@@ -2,6 +2,8 @@
 
 This repository is designed to be changed by coding agents. Treat this file as binding. Read `docs/engineering-principles.md` before every code change, then use `docs/README.md` to load only the architecture, testing, or research context relevant to the task.
 
+This file is the only place repository rules are written. The files each agent loads on its own — `CLAUDE.md`, `GEMINI.md`, `.cursor/rules/repository.mdc` and `.github/copilot-instructions.md` — are generated pointers back to it; change a rule here and run `pnpm instructions:write`. A package carries its own `AGENTS.md` only for rules that genuinely differ from this contract, and `pnpm instructions` fails when a pointer goes stale, a rule is restated, or a referenced document stops resolving. `docs/README.md` explains the mechanism.
+
 ## Non-negotiable invariants
 
 - Keep TypeScript `strict`, `noUncheckedIndexedAccess`, and `exactOptionalPropertyTypes` enabled. Do not use `any`, non-null assertions, or `@ts-ignore` to bypass a design problem.
@@ -25,7 +27,7 @@ ESLint encodes many of these boundaries. Do not weaken a rule to make a change p
 - `packages/db`: Prisma schema, migrations, server-only client, and persistence adapters.
 - `packages/config`: shared compiler, lint, and test configuration.
 - `packages/tokens`: plain cross-platform design values.
-- `packages/tooling`: repository commands (`bootstrap`, `diagnose`, `verify`, `verify:changed`, `starter:init`). Node built-ins only: `diagnose` must inspect a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency.
+- `packages/tooling`: repository commands (`bootstrap`, `diagnose`, `instructions`, `verify`, `verify:changed`, `starter:init`). Node built-ins only: `diagnose` must inspect a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency. Editing it also requires `packages/tooling/AGENTS.md`.
 
 ## Getting a checkout running
 

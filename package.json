@@ -21,6 +21,8 @@
     "diagnose": "node packages/tooling/src/bin/diagnose.ts",
     "format:check": "prettier --check . --cache",
     "format:write": "prettier --write . --cache",
+    "instructions": "node packages/tooling/src/bin/instructions.ts",
+    "instructions:write": "node packages/tooling/src/bin/instructions.ts --write",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",
     "postinstall": "pnpm db:generate",

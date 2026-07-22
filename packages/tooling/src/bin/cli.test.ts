@@ -20,6 +20,7 @@ describe("command entry points", () => {
     expect(commands.sort()).toEqual([
       "bootstrap.ts",
       "diagnose.ts",
+      "instructions.ts",
       "starter-init.ts",
       "verify-changed.ts",
       "verify.ts",
