@@ -3,37 +3,65 @@
 ## Dependency direction
 
 ```text
-apps/web ─────┐
-              ├──> packages/api ──> packages/domain
-apps/mobile ──┘          │
-                        └──> packages/db ──> PostgreSQL
+apps/mobile ──> packages/api/client (types only)
+
+apps/web ─────> packages/api ──────> packages/domain
+    │                 ↑
+    │                 └── injects consumer-owned ports
+    └─────────> packages/db ───────> PostgreSQL
 
 apps/web + apps/mobile ──> packages/tokens
 all workspaces ──────────> packages/config (tooling only)
 ```
 
-| Layer    | May contain                                         | Must not contain                                      |
-| -------- | --------------------------------------------------- | ----------------------------------------------------- |
-| `domain` | Zod schemas, value objects, deterministic rules     | React, Next.js, Expo, Prisma, environment reads       |
-| `tokens` | Plain colors, spacing, typography values            | Components, runtime/platform imports                  |
-| `db`     | Prisma client, schema, migrations                   | Client code, framework adapters, API routing          |
-| `api`    | tRPC routers, authorization, orchestration          | Next.js/Expo UI or framework-specific request objects |
-| `web`    | App Router, shadcn UI, Better Auth, server adapters | Direct database access from UI/transport folders      |
-| `mobile` | Expo Router, native UI, typed API client            | Prisma, Next.js, server API implementation            |
+| Layer    | May contain                                             | Must not contain                                 |
+| -------- | ------------------------------------------------------- | ------------------------------------------------ |
+| `domain` | Zod schemas, value objects, deterministic rules         | React, Next.js, Expo, Prisma, environment reads  |
+| `tokens` | Plain colors, spacing, typography values                | Components, runtime/platform imports             |
+| `db`     | Prisma client, schema, migrations, persistence adapters | Client code, web framework adapters, API routing |
+| `api`    | tRPC, authorization, use cases, consumer-owned ports    | Prisma/service SDKs, Next.js/Expo UI             |
+| `web`    | App Router, UI, Better Auth, transport/composition root | Direct database access from UI/transport folders |
+| `mobile` | Expo Router, native UI, typed API client                | Prisma, Next.js, server API implementation       |
 
 ESLint import restrictions enforce the most important boundaries. The database package also imports `server-only`, providing a runtime/build-time backstop.
+
+## Domain-driven structure and dependency inversion
+
+Organize new business behavior around bounded contexts and product language, not framework primitives. A context owns its vocabulary, schemas, invariants, policies, and use cases. Do not create one generic service/repository layer shared by unrelated domains.
+
+Use a functional core with an imperative shell:
+
+```text
+transport/UI → application use case → domain rules
+                         ↓
+               consumer-owned port
+                         ↓
+                infrastructure adapter
+```
+
+- Domain functions are deterministic and accept values explicitly.
+- A use case coordinates a single business outcome and depends on the smallest capability contract it consumes.
+- Prisma, provider SDKs, clocks, randomness, queues, email, files, and network calls live behind adapters.
+- The web server composition root constructs concrete adapters and injects them into API/application code.
+- Transport handlers translate protocol concerns; they do not contain business rules or expose Prisma/vendor models as public contracts.
+
+An interface is not automatically good architecture. Add one only at a real side-effect or volatility boundary, for a genuine substitution/test seam, or after proven duplication. Prefer a direct function for stable pure behavior. Keep contract methods use-case-shaped rather than mirroring an SDK or exposing generic CRUD.
+
+Cross-context communication goes through an explicit public contract. Never reach into another context's internal files, database tables, or adapter implementation. If a feature forces reverse or circular dependencies, redesign the ownership or introduce an event/port at the boundary rather than adding an import exception.
 
 ## Data and validation
 
 The intended path is:
 
 ```text
-form/native input → shared Zod schema → tRPC procedure → domain rule → Prisma transaction → PostgreSQL constraint
+input → Zod → tRPC adapter → domain/use case → port → Prisma adapter/transaction → PostgreSQL constraint
 ```
 
 Zod provides runtime validation and inferred TypeScript types. It does not replace database integrity. Required data uses `NOT NULL`; ownership uses foreign keys; identities use unique constraints; row-level invariants use CHECK constraints; related writes use a transaction. Integration tests apply migrations to a real ephemeral PostgreSQL instance and prove those rules independently of TypeScript.
 
 For forms, use the same domain schema on web and mobile. Add React Hook Form plus the Zod resolver when a real form exists; do not introduce a form abstraction pre-emptively. tRPC `.input(schema)` is the server request boundary. Validate responses from external APIs before domain code consumes them.
+
+Parse external data once at the edge and pass trusted domain values inward. Do not repeatedly validate the same object or scatter defensive optional chaining through trusted code. Domain types must not be aliases of Prisma-generated or provider SDK types.
 
 ## Server and client state
 
@@ -52,5 +80,7 @@ The web uses Tailwind CSS and shadcn components in `apps/web/src/components/ui`.
 ## Optional integrations
 
 Sentry initializes on Next.js and Expo only when a DSN exists. Build-time org/project/token variables enable source maps. Other external services—email, AI providers, payments, calendars—should enter through server-side adapters with typed configuration, timeouts, error translation, Zod response parsing, idempotency where relevant, and tests at the adapter boundary.
+
+An adapter must expose a narrow product-oriented contract and keep vendor request/response types private. Centralize retries, rate-limit handling, idempotency, observability, and error translation there. Keep authorization visible at the use-case or procedure boundary; never rely on an implicit UI check.
 
 Realtime AI chat should stream from a server route (SSE/streamed HTTP by default; WebSockets only when bidirectional realtime is required). Persist final messages and important tool results, but keep transport chunks ephemeral. Never expose model/provider secrets to either client.

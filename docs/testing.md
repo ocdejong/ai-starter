@@ -25,3 +25,16 @@ The Maestro flow is checked in but not run by the default GitHub-hosted CI becau
 - Test an external integration with contract fixtures plus a thin sandbox test when the provider offers one.
 
 Every bug fix should first demonstrate the failure at the lowest level that faithfully reproduces it.
+
+## Evidence workflow
+
+1. Run the closest relevant test before editing to establish a trustworthy baseline.
+2. Add or change an executable example and observe it fail for the expected reason when practical.
+3. Implement the smallest change that makes it pass.
+4. Run the focused test during iteration, then the wider affected suite.
+5. Inspect the diff for test weakening, skipped cases, broad mocks, unsafe casts, and unrelated changes.
+6. Exercise the real interface for user-visible or integration behavior; use browser/native automation when repeatable.
+
+Passing tests are evidence, not permission to ignore the rest of the system. Type checks cannot prove runtime parsing, authorization, persistence, accessibility, or provider behavior. A mocked unit cannot prove a database constraint or integration contract. Match evidence to the risk and report exactly what ran.
+
+Tests must not be deleted, skipped, weakened, or rewritten merely because the implementation fails them. Change an existing expectation only when the product contract intentionally changed, and document that change in the same commit.

@@ -50,6 +50,8 @@ pnpm build
 pnpm test:e2e
 ```
 
-See `AGENTS.md` for the agent contract, `docs/architecture.md` for boundaries and extension patterns, `docs/testing.md` for the test pyramid, and `CONTRIBUTING.md` for the full workflow.
+See `AGENTS.md` for the binding agent contract and `docs/README.md` for the repository knowledge map. The ranked hard rules live in `docs/engineering-principles.md`; architecture, verification, and their research basis stay in separate progressively loaded documents.
+
+Codex and compatible tools load `AGENTS.md` directly. Thin pointer files also route Claude Code, Gemini CLI, Cursor, and GitHub Copilot to that same source of truth without duplicating instructions.
 
 After creating a GitHub remote, protect `main` and enable Dependabot alerts, secret scanning, push protection, and private vulnerability reporting. The workflows and Dependabot/CodeQL configuration are already checked in.

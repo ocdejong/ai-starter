@@ -1,0 +1,6 @@
+---
+description: Binding repository contract for every change
+alwaysApply: true
+---
+
+Read and follow @AGENTS.md before making or reviewing changes. It routes to the canonical engineering principles, architecture, security, and testing guidance. Do not duplicate or override those rules here.
