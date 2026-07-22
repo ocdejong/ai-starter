@@ -71,8 +71,6 @@ pnpm test:integration
 
 ## Security and integrations
 
-- Keep OAuth login scopes minimal. Request calendar or other provider scopes later through explicit account linking/consent.
-- Treat OAuth access and refresh tokens as secrets. Better Auth provider tokens require a deliberate encryption and rotation design before handling sensitive production integrations.
 - Keep third-party SDKs behind a small adapter and validate their responses with Zod before passing data into domain logic.
 - Sentry is disabled without a DSN and must keep `sendDefaultPii: false` unless a documented privacy decision changes it.
 - Never log credentials, authorization headers, full provider payloads, or sensitive user content.
