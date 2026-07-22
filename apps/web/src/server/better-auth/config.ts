@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { db } from "@t3-test/db";
+import { db } from "@ai-starter/db";
 
 import { env } from "~/env";
 

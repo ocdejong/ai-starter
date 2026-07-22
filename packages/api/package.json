@@ -1,5 +1,5 @@
 {
-  "name": "@t3-test/api",
+  "name": "@ai-starter/api",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -14,14 +14,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@t3-test/domain": "workspace:*",
+    "@ai-starter/domain": "workspace:*",
     "@trpc/server": "^11.18.0",
     "server-only": "^0.0.1",
     "superjson": "^2.2.6",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@t3-test/config": "workspace:*",
+    "@ai-starter/config": "workspace:*",
     "@types/node": "^20.14.10",
     "eslint": "^9.23.0",
     "typescript": "^5.8.2",

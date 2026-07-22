@@ -1,4 +1,4 @@
-import { baseVitestConfig } from "@t3-test/config/vitest/base";
+import { baseVitestConfig } from "@ai-starter/config/vitest/base";
 import { defineConfig, mergeConfig } from "vitest/config";
 
 export default mergeConfig(

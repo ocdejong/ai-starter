@@ -7,7 +7,7 @@ import type {
   AppRouter,
   RouterInputs,
   RouterOutputs,
-} from "@t3-test/api/client";
+} from "@ai-starter/api/client";
 import { useState } from "react";
 import SuperJSON from "superjson";
 

@@ -1,5 +1,5 @@
 {
-  "extends": ["expo/tsconfig.base", "@t3-test/config/typescript/base.json"],
+  "extends": ["expo/tsconfig.base", "@ai-starter/config/typescript/base.json"],
   "compilerOptions": {
     "strict": true,
     "types": ["jest"],

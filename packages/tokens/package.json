@@ -1,5 +1,5 @@
 {
-  "name": "@t3-test/tokens",
+  "name": "@ai-starter/tokens",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@t3-test/config": "workspace:*",
+    "@ai-starter/config": "workspace:*",
     "eslint": "^9.23.0",
     "typescript": "^5.8.2"
   }

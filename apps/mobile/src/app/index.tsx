@@ -1,4 +1,4 @@
-import { colors, spacing } from "@t3-test/tokens";
+import { colors, spacing } from "@ai-starter/tokens";
 import { StyleSheet, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 

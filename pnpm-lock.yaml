@@ -34,10 +34,10 @@ importers:
       '@sentry/react-native':
         specifier: ~7.11.0
         version: 7.11.0(expo@57.0.7)(react-native@0.86.0(@babel/core@7.29.7)(@react-native/jest-preset@0.86.0(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
-      '@t3-test/api':
+      '@ai-starter/api':
         specifier: workspace:*
         version: link:../../packages/api
-      '@t3-test/tokens':
+      '@ai-starter/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       '@tanstack/react-query':
@@ -98,7 +98,7 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
-      '@t3-test/config':
+      '@ai-starter/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@testing-library/react-native':
@@ -134,10 +134,10 @@ importers:
       '@t3-oss/env-nextjs':
         specifier: ^0.13.11
         version: 0.13.11(typescript@5.9.3)(zod@4.4.3)
-      '@t3-test/api':
+      '@ai-starter/api':
         specifier: workspace:*
         version: link:../../packages/api
-      '@t3-test/db':
+      '@ai-starter/db':
         specifier: workspace:*
         version: link:../../packages/db
       '@tanstack/react-query':
@@ -198,7 +198,7 @@ importers:
       '@eslint/eslintrc':
         specifier: ^3.3.1
         version: 3.3.6
-      '@t3-test/config':
+      '@ai-starter/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@tailwindcss/postcss':
@@ -249,7 +249,7 @@ importers:
 
   packages/api:
     dependencies:
-      '@t3-test/domain':
+      '@ai-starter/domain':
         specifier: workspace:*
         version: link:../domain
       '@trpc/server':
@@ -265,7 +265,7 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
-      '@t3-test/config':
+      '@ai-starter/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -306,7 +306,7 @@ importers:
         specifier: ^0.0.1
         version: 0.0.1
     devDependencies:
-      '@t3-test/config':
+      '@ai-starter/config':
         specifier: workspace:*
         version: link:../config
       '@testcontainers/postgresql':
@@ -334,7 +334,7 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
-      '@t3-test/config':
+      '@ai-starter/config':
         specifier: workspace:*
         version: link:../config
       eslint:
@@ -349,7 +349,7 @@ importers:
 
   packages/tokens:
     devDependencies:
-      '@t3-test/config':
+      '@ai-starter/config':
         specifier: workspace:*
         version: link:../config
       eslint:

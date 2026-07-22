@@ -1,6 +1,6 @@
-import { createTRPCContext as createSharedTRPCContext } from "@t3-test/api";
-import type { PostRepository } from "@t3-test/api";
-import { prismaPostRepository } from "@t3-test/db";
+import { createTRPCContext as createSharedTRPCContext } from "@ai-starter/api";
+import type { PostRepository } from "@ai-starter/api";
+import { prismaPostRepository } from "@ai-starter/db";
 
 import { auth } from "~/server/better-auth";
 

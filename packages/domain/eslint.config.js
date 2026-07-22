@@ -1,4 +1,4 @@
-import baseConfig from "@t3-test/config/eslint/base";
+import baseConfig from "@ai-starter/config/eslint/base";
 
 export default [
   ...baseConfig,
@@ -18,10 +18,13 @@ export default [
         {
           paths: [
             {
-              name: "@t3-test/api",
+              name: "@ai-starter/api",
               message: "Domain code is dependency-free.",
             },
-            { name: "@t3-test/db", message: "Domain code is dependency-free." },
+            {
+              name: "@ai-starter/db",
+              message: "Domain code is dependency-free.",
+            },
             { name: "expo", message: "Domain code is platform-independent." },
             { name: "next", message: "Domain code is platform-independent." },
             { name: "react", message: "Domain code is framework-independent." },
@@ -33,8 +36,8 @@ export default [
           patterns: [
             {
               group: [
-                "@t3-test/api/*",
-                "@t3-test/db/*",
+                "@ai-starter/api/*",
+                "@ai-starter/db/*",
                 "expo/*",
                 "next/*",
                 "react-native/*",

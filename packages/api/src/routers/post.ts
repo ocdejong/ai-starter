@@ -1,4 +1,4 @@
-import { createPostInputSchema, helloInputSchema } from "@t3-test/domain";
+import { createPostInputSchema, helloInputSchema } from "@ai-starter/domain";
 
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 

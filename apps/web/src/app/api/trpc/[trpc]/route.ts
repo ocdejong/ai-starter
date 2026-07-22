@@ -1,5 +1,5 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import { appRouter } from "@t3-test/api";
+import { appRouter } from "@ai-starter/api";
 import { type NextRequest } from "next/server";
 
 import { env } from "~/env";

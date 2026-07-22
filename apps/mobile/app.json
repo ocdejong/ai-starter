@@ -1,18 +1,18 @@
 {
   "expo": {
-    "name": "t3-test",
-    "slug": "t3-test",
+    "name": "ai-starter",
+    "slug": "ai-starter",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "t3-test",
+    "scheme": "ai-starter",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "bundleIdentifier": "com.example.t3test",
+      "bundleIdentifier": "com.example.aistarter",
       "icon": "./assets/expo.icon"
     },
     "android": {
-      "package": "com.example.t3test",
+      "package": "com.example.aistarter",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

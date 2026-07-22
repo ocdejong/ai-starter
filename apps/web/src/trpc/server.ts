@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createHydrationHelpers } from "@trpc/react-query/rsc";
-import { createCaller, type AppRouter } from "@t3-test/api";
+import { createCaller, type AppRouter } from "@ai-starter/api";
 import { headers } from "next/headers";
 import { cache } from "react";
 

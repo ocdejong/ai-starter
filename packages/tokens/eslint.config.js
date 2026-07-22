@@ -1,4 +1,4 @@
-import baseConfig from "@t3-test/config/eslint/base";
+import baseConfig from "@ai-starter/config/eslint/base";
 
 export default [
   ...baseConfig,
@@ -18,11 +18,11 @@ export default [
         {
           paths: [
             {
-              name: "@t3-test/api",
+              name: "@ai-starter/api",
               message: "Design tokens are dependency-free.",
             },
             {
-              name: "@t3-test/db",
+              name: "@ai-starter/db",
               message: "Design tokens are dependency-free.",
             },
             {
@@ -42,8 +42,8 @@ export default [
           patterns: [
             {
               group: [
-                "@t3-test/api/*",
-                "@t3-test/db/*",
+                "@ai-starter/api/*",
+                "@ai-starter/db/*",
                 "expo/*",
                 "next/*",
                 "react-native/*",

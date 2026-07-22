@@ -1,4 +1,4 @@
-import baseConfig from "@t3-test/config/eslint/base";
+import baseConfig from "@ai-starter/config/eslint/base";
 
 export default [
   ...baseConfig,

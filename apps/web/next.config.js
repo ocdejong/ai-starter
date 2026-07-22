@@ -7,7 +7,11 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 /** @type {import("next").NextConfig} */
 const config = {
-  transpilePackages: ["@t3-test/api", "@t3-test/domain", "@t3-test/db"],
+  transpilePackages: [
+    "@ai-starter/api",
+    "@ai-starter/domain",
+    "@ai-starter/db",
+  ],
 };
 
 const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;

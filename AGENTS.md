@@ -8,7 +8,7 @@ This repository is designed to be changed by coding agents. Treat this file as b
 - Validate every untrusted runtime boundary with Zod. TypeScript types alone are not validation.
 - Preserve dependency direction: apps compose the API and infrastructure adapters; API → domain; DB → PostgreSQL. `domain` and `tokens` remain platform-neutral; `db` remains server-only.
 - Put side effects and volatile vendors behind narrow, consumer-owned contracts. Wire concrete adapters only at a composition root; do not create speculative abstractions around stable pure code.
-- Client code may import `@t3-test/api/client`, never `@t3-test/db` or the server entry point of `@t3-test/api`.
+- Client code may import `@ai-starter/api/client`, never `@ai-starter/db` or the server entry point of `@ai-starter/api`.
 - Persisted invariants belong in PostgreSQL constraints as well as application validation. Use transactions for multi-write operations that must succeed or fail together.
 - Never commit secrets or generated Prisma output. Public environment variables are not secret.
 - Keep web and native UI separate. Share schemas, business logic, API types, and tokens—not DOM or React Native components.

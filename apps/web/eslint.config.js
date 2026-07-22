@@ -1,5 +1,5 @@
 import { FlatCompat } from "@eslint/eslintrc";
-import baseConfig from "@t3-test/config/eslint/base";
+import baseConfig from "@ai-starter/config/eslint/base";
 
 const compat = new FlatCompat({
   baseDirectory: import.meta.dirname,
@@ -29,14 +29,14 @@ const config = [
         {
           paths: [
             {
-              name: "@t3-test/db",
+              name: "@ai-starter/db",
               message:
                 "UI and transport code must reach the database through server modules or tRPC.",
             },
           ],
           patterns: [
             {
-              group: ["@t3-test/db/*"],
+              group: ["@ai-starter/db/*"],
               message:
                 "UI and transport code must not import database internals.",
             },

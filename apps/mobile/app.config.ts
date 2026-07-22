@@ -20,8 +20,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
   return {
     ...config,
-    name: config.name ?? "t3-test",
+    name: config.name ?? "ai-starter",
     plugins,
-    slug: config.slug ?? "t3-test",
+    slug: config.slug ?? "ai-starter",
   };
 };

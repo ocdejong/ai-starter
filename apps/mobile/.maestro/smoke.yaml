@@ -1,4 +1,4 @@
-appId: com.example.t3test
+appId: com.example.aistarter
 ---
 - launchApp
-- assertVisible: "t3-test mobile"
+- assertVisible: "ai-starter mobile"

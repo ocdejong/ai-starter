@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 
-import { baseVitestConfig } from "@t3-test/config/vitest/base";
+import { baseVitestConfig } from "@ai-starter/config/vitest/base";
 import react from "@vitejs/plugin-react";
 import { defineConfig, mergeConfig } from "vitest/config";
 

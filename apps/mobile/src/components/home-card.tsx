@@ -1,4 +1,4 @@
-import { colors, spacing } from "@t3-test/tokens";
+import { colors, spacing } from "@ai-starter/tokens";
 import { StyleSheet, Text, useColorScheme, View } from "react-native";
 
 export function HomeCard({ message }: { message: string }) {
@@ -7,7 +7,9 @@ export function HomeCard({ message }: { message: string }) {
 
   return (
     <View style={[styles.card, { backgroundColor: theme.surface }]}>
-      <Text style={[styles.title, { color: theme.text }]}>t3-test mobile</Text>
+      <Text style={[styles.title, { color: theme.text }]}>
+        ai-starter mobile
+      </Text>
       <Text style={[styles.body, { color: theme.textMuted }]}>{message}</Text>
     </View>
   );

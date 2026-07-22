@@ -1,4 +1,4 @@
-import baseConfig from "@t3-test/config/eslint/base";
+import baseConfig from "@ai-starter/config/eslint/base";
 
 export default [
   { ignores: ["generated/**"] },
@@ -19,7 +19,7 @@ export default [
         {
           paths: [
             {
-              name: "@t3-test/api",
+              name: "@ai-starter/api",
               message: "The database is below the API layer.",
             },
             { name: "expo", message: "The database package is server-only." },
@@ -32,7 +32,12 @@ export default [
           ],
           patterns: [
             {
-              group: ["@t3-test/api/*", "expo/*", "next/*", "react-native/*"],
+              group: [
+                "@ai-starter/api/*",
+                "expo/*",
+                "next/*",
+                "react-native/*",
+              ],
               message: "The database package must not depend on higher layers.",
             },
           ],

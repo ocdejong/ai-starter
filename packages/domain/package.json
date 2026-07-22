@@ -1,5 +1,5 @@
 {
-  "name": "@t3-test/domain",
+  "name": "@ai-starter/domain",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -16,7 +16,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@t3-test/config": "workspace:*",
+    "@ai-starter/config": "workspace:*",
     "eslint": "^9.23.0",
     "typescript": "^5.8.2",
     "vitest": "^4.1.10"

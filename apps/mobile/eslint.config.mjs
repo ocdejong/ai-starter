@@ -1,4 +1,4 @@
-import { typescriptRules } from "@t3-test/config/eslint/rules";
+import { typescriptRules } from "@ai-starter/config/eslint/rules";
 import { defineConfig } from "eslint/config";
 import expoConfig from "eslint-config-expo/flat.js";
 
@@ -35,11 +35,14 @@ export default defineConfig([
         {
           paths: [
             {
-              name: "@t3-test/api",
+              name: "@ai-starter/api",
               message:
-                "Mobile may import only public client types from @t3-test/api/client.",
+                "Mobile may import only public client types from @ai-starter/api/client.",
             },
-            { name: "@t3-test/db", message: "Database code is server-only." },
+            {
+              name: "@ai-starter/db",
+              message: "Database code is server-only.",
+            },
             { name: "next", message: "Next.js modules are web-only." },
             {
               name: "server-only",
@@ -48,7 +51,7 @@ export default defineConfig([
           ],
           patterns: [
             {
-              group: ["@t3-test/db/*", "next/*"],
+              group: ["@ai-starter/db/*", "next/*"],
               message: "This module is unavailable in the mobile runtime.",
             },
           ],
