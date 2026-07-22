@@ -1,0 +1,4 @@
+appId: com.example.t3test
+---
+- launchApp
+- assertVisible: "t3-test mobile"

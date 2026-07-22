@@ -12,6 +12,7 @@
     "lint:fix": "eslint . --fix",
     "start": "expo start",
     "test": "jest --runInBand",
+    "test:e2e": "maestro test .maestro",
     "typecheck": "tsc --noEmit",
     "web": "expo start --web"
   },

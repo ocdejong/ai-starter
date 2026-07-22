@@ -11,6 +11,7 @@
     "preview": "next build && next start",
     "start": "next start",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

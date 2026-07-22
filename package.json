@@ -22,9 +22,14 @@
     "lint:fix": "turbo run lint:fix",
     "postinstall": "pnpm db:generate",
     "test": "turbo run test",
+    "test:e2e": "pnpm --filter @t3-test/web test:e2e",
+    "test:e2e:mobile": "pnpm --filter @t3-test/mobile test:e2e",
+    "test:integration": "pnpm --filter @t3-test/db test:integration",
+    "test:unit": "turbo run test",
     "typecheck": "turbo run typecheck"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "dotenv-cli": "^11.0.0",
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.6.11",
