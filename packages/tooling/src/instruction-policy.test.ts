@@ -252,3 +252,63 @@ describe("violation messages", () => {
     );
   });
 });
+
+/**
+ * A template that loses its import line or its `alwaysApply` flag still
+ * regenerates into a file that matches its source, so the byte comparison
+ * cannot see it. These pin each entry to the vendor's actual requirement.
+ */
+describe("auto-load markers", () => {
+  it.each(vendorPointers)(
+    "$vendor renders a file that carries every load marker",
+    (pointer) => {
+      const rendered = renderPointer(pointer);
+      const unmet = pointer.loadMarkers.filter(
+        (marker) => !marker.pattern.test(rendered),
+      );
+
+      expect(unmet).toEqual([]);
+      expect(pointer.loadMarkers.length).toBeGreaterThan(0);
+    },
+  );
+
+  it.each(vendorPointers.filter((pointer) => pointer.reference !== undefined))(
+    "$vendor loses a load marker once the import line is dropped",
+    (pointer) => {
+      const rendered = renderPointer({
+        discovery: pointer.discovery,
+        loadMarkers: pointer.loadMarkers,
+        path: pointer.path,
+        vendor: pointer.vendor,
+        ...(pointer.frontmatter === undefined
+          ? {}
+          : { frontmatter: pointer.frontmatter }),
+      });
+
+      expect(
+        pointer.loadMarkers.some((marker) => !marker.pattern.test(rendered)),
+      ).toBe(true);
+    },
+  );
+
+  it("Cursor loses a load marker once alwaysApply is turned off", () => {
+    const cursor = vendorPointers.find(
+      (pointer) => pointer.vendor === "Cursor",
+    );
+    if (cursor === undefined) {
+      throw new Error("Cursor is no longer a registered vendor pointer.");
+    }
+
+    const rendered = renderPointer({
+      ...cursor,
+      frontmatter: [
+        "description: Binding repository contract",
+        "alwaysApply: false",
+      ],
+    });
+
+    expect(
+      cursor.loadMarkers.some((marker) => !marker.pattern.test(rendered)),
+    ).toBe(true);
+  });
+});

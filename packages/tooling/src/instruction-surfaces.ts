@@ -14,7 +14,21 @@ export const rootContractPath = "AGENTS.md";
 export const checkCommand = "pnpm instructions";
 export const writeCommand = "pnpm instructions:write";
 
-const sourcePath = "packages/tooling/src/instruction-surfaces.ts";
+export const sourcePath = "packages/tooling/src/instruction-surfaces.ts";
+
+/**
+ * What has to survive rendering for the vendor to load the contract at all.
+ *
+ * Comparing a pointer against this module proves it is not hand-edited, but a
+ * template that loses its import line or its `alwaysApply` flag regenerates
+ * cleanly and still matches, while the agent silently stops receiving the
+ * contract. This pins each template to the vendor's requirement instead.
+ */
+export type LoadMarker = {
+  /** Completes "would no longer …", so phrase it as an action. */
+  readonly description: string;
+  readonly pattern: RegExp;
+};
 
 export type VendorPointer = {
   readonly path: string;
@@ -22,10 +36,18 @@ export type VendorPointer = {
   readonly vendor: string;
   /** How that agent finds the file without being told to, in one clause. */
   readonly discovery: string;
+  /** Every requirement the rendered file must satisfy for the vendor to load it. */
+  readonly loadMarkers: readonly LoadMarker[];
   /** Vendor-specific import line, omitted where the vendor has no import syntax. */
   readonly reference?: string;
   /** Leading YAML block, for vendors that key their loading rules off one. */
   readonly frontmatter?: readonly string[];
+};
+
+/** Every import-following vendor needs a resolvable `@` import on its own line. */
+const importsTheContract: LoadMarker = {
+  description: `import \`${rootContractPath}\``,
+  pattern: /^@\.{0,2}\/?AGENTS\.md$/m,
 };
 
 /**
@@ -37,6 +59,7 @@ export const vendorPointers: readonly VendorPointer[] = [
   {
     discovery:
       "reads `CLAUDE.md` from the repository root and follows `@` imports",
+    loadMarkers: [importsTheContract],
     path: "CLAUDE.md",
     reference: "@AGENTS.md",
     vendor: "Claude Code",
@@ -44,6 +67,7 @@ export const vendorPointers: readonly VendorPointer[] = [
   {
     discovery:
       "reads `GEMINI.md` from the repository root and follows `@` imports",
+    loadMarkers: [importsTheContract],
     path: "GEMINI.md",
     reference: "@./AGENTS.md",
     vendor: "Gemini CLI",
@@ -55,6 +79,13 @@ export const vendorPointers: readonly VendorPointer[] = [
       "description: Binding repository contract for every change",
       "alwaysApply: true",
     ],
+    loadMarkers: [
+      {
+        description: "declare `alwaysApply: true` in its front matter",
+        pattern: /^alwaysApply: true$/m,
+      },
+      importsTheContract,
+    ],
     path: ".cursor/rules/repository.mdc",
     reference: "@AGENTS.md",
     vendor: "Cursor",
@@ -62,6 +93,13 @@ export const vendorPointers: readonly VendorPointer[] = [
   {
     discovery:
       "reads `.github/copilot-instructions.md` for every request in the repository",
+    loadMarkers: [
+      {
+        // Copilot has no import syntax: the prose naming the file is the pointer.
+        description: `name \`${rootContractPath}\``,
+        pattern: /`AGENTS\.md`/,
+      },
+    ],
     path: ".github/copilot-instructions.md",
     vendor: "GitHub Copilot",
   },

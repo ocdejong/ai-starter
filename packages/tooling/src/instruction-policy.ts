@@ -12,6 +12,7 @@ import {
   renderPointer,
   rootContractPath,
   scopedInstructions,
+  sourcePath,
   vendorPointers,
   writeCommand,
 } from "./instruction-surfaces.ts";
@@ -204,6 +205,25 @@ function checkPointers(root: string): PolicyViolation[] {
   return violations;
 }
 
+/**
+ * Checks the templates rather than the checkout: a pointer that matches a
+ * source which no longer carries the vendor's load marker is consistent and
+ * useless, and nothing else in this module would notice.
+ */
+function checkLoadMarkers(): PolicyViolation[] {
+  return vendorPointers.flatMap((pointer) => {
+    const rendered = renderPointer(pointer);
+
+    return pointer.loadMarkers
+      .filter((marker) => !marker.pattern.test(rendered))
+      .map((marker) => ({
+        file: sourcePath,
+        fix: `Restore the ${pointer.vendor} entry so the rendered file will ${marker.description}, then run \`${writeCommand}\`.`,
+        problem: `Regenerating ${pointer.path} would no longer ${marker.description}, so ${pointer.vendor} would stop receiving the contract even while the file matches its source.`,
+      }));
+  });
+}
+
 function checkScoped(root: string, contract: string): PolicyViolation[] {
   const violations: PolicyViolation[] = [];
 
@@ -312,6 +332,7 @@ export function checkInstructionSurfaces(root: string): PolicyViolation[] {
 
   return [
     ...checkPointers(root),
+    ...checkLoadMarkers(),
     ...checkScoped(root, contract),
     ...checkDuplication(root),
     ...checkReferences(root),
