@@ -13,6 +13,9 @@ const config = {
 const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
 const sentryOrg = process.env.SENTRY_ORG;
 const sentryProject = process.env.SENTRY_PROJECT;
+const hasSentryBuildCredentials = Boolean(
+  sentryAuthToken && sentryOrg && sentryProject,
+);
 
 const sourceMapOptions =
   sentryAuthToken && sentryOrg && sentryProject
@@ -22,10 +25,14 @@ const sourceMapOptions =
         project: sentryProject,
         widenClientFileUpload: true,
       }
-    : {};
+    : {
+        release: { create: false },
+        sourcemaps: { disable: true },
+      };
 
 export default withSentryConfig(config, {
-  silent: !process.env.CI,
+  silent: !hasSentryBuildCredentials || !process.env.CI,
+  telemetry: hasSentryBuildCredentials,
   webpack: {
     treeshake: {
       removeDebugLogging: true,
