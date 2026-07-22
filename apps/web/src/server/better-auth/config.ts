@@ -4,16 +4,24 @@ import { db } from "@t3-test/db";
 
 import { env } from "~/env";
 
-const googleIsConfigured = Boolean(
-  env.BETTER_AUTH_GOOGLE_CLIENT_ID && env.BETTER_AUTH_GOOGLE_CLIENT_SECRET,
-);
-const githubIsConfigured = Boolean(
-  env.BETTER_AUTH_GITHUB_CLIENT_ID && env.BETTER_AUTH_GITHUB_CLIENT_SECRET,
-);
+const googleCredentials =
+  env.BETTER_AUTH_GOOGLE_CLIENT_ID && env.BETTER_AUTH_GOOGLE_CLIENT_SECRET
+    ? {
+        clientId: env.BETTER_AUTH_GOOGLE_CLIENT_ID,
+        clientSecret: env.BETTER_AUTH_GOOGLE_CLIENT_SECRET,
+      }
+    : null;
+const githubCredentials =
+  env.BETTER_AUTH_GITHUB_CLIENT_ID && env.BETTER_AUTH_GITHUB_CLIENT_SECRET
+    ? {
+        clientId: env.BETTER_AUTH_GITHUB_CLIENT_ID,
+        clientSecret: env.BETTER_AUTH_GITHUB_CLIENT_SECRET,
+      }
+    : null;
 
-export const primarySocialProvider = googleIsConfigured
+export const primarySocialProvider = googleCredentials
   ? ("google" as const)
-  : githubIsConfigured
+  : githubCredentials
     ? ("github" as const)
     : null;
 
@@ -26,18 +34,16 @@ export const auth = betterAuth({
     enabled: true,
   },
   socialProviders: {
-    ...(googleIsConfigured && {
+    ...(googleCredentials && {
       google: {
         accessType: "offline" as const,
-        clientId: env.BETTER_AUTH_GOOGLE_CLIENT_ID!,
-        clientSecret: env.BETTER_AUTH_GOOGLE_CLIENT_SECRET!,
+        ...googleCredentials,
         prompt: "select_account consent" as const,
       },
     }),
-    ...(githubIsConfigured && {
+    ...(githubCredentials && {
       github: {
-        clientId: env.BETTER_AUTH_GITHUB_CLIENT_ID!,
-        clientSecret: env.BETTER_AUTH_GITHUB_CLIENT_SECRET!,
+        ...githubCredentials,
       },
     }),
   },
