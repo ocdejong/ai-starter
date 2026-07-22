@@ -15,7 +15,11 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@t3-test/api": "workspace:*",
     "@t3-test/tokens": "workspace:*",
+    "@tanstack/react-query": "^5.101.4",
+    "@trpc/client": "^11.18.0",
+    "@trpc/react-query": "^11.18.0",
     "expo": "~57.0.7",
     "expo-constants": "~57.0.6",
     "expo-linking": "~57.0.3",
@@ -29,7 +33,9 @@
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "4.25.2",
     "react-native-web": "~0.21.0",
-    "react-native-worklets": "0.10.0"
+    "react-native-worklets": "0.10.0",
+    "superjson": "^2.2.6",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@t3-test/config": "workspace:*",

@@ -2,9 +2,12 @@ import { colors, spacing } from "@t3-test/tokens";
 import { StyleSheet, Text, useColorScheme, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { api } from "../trpc/provider";
+
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const theme = colorScheme === "dark" ? colors.dark : colors.light;
+  const hello = api.post.hello.useQuery({ text: "from Expo" });
 
   return (
     <SafeAreaView
@@ -15,7 +18,10 @@ export default function HomeScreen() {
           t3-test mobile
         </Text>
         <Text style={[styles.body, { color: theme.textMuted }]}>
-          Expo Router and shared workspace packages are ready.
+          {hello.data?.greeting ??
+            (hello.isError
+              ? "The API is unavailable. Start the web app and check EXPO_PUBLIC_API_URL."
+              : "Connecting to the typed API…")}
         </Text>
       </View>
     </SafeAreaView>
