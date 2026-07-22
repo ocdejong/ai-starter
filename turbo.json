@@ -12,6 +12,9 @@
         "DATABASE_URL",
         "EXPO_PUBLIC_*",
         "NEXT_PUBLIC_*",
+        "SENTRY_AUTH_TOKEN",
+        "SENTRY_ORG",
+        "SENTRY_PROJECT",
         "SKIP_ENV_VALIDATION",
         "VERCEL_URL"
       ],

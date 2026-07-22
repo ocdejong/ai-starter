@@ -6,6 +6,16 @@ export default defineConfig([
   {
     ignores: [".expo/**", "dist/**"],
   },
+  {
+    files: ["*.config.cjs"],
+    languageOptions: {
+      globals: {
+        __dirname: "readonly",
+        module: "readonly",
+        require: "readonly",
+      },
+    },
+  },
   expoConfig,
   {
     files: ["**/*.ts", "**/*.tsx"],

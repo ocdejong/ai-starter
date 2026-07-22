@@ -23,6 +23,7 @@
     ]
   },
   "dependencies": {
+    "@sentry/react-native": "~7.11.0",
     "@t3-test/api": "workspace:*",
     "@t3-test/tokens": "workspace:*",
     "@tanstack/react-query": "^5.101.4",
