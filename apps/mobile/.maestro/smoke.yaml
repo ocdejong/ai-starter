@@ -1,4 +1,4 @@
 appId: com.example.aistarter
 ---
 - launchApp
-- assertVisible: "ai-starter mobile"
+- assertVisible: "AI Starter mobile"

@@ -8,7 +8,7 @@ export function HomeCard({ message }: { message: string }) {
   return (
     <View style={[styles.card, { backgroundColor: theme.surface }]}>
       <Text style={[styles.title, { color: theme.text }]}>
-        ai-starter mobile
+        AI Starter mobile
       </Text>
       <Text style={[styles.body, { color: theme.textMuted }]}>{message}</Text>
     </View>

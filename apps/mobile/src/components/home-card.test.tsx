@@ -6,7 +6,7 @@ describe("HomeCard", () => {
   it("renders API status for the user", async () => {
     const screen = await render(<HomeCard message="Hello from the API" />);
 
-    expect(screen.getByText("ai-starter mobile")).toBeOnTheScreen();
+    expect(screen.getByText("AI Starter mobile")).toBeOnTheScreen();
     expect(screen.getByText("Hello from the API")).toBeOnTheScreen();
   });
 });
