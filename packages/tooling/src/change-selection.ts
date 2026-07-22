@@ -27,6 +27,22 @@ const harnessPaths = [
 /** Turborepo cannot infer that a schema edit requires real-PostgreSQL evidence. */
 const schemaPaths = ["packages/db/prisma/"];
 
+/**
+ * Instruction and documentation surfaces. Turborepo cannot see these at all,
+ * yet an edit here is exactly what makes a pointer stale or a link dangle.
+ */
+const instructionPaths = [
+  ".cursor/",
+  ".github/copilot-instructions.md",
+  "AGENTS.md",
+  "CLAUDE.md",
+  "CONTRIBUTING.md",
+  "GEMINI.md",
+  "README.md",
+  "SECURITY.md",
+  "docs/",
+];
+
 /** Paths whose behaviour is only observable through the browser journey. */
 const webBehaviourPaths = ["apps/web/", "packages/api/", "packages/domain/"];
 
@@ -82,6 +98,16 @@ export function selectChecks(
   const reasons = [
     `Linting, typechecking and unit-testing packages affected since ${base}.`,
   ];
+
+  if (
+    touches(changedPaths, instructionPaths) ||
+    changedPaths.some((file) => file.endsWith("/AGENTS.md"))
+  ) {
+    steps.push(requireStep("instructions"));
+    reasons.push(
+      "An agent instruction surface or referenced document changed; rechecking the instruction policy.",
+    );
+  }
 
   if (touches(changedPaths, schemaPaths)) {
     steps.push(

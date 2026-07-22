@@ -29,6 +29,23 @@ describe("selectChecks", () => {
     expect(affected?.args).toContain(`--filter=...[${base}]`);
   });
 
+  it.each([
+    "AGENTS.md",
+    "packages/tooling/AGENTS.md",
+    "docs/architecture.md",
+    "README.md",
+    ".cursor/rules/repository.mdc",
+    ".github/copilot-instructions.md",
+  ])("rechecks the instruction policy when %s changes", (file) => {
+    expect(names([file])).toContain("instructions");
+  });
+
+  it("does not recheck the instruction policy for an ordinary source change", () => {
+    expect(names(["packages/domain/src/post.ts"])).not.toContain(
+      "instructions",
+    );
+  });
+
   it("adds real-PostgreSQL evidence when the schema or a migration changes", () => {
     expect(names(["packages/db/prisma/schema.prisma"])).toContain(
       "test:integration",

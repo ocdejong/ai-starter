@@ -17,6 +17,7 @@ function script(name: string): VerificationStep {
  */
 export const verificationSteps: readonly VerificationStep[] = [
   script("format:check"),
+  script("instructions"),
   script("lint"),
   script("typecheck"),
   script("db:validate"),
