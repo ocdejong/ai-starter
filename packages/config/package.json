@@ -1,0 +1,30 @@
+{
+  "name": "@t3-test/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./eslint/base": "./eslint/base.js",
+    "./eslint/rules": "./eslint/rules.js",
+    "./typescript/base.json": "./typescript/base.json",
+    "./typescript/nextjs.json": "./typescript/nextjs.json",
+    "./vitest/base": "./vitest/base.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "typescript-eslint": "^8.27.0",
+    "vitest": "^4.1.10"
+  },
+  "peerDependencies": {
+    "eslint": "^9.0.0",
+    "typescript": ">=5.8"
+  },
+  "devDependencies": {
+    "eslint": "^9.23.0",
+    "typescript": "^5.8.2"
+  }
+}

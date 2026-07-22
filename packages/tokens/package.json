@@ -1,0 +1,19 @@
+{
+  "name": "@t3-test/tokens",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@t3-test/config": "workspace:*",
+    "eslint": "^9.23.0",
+    "typescript": "^5.8.2"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "extends": "@t3-test/config/typescript/base.json",
+  "compilerOptions": {
+    "lib": ["ES2022"]
+  },
+  "include": ["src/**/*.ts", "vitest.config.ts"]
+}
