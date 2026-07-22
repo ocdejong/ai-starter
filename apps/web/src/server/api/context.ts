@@ -1,7 +1,10 @@
 import { createTRPCContext as createSharedTRPCContext } from "@t3-test/api";
-import { db } from "@t3-test/db";
+import type { PostRepository } from "@t3-test/api";
+import { prismaPostRepository } from "@t3-test/db";
 
 import { auth } from "~/server/better-auth";
+
+const posts: PostRepository = prismaPostRepository;
 
 export const createTRPCContext = async (options: { headers: Headers }) => {
   const session = await auth.api.getSession({
@@ -9,8 +12,8 @@ export const createTRPCContext = async (options: { headers: Headers }) => {
   });
 
   return createSharedTRPCContext({
-    db,
     headers: options.headers,
+    posts,
     session,
   });
 };

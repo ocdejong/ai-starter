@@ -10,22 +10,15 @@ export const postRouter = createTRPCRouter({
   create: protectedProcedure
     .input(createPostInputSchema)
     .mutation(async ({ ctx, input }) =>
-      ctx.db.post.create({
-        data: {
-          name: input.name,
-          createdBy: { connect: { id: ctx.session.user.id } },
-        },
+      ctx.posts.create({
+        createdById: ctx.session.user.id,
+        name: input.name,
       }),
     ),
 
-  getLatest: protectedProcedure.query(async ({ ctx }) => {
-    const post = await ctx.db.post.findFirst({
-      orderBy: { createdAt: "desc" },
-      where: { createdBy: { id: ctx.session.user.id } },
-    });
-
-    return post ?? null;
-  }),
+  getLatest: protectedProcedure.query(({ ctx }) =>
+    ctx.posts.findLatestByUserId(ctx.session.user.id),
+  ),
 
   getSecretMessage: protectedProcedure.query(
     () => "you can now see this secret message!",
