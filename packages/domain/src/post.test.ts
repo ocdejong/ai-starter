@@ -8,4 +8,10 @@ describe("createPostInputSchema", () => {
       false,
     );
   });
+
+  it("rejects a post name longer than the database limit", () => {
+    expect(
+      createPostInputSchema.safeParse({ name: "a".repeat(201) }).success,
+    ).toBe(false);
+  });
 });

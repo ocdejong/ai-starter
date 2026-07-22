@@ -21,6 +21,30 @@ const config = [
       },
     },
   },
+  {
+    files: ["src/app/**/*.{ts,tsx}", "src/trpc/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@t3-test/db",
+              message:
+                "UI and transport code must reach the database through server modules or tRPC.",
+            },
+          ],
+          patterns: [
+            {
+              group: ["@t3-test/db/*"],
+              message:
+                "UI and transport code must not import database internals.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];
 
 export default config;
