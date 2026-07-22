@@ -12,6 +12,7 @@
     "db:migrate:status": "dotenv -e apps/web/.env -- pnpm --filter @t3-test/db db:migrate:status",
     "db:push:prototype": "dotenv -e apps/web/.env -- pnpm --filter @t3-test/db db:push:prototype",
     "db:studio": "dotenv -e apps/web/.env -- pnpm --filter @t3-test/db db:studio",
+    "db:validate": "dotenv -e apps/web/.env -- pnpm --filter @t3-test/db db:validate",
     "dev": "turbo run dev --filter=@t3-test/web",
     "dev:all": "turbo run dev",
     "dev:mobile": "turbo run dev --filter=@t3-test/mobile",
@@ -37,6 +38,18 @@
   },
   "packageManager": "pnpm@10.32.1",
   "engines": {
-    "node": ">=22.13"
+    "node": ">=24"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@sentry/cli"
+    ],
+    "packageExtensions": {
+      "@react-native/jest-preset@*": {
+        "dependencies": {
+          "@babel/runtime": "^7.29.7"
+        }
+      }
+    }
   }
 }

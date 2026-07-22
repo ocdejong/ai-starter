@@ -4,6 +4,8 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+packageExtensionsChecksum: sha256-kfQ2t81G5fLUyNy73YZmkTWSMD7Kp61Q/j+6Z/TE424=
+
 importers:
 
   .:
@@ -26,6 +28,9 @@ importers:
 
   apps/mobile:
     dependencies:
+      '@babel/runtime':
+        specifier: ^7.29.7
+        version: 7.29.7
       '@sentry/react-native':
         specifier: ~7.11.0
         version: 7.11.0(expo@57.0.7)(react-native@0.86.0(@babel/core@7.29.7)(@react-native/jest-preset@0.86.0(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
@@ -11192,6 +11197,7 @@ snapshots:
 
   '@react-native/jest-preset@0.86.0(@babel/core@7.29.7)(react@19.2.3)':
     dependencies:
+      '@babel/runtime': 7.29.7
       '@jest/create-cache-key-function': 29.7.0
       '@react-native/js-polyfills': 0.86.0
       babel-jest: 29.7.0(@babel/core@7.29.7)
@@ -11221,9 +11227,7 @@ snapshots:
       metro-runtime: 0.84.4
     transitivePeerDependencies:
       - '@babel/core'
-      - bufferutil
       - supports-color
-      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 

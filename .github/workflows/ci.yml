@@ -71,7 +71,7 @@ jobs:
 
       - name: Validate and generate Prisma client
         run: |
-          pnpm exec prisma validate --schema packages/db/prisma/schema.prisma
+          pnpm db:validate
           pnpm db:generate
 
       - name: Run unit and component tests
