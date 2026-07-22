@@ -24,31 +24,49 @@ packages/
   tokens/    platform-neutral design tokens
 ```
 
+## Create a product from this template
+
+```bash
+pnpm starter:init --name "Acme Notes"
+pnpm bootstrap
+pnpm verify
+```
+
+`starter:init` runs once in a fresh clone. It replaces every starter identifier — the workspace package scope, the repository, database and container names, the Expo name, slug and scheme, the iOS bundle identifier, the Android package, and the visible starter text — and then fails if any starter identity survives, including in a file name.
+
+| Option     | Default              | Purpose                                       |
+| ---------- | -------------------- | --------------------------------------------- |
+| `--name`   | required             | Display name; everything else derives from it |
+| `--scope`  | slug of `--name`     | npm scope for workspace packages              |
+| `--app-id` | `com.example.<slug>` | iOS bundle identifier and Android package     |
+
+`packages/tooling/src/starter-identity.ts` is deliberately left untouched: it stays the record of what was replaced.
+
 ## Start locally
 
 Requirements: Node.js 24, pnpm 10, and Docker or Podman.
 
 ```bash
-pnpm install
-cp apps/web/.env.example apps/web/.env
-./start-database.sh
-pnpm db:migrate
+pnpm bootstrap
 pnpm dev
 ```
 
-`start-database.sh` creates or starts a local PostgreSQL container; Prisma itself does not require a separate local installation. `pnpm dev` starts web. Use `pnpm dev:mobile` for Expo or `pnpm dev:all` for both. On a physical device, set `EXPO_PUBLIC_API_URL` in `apps/mobile/.env` to the development machine's LAN URL.
+`bootstrap` creates the environment files, installs dependencies, starts a local PostgreSQL container, generates the Prisma client and applies every migration. It is idempotent, so run it again whenever a checkout drifts. When the configured database port is already taken, the generated `apps/web/.env` moves to the next free port so several products from this starter can run side by side.
+
+Run `pnpm run doctor` when something does not work: it reports Node, pnpm, the container runtime, the environment files, PostgreSQL and the generated Prisma client, and names the command that fixes each problem. (pnpm reserves the bare `pnpm doctor` for its own built-in, so this one command needs `pnpm run`.)
+
+`pnpm dev` starts web. Use `pnpm dev:mobile` for Expo or `pnpm dev:all` for both. On a physical device, set `EXPO_PUBLIC_API_URL` in `apps/mobile/.env` to the development machine's LAN URL.
 
 OAuth and Sentry are optional. Copy the relevant values from the environment examples when the product needs them. Never commit the resulting `.env` files.
 
 ## Verify
 
 ```bash
-pnpm format:check
-pnpm check
-pnpm test:integration
-pnpm build
-pnpm test:e2e
+pnpm verify:changed   # only the checks the current diff can affect
+pnpm verify           # the complete authoritative suite, in CI's order
 ```
+
+`pnpm verify` is the single source of truth for what "green" means; CI runs the same command. `verify:changed` uses Turborepo's affected graph, plus explicit rules for evidence the graph cannot infer: a Prisma schema or migration change adds the real-PostgreSQL tests, and web-observable behavior adds the browser journey. A change to the harness itself falls back to the full suite.
 
 See `AGENTS.md` for the binding agent contract and `docs/README.md` for the repository knowledge map. The ranked hard rules live in `docs/engineering-principles.md`; architecture, verification, and their research basis stay in separate progressively loaded documents.
 

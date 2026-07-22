@@ -5,23 +5,18 @@ Read `AGENTS.md` and `docs/architecture.md` first. Create a focused branch, keep
 ## Setup
 
 ```bash
-pnpm install
-cp apps/web/.env.example apps/web/.env
-./start-database.sh
-pnpm db:migrate
+pnpm bootstrap
 pnpm dev
 ```
 
+Run `pnpm run doctor` if the checkout does not behave.
+
 For a physical phone, copy `apps/mobile/.env.example` to `apps/mobile/.env` and replace localhost with the development machine's LAN address.
 
-Before opening a pull request, run:
+Use `pnpm verify:changed` while iterating. Before opening a pull request, run the authoritative suite:
 
 ```bash
-pnpm format:check
-pnpm check
-pnpm test:integration
-pnpm build
-pnpm test:e2e
+pnpm verify
 ```
 
 Update `.env.example`, migrations, tests, and architecture documentation whenever the corresponding contract changes.

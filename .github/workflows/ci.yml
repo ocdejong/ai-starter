@@ -60,37 +60,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check formatting
-        run: pnpm format:check
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Validate and generate Prisma client
-        run: |
-          pnpm db:validate
-          pnpm db:generate
-
-      - name: Run unit and component tests
-        run: pnpm test:unit
-
-      - name: Run PostgreSQL integration tests
-        run: pnpm test:integration
-
-      - name: Build production applications
-        run: pnpm build
-
-      - name: Apply migrations for browser tests
-        run: pnpm db:migrate
-
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Run Playwright tests
-        run: pnpm test:e2e
+      # `pnpm verify` is the authoritative suite. Keeping CI on the same command
+      # is what stops the required checks from drifting away from the ones an
+      # agent runs locally.
+      - name: Verify
+        run: pnpm verify
 
       - name: Upload Playwright report
         if: ${{ !cancelled() }}

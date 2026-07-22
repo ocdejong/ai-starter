@@ -25,6 +25,11 @@ ESLint encodes many of these boundaries. Do not weaken a rule to make a change p
 - `packages/db`: Prisma schema, migrations, server-only client, and persistence adapters.
 - `packages/config`: shared compiler, lint, and test configuration.
 - `packages/tokens`: plain cross-platform design values.
+- `packages/tooling`: repository commands (`bootstrap`, `doctor`, `verify`, `verify:changed`, `starter:init`). Node built-ins only: `doctor` must diagnose a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency.
+
+## Getting a checkout running
+
+`pnpm bootstrap` takes a clean clone to a runnable, migrated local environment and is safe to run repeatedly. `pnpm run doctor` reports what is missing and names the command that fixes it. `pnpm starter:init` is the one-time downstream initializer; see `README.md`.
 
 ## Required workflow
 
@@ -34,20 +39,15 @@ ESLint encodes many of these boundaries. Do not weaken a rule to make a change p
 4. For changed behavior, use red-green testing where practical: observe the focused test fail, implement, then observe it pass. Use real PostgreSQL for persistence behavior.
 5. Change Prisma through a migration. For unsupported features such as CHECK constraints, create the migration without applying it, edit its SQL, then apply it.
 6. Inspect the finished diff and exercise the real user/runtime interface appropriate to the risk.
-7. Run checks proportional to the change, then the complete verification sequence before handing off.
+7. Run `pnpm verify:changed` while iterating, then `pnpm verify` before handing off.
 8. Commit one coherent, verified change at a time with an imperative commit message. Leave no unrelated or half-finished state.
 
 ```bash
-pnpm format:check
-pnpm lint
-pnpm typecheck
-pnpm db:validate
-pnpm db:generate
-pnpm test:unit
-pnpm test:integration
-pnpm build
-pnpm test:e2e       # when web behavior changed
+pnpm verify:changed   # only the checks the current diff can affect
+pnpm verify           # the complete authoritative suite, in CI's order
 ```
+
+`pnpm verify` owns the list of required checks; `packages/tooling/src/verification.ts` is its single definition, and CI runs the same command. Do not assemble a verification sequence from memory, and do not weaken or reorder the list to land a change.
 
 For a schema change:
 
@@ -77,4 +77,4 @@ pnpm test:integration
 
 ## Completion criteria
 
-A task is not complete while formatting, lint, typecheck, relevant tests, or production build fail. Completion MUST report concrete verification evidence and any check that could not run. Do not silently skip a gate, claim success from code inspection alone, or hand a reviewer output you have not reviewed.
+A task is not complete while `pnpm verify` fails. Completion MUST report concrete verification evidence and any check that could not run. Do not silently skip a gate, claim success from code inspection alone, or hand a reviewer output you have not reviewed.

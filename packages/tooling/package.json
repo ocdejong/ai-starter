@@ -1,0 +1,19 @@
+{
+  "name": "@ai-starter/tooling",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@ai-starter/config": "workspace:*",
+    "@types/node": "^20.14.10",
+    "eslint": "^9.23.0",
+    "typescript": "^5.8.2",
+    "vitest": "^4.1.10"
+  }
+}

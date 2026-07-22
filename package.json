@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "bootstrap": "node packages/tooling/src/bin/bootstrap.ts",
     "build": "turbo run build",
     "check": "turbo run lint typecheck test",
     "db:generate": "pnpm --filter @ai-starter/db db:generate",
@@ -17,17 +18,21 @@
     "dev:all": "turbo run dev",
     "dev:mobile": "turbo run dev --filter=@ai-starter/mobile",
     "dev:web": "turbo run dev --filter=@ai-starter/web",
+    "doctor": "node packages/tooling/src/bin/doctor.ts",
     "format:check": "prettier --check . --cache",
     "format:write": "prettier --write . --cache",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",
     "postinstall": "pnpm db:generate",
+    "starter:init": "node packages/tooling/src/bin/starter-init.ts",
     "test": "turbo run test",
     "test:e2e": "pnpm --filter @ai-starter/web test:e2e",
     "test:e2e:mobile": "pnpm --filter @ai-starter/mobile test:e2e",
     "test:integration": "pnpm --filter @ai-starter/db test:integration",
     "test:unit": "turbo run test",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "verify": "node packages/tooling/src/bin/verify.ts",
+    "verify:changed": "node packages/tooling/src/bin/verify-changed.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
