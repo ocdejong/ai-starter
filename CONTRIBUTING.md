@@ -9,7 +9,7 @@ pnpm bootstrap
 pnpm dev
 ```
 
-Run `pnpm run doctor` if the checkout does not behave.
+Run `pnpm diagnose` if the checkout does not behave.
 
 For a physical phone, copy `apps/mobile/.env.example` to `apps/mobile/.env` and replace localhost with the development machine's LAN address.
 

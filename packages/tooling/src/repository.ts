@@ -26,7 +26,7 @@ export type RootManifest = {
 
 /**
  * Reads only the two fields the diagnostics need. The manifest is repository
- * data rather than a product boundary, and `doctor` must run before any
+ * data rather than a product boundary, and `diagnose` must run before any
  * dependency — including a schema library — is installed.
  */
 export function readRootManifest(root: string): RootManifest {

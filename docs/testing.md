@@ -16,13 +16,21 @@
 
 `pnpm verify:changed` selects work from Turborepo's affected graph, plus the rules the graph cannot infer from imports: a change under `packages/db/prisma/` adds schema validation and the real-PostgreSQL tests, a change under `apps/web/`, `packages/api/` or `packages/domain/` adds the browser journey, and a change to the harness itself (`turbo.json`, the root manifest, the lockfile, `packages/config`, `packages/tooling`, or a workflow) falls back to the full suite. `verify:changed` is a fast local filter, never the handoff gate.
 
-Run `pnpm bootstrap` before the integration and browser levels; run `pnpm run doctor` when one of them fails for an environmental reason.
+Run `pnpm bootstrap` before the integration and browser levels; run `pnpm diagnose` when one of them fails for an environmental reason.
 
 Integration tests use Testcontainers and do not touch the development database. They start PostgreSQL, apply every committed migration with `prisma migrate deploy`, run tests, and destroy the container.
 
 Playwright starts the Next.js development server locally. Under `CI=true`, it starts the existing production build. Install its browser once with `pnpm exec playwright install chromium`.
 
-The Maestro flow is checked in but not run by the default GitHub-hosted CI because it requires a native app build and simulator. Add an EAS Workflow when the starter is connected to an Expo project and credentials.
+## Native evidence
+
+`pnpm verify` does not run Maestro, because a native journey needs an app build and a simulator that a GitHub-hosted runner does not have. The suite still carries three levels of native evidence:
+
+- `test:unit` runs the Jest/RNTL component suites.
+- `typecheck` covers the Expo app against the same shared API and domain contracts as web.
+- `build` runs `expo export --platform all`, so a bundle that no longer resolves or compiles fails the authoritative suite.
+
+What is missing is the on-device journey. Run it locally against a simulator with `pnpm test:e2e:mobile`, and add an EAS Workflow once the product is connected to an Expo project with credentials. Do not substitute a browser run of React Native Web for it: that exercises a renderer the product does not ship, so it would report confidence the native build has not earned.
 
 ## Choosing a level
 

@@ -7,7 +7,7 @@ import {
   minimumMajor,
   pinnedVersion,
   type Check,
-} from "./doctor.ts";
+} from "./diagnostics.ts";
 
 describe("version parsing", () => {
   it("reads the minimum major from an engines range", () => {

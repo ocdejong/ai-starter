@@ -25,11 +25,11 @@ ESLint encodes many of these boundaries. Do not weaken a rule to make a change p
 - `packages/db`: Prisma schema, migrations, server-only client, and persistence adapters.
 - `packages/config`: shared compiler, lint, and test configuration.
 - `packages/tokens`: plain cross-platform design values.
-- `packages/tooling`: repository commands (`bootstrap`, `doctor`, `verify`, `verify:changed`, `starter:init`). Node built-ins only: `doctor` must diagnose a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency.
+- `packages/tooling`: repository commands (`bootstrap`, `diagnose`, `verify`, `verify:changed`, `starter:init`). Node built-ins only: `diagnose` must inspect a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency.
 
 ## Getting a checkout running
 
-`pnpm bootstrap` takes a clean clone to a runnable, migrated local environment and is safe to run repeatedly. `pnpm run doctor` reports what is missing and names the command that fixes it. `pnpm starter:init` is the one-time downstream initializer; see `README.md`.
+`pnpm bootstrap` takes a clean clone to a runnable, migrated local environment and is safe to run repeatedly. `pnpm diagnose` reports what is missing and names the command that fixes it. `pnpm starter:init` is the one-time downstream initializer; see `README.md`.
 
 ## Required workflow
 

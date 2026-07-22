@@ -18,7 +18,7 @@
     "dev:all": "turbo run dev",
     "dev:mobile": "turbo run dev --filter=@ai-starter/mobile",
     "dev:web": "turbo run dev --filter=@ai-starter/web",
-    "doctor": "node packages/tooling/src/bin/doctor.ts",
+    "diagnose": "node packages/tooling/src/bin/diagnose.ts",
     "format:check": "prettier --check . --cache",
     "format:write": "prettier --write . --cache",
     "lint": "turbo run lint",

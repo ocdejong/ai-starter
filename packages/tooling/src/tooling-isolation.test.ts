@@ -18,7 +18,7 @@ const sources = listTextFiles(sourceRoot).filter(
 );
 
 /**
- * `pnpm doctor` has to diagnose a checkout whose dependencies are missing or
+ * `pnpm diagnose` has to inspect a checkout whose dependencies are missing or
  * broken, so nothing under `src` may import an installed package. This is the
  * mechanical guard for that rule; weakening it breaks the pre-install path.
  */
