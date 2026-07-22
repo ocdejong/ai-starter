@@ -32,7 +32,7 @@ pnpm bootstrap
 pnpm verify
 ```
 
-`starter:init` runs once in a fresh clone. It replaces every starter identifier — the workspace package scope, the repository, database and container names, the Expo name, slug and scheme, the iOS bundle identifier, the Android package, and the visible starter text — and then fails if any starter identity survives, including in a file name.
+`starter:init` runs once in a fresh clone. It replaces every starter identifier — the workspace package scope, the repository, database and container names, the Expo name, slug and scheme, the iOS bundle identifier, the Android package, and the visible starter text — and then fails if any starter identity survives, including in a file name. It finishes by relinking the workspace and reformatting: the new identifiers have different lengths, so Prettier wraps a few files differently.
 
 | Option     | Default              | Purpose                                       |
 | ---------- | -------------------- | --------------------------------------------- |

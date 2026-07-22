@@ -1,6 +1,7 @@
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 
+import { runCapture, runInherit } from "./command.ts";
 import {
   isRewritableTextFile,
   listFiles,
@@ -109,4 +110,44 @@ export function findResidualIdentity(
   }
 
   return residual;
+}
+
+export type FinalizationResult = {
+  readonly ok: boolean;
+  readonly message: string;
+};
+
+/**
+ * Renaming the workspace packages invalidates the installed link tree, and the
+ * new identifiers have different lengths, so Prettier wraps several files
+ * differently. Both are consequences of the rewrite rather than follow-up work,
+ * so the initializer completes them itself and leaves a repository that passes
+ * `pnpm verify`.
+ */
+export function finalizeInitialization(root: string): FinalizationResult {
+  if (runCapture("pnpm", ["--version"], { cwd: root }).code !== 0) {
+    return {
+      message:
+        "pnpm is not available, so the workspace was not relinked or reformatted. Run `pnpm install` and `pnpm format:write` before `pnpm verify`.",
+      ok: false,
+    };
+  }
+
+  if (runInherit("pnpm", ["install"], { cwd: root }) !== 0) {
+    return {
+      message:
+        "`pnpm install` failed after the rename. Resolve the cause above, then run `pnpm install` and `pnpm format:write`.",
+      ok: false,
+    };
+  }
+
+  if (runInherit("pnpm", ["format:write"], { cwd: root }) !== 0) {
+    return {
+      message:
+        "`pnpm format:write` failed after the rename. Resolve the cause above, then run it again before `pnpm verify`.",
+      ok: false,
+    };
+  }
+
+  return { message: "Relinked the workspace and reformatted.", ok: true };
 }
