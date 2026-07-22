@@ -233,3 +233,22 @@ describe("rule statement extraction", () => {
     ]).toEqual([]);
   });
 });
+
+describe("violation messages", () => {
+  it("names both places a reference was looked for, without an empty directory", () => {
+    const root = cleanCheckout();
+    write(root, "AGENTS.md", `${contract}\nSee [it](docs/missing.md).\n`);
+    write(root, "docs/README.md", "# Map\n\nSee `gone.md`.\n");
+
+    const problems = checkInstructionSurfaces(root).map(
+      (violation) => violation.problem,
+    );
+
+    expect(problems).toContain(
+      "References `docs/missing.md`, which does not resolve from the repository root.",
+    );
+    expect(problems).toContain(
+      "References `gone.md`, which does not resolve from docs/ or the repository root.",
+    );
+  });
+});

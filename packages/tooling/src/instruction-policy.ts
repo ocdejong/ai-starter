@@ -276,12 +276,18 @@ function checkReferences(root: string): PolicyViolation[] {
       continue;
     }
 
+    const directory = path.posix.dirname(file);
+    const attempted =
+      directory === "."
+        ? "the repository root"
+        : `${directory}/ or the repository root`;
+
     for (const reference of references(content)) {
       if (!resolves(root, file, reference)) {
         violations.push({
           file,
           fix: `Point the reference at a file that exists, or remove it.`,
-          problem: `References \`${reference}\`, which does not resolve from ${path.posix.dirname(file)} or from the repository root.`,
+          problem: `References \`${reference}\`, which does not resolve from ${attempted}.`,
         });
       }
     }
