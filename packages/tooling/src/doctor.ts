@@ -166,7 +166,7 @@ function checkContainerRuntime(root: string): Check {
   if (probe.installed.length > 0) {
     return {
       detail: `${probe.installed.join(" and ")} is installed but the daemon is not responding.`,
-      fix: `Start ${probe.installed[0] ?? "the container runtime"} and run \`pnpm doctor\` again.`,
+      fix: `Start ${probe.installed[0] ?? "the container runtime"} and run \`pnpm run doctor\` again.`,
       name: "Container runtime",
       status: "failure",
     };

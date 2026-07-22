@@ -2,7 +2,7 @@ import { ArgumentError, parseArguments } from "../argv.ts";
 import { formatChecks, hasFailure, runDiagnostics } from "../doctor.ts";
 import { repositoryRoot } from "../repository.ts";
 
-const usage = `Usage: pnpm doctor [--json]
+const usage = `Usage: pnpm run doctor [--json]
 
 Reports whether this machine and checkout can build, migrate and test the
 repository, and names the exact command that resolves each problem.`;
