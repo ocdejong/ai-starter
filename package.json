@@ -11,7 +11,7 @@
     "db:migrate": "dotenv -e apps/web/.env -- pnpm --filter @ai-starter/db db:migrate",
     "db:migrate:dev": "dotenv -e apps/web/.env -- pnpm --filter @ai-starter/db db:migrate:dev",
     "db:migrate:status": "dotenv -e apps/web/.env -- pnpm --filter @ai-starter/db db:migrate:status",
-    "db:push:prototype": "dotenv -e apps/web/.env -- pnpm --filter @ai-starter/db db:push:prototype",
+    "db:push:prototype": "dotenv -e apps/web/.env -- node packages/tooling/src/bin/db-push-prototype.ts",
     "db:studio": "dotenv -e apps/web/.env -- pnpm --filter @ai-starter/db db:studio",
     "db:validate": "dotenv -e apps/web/.env -- pnpm --filter @ai-starter/db db:validate",
     "dev": "turbo run dev --filter=@ai-starter/web",

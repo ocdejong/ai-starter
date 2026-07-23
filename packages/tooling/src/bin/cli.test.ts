@@ -19,6 +19,7 @@ describe("command entry points", () => {
   it("finds every command", () => {
     expect(commands.sort()).toEqual([
       "bootstrap.ts",
+      "db-push-prototype.ts",
       "diagnose.ts",
       "instructions.ts",
       "starter-init.ts",

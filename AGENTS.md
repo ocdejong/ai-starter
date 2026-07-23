@@ -60,7 +60,7 @@ pnpm db:migrate:dev
 pnpm test:integration
 ```
 
-`pnpm db:push:prototype` is a disposable prototyping escape hatch. Never use it for a shared or deployed database.
+`pnpm db:push:prototype` is a disposable prototyping escape hatch. Never use it for a shared or deployed database; it refuses to run unless `DATABASE_URL` resolves to a local host, so change a shared database through a migration instead.
 
 ## Testing rules
 
