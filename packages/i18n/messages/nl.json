@@ -1,0 +1,40 @@
+{
+  "metadata": {
+    "title": "AI Starter",
+    "description": "Een getypeerde full-stack starter voor web- en native producten."
+  },
+  "theme": {
+    "label": "Thema",
+    "light": "Licht",
+    "dark": "Donker",
+    "system": "Systeem"
+  },
+  "locale": {
+    "label": "Taal",
+    "english": "English",
+    "dutch": "Nederlands"
+  },
+  "home": {
+    "title": "AI Starter",
+    "greetingFallback": "tRPC-query laden…",
+    "loggedInAs": "Ingelogd als {name}",
+    "signInWith": "Inloggen met {provider}",
+    "signOut": "Uitloggen",
+    "oauthHint": "Voeg Google- of GitHub-OAuth-gegevens toe om inloggen mogelijk te maken."
+  },
+  "post": {
+    "latest": "Je meest recente post: {name}",
+    "empty": "Je hebt nog geen posts.",
+    "titlePlaceholder": "Titel",
+    "submit": "Verzenden",
+    "submitting": "Verzenden…"
+  },
+  "mobile": {
+    "homeTitle": "AI Starter mobiel",
+    "apiUnavailable": "De API is niet beschikbaar. Start de webapp en controleer EXPO_PUBLIC_API_URL.",
+    "apiConnecting": "Verbinden met de getypeerde API…"
+  },
+  "plural": {
+    "posts": "{count, plural, =0 {Je hebt nog geen posts} one {Je hebt # post} other {Je hebt # posts}}"
+  }
+}

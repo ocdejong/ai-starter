@@ -26,6 +26,7 @@ ESLint encodes many of these boundaries per file; `pnpm arch` (dependency-cruise
 - `packages/domain`: Zod schemas and deterministic business logic.
 - `packages/db`: Prisma schema, migrations, server-only client, and persistence adapters.
 - `packages/config`: shared compiler, lint, and test configuration.
+- `packages/i18n`: shared EN/NL ICU message catalogs, the `Locale` schema, and locale negotiation. Platform-neutral; consumed by both apps.
 - `packages/tokens`: plain cross-platform design values.
 - `packages/tooling`: repository commands (`bootstrap`, `diagnose`, `instructions`, `policy`, `verify`, `verify:changed`, `starter:init`). Node built-ins only: `diagnose` must inspect a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency. Editing it also requires `packages/tooling/AGENTS.md`.
 

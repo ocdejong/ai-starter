@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { Monitor, Moon, Sun } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 
 import { Button } from "~/components/ui/button";
@@ -20,9 +21,9 @@ function useMounted(): boolean {
 }
 
 const options = [
-  { Icon: Sun, label: "Light", value: "light" },
-  { Icon: Moon, label: "Dark", value: "dark" },
-  { Icon: Monitor, label: "System", value: "system" },
+  { Icon: Sun, value: "light" },
+  { Icon: Moon, value: "dark" },
+  { Icon: Monitor, value: "system" },
 ] as const;
 
 /**
@@ -34,16 +35,17 @@ const options = [
  * control never shifts layout.
  */
 export function ThemeToggle() {
+  const t = useTranslations("theme");
   const { setTheme, theme } = useTheme();
   const mounted = useMounted();
 
   return (
     <div
       role="group"
-      aria-label="Theme"
+      aria-label={t("label")}
       className="border-border bg-card inline-flex gap-1 rounded-lg border p-1"
     >
-      {options.map(({ Icon, label, value }) => {
+      {options.map(({ Icon, value }) => {
         const active = mounted && theme === value;
 
         return (
@@ -52,7 +54,7 @@ export function ThemeToggle() {
             type="button"
             size="icon"
             variant={active ? "default" : "ghost"}
-            aria-label={label}
+            aria-label={t(value)}
             aria-pressed={active}
             onClick={() => {
               setTheme(value);

@@ -4,6 +4,9 @@
  */
 import "./src/env.js";
 import { withSentryConfig } from "@sentry/nextjs";
+import createNextIntlPlugin from "next-intl/plugin";
+
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 /** @type {import("next").NextConfig} */
 const config = {
@@ -12,6 +15,7 @@ const config = {
     "@ai-starter/domain",
     "@ai-starter/db",
     "@ai-starter/email",
+    "@ai-starter/i18n",
   ],
 };
 
@@ -35,7 +39,7 @@ const sourceMapOptions =
         sourcemaps: { disable: true },
       };
 
-export default withSentryConfig(config, {
+export default withSentryConfig(withNextIntl(config), {
   silent: !hasSentryBuildCredentials || !process.env.CI,
   telemetry: hasSentryBuildCredentials,
   webpack: {

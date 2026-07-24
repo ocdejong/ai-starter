@@ -1,15 +1,17 @@
 import { spacing } from "@ai-starter/tokens";
 import { StyleSheet, Text, View } from "react-native";
+import { useTranslations } from "use-intl";
 
 import { useTheme } from "../theme/theme-provider";
 
 export function HomeCard({ message }: { message: string }) {
+  const t = useTranslations("mobile");
   const { theme } = useTheme();
 
   return (
     <View style={[styles.card, { backgroundColor: theme.card }]}>
       <Text style={[styles.title, { color: theme.foreground }]}>
-        AI Starter mobile
+        {t("homeTitle")}
       </Text>
       <Text style={[styles.body, { color: theme["muted-foreground"] }]}>
         {message}

@@ -10,18 +10,19 @@ apps/web ─────> packages/api ──────> packages/domain
     │                 └── injects consumer-owned ports
     └─────────> packages/db ───────> PostgreSQL
 
-apps/web + apps/mobile ──> packages/tokens
+apps/web + apps/mobile ──> packages/tokens, packages/i18n
 all workspaces ──────────> packages/config (tooling only)
 ```
 
-| Layer    | May contain                                             | Must not contain                                 |
-| -------- | ------------------------------------------------------- | ------------------------------------------------ |
-| `domain` | Zod schemas, value objects, deterministic rules         | React, Next.js, Expo, Prisma, environment reads  |
-| `tokens` | Plain colors, spacing, typography values                | Components, runtime/platform imports             |
-| `db`     | Prisma client, schema, migrations, persistence adapters | Client code, web framework adapters, API routing |
-| `api`    | tRPC, authorization, use cases, consumer-owned ports    | Prisma/service SDKs, Next.js/Expo UI             |
-| `web`    | App Router, UI, Better Auth, transport/composition root | Direct database access from UI/transport folders |
-| `mobile` | Expo Router, native UI, typed API client                | Prisma, Next.js, server API implementation       |
+| Layer    | May contain                                               | Must not contain                                 |
+| -------- | --------------------------------------------------------- | ------------------------------------------------ |
+| `domain` | Zod schemas, value objects, deterministic rules           | React, Next.js, Expo, Prisma, environment reads  |
+| `tokens` | Plain colors, spacing, typography values                  | Components, runtime/platform imports             |
+| `i18n`   | ICU message catalogs, `Locale` schema, locale negotiation | Components, framework or platform imports        |
+| `db`     | Prisma client, schema, migrations, persistence adapters   | Client code, web framework adapters, API routing |
+| `api`    | tRPC, authorization, use cases, consumer-owned ports      | Prisma/service SDKs, Next.js/Expo UI             |
+| `web`    | App Router, UI, Better Auth, transport/composition root   | Direct database access from UI/transport folders |
+| `mobile` | Expo Router, native UI, typed API client                  | Prisma, Next.js, server API implementation       |
 
 ESLint import restrictions enforce the most important boundaries per file. `pnpm arch` runs dependency-cruiser (`.dependency-cruiser.cjs`) over the whole graph to enforce this direction and forbid cycles and deep imports into a package's internals; `pnpm policy` enforces the structural rules the graph cannot see (workspace dependency allowlists, public export surfaces, strict compiler flags in every tsconfig, vendor SDK locations, silenced guardrails, generated-client cleanliness, and the verification scripts). Both run inside `pnpm verify`. The database package also imports `server-only`, providing a runtime/build-time backstop.
 

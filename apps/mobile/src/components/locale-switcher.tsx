@@ -1,32 +1,41 @@
+import { locales, type Locale } from "@ai-starter/i18n";
 import { spacing } from "@ai-starter/tokens";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslations } from "use-intl";
 
-import { useTheme, type ThemePreference } from "../theme/theme-provider";
+import { useLocale } from "../i18n/locale-provider";
+import { useTheme } from "../theme/theme-provider";
 
-const options: readonly ThemePreference[] = ["light", "dark", "system"];
+/** The locale label key that names each language in its own tongue. */
+const labelKeys = { en: "english", nl: "dutch" } as const satisfies Record<
+  Locale,
+  "english" | "dutch"
+>;
 
-export function ThemeToggle() {
-  const t = useTranslations("theme");
-  const { preference, setPreference, theme } = useTheme();
+export function LocaleSwitcher() {
+  const t = useTranslations("locale");
+  const { locale, setLocale } = useLocale();
+  const { theme } = useTheme();
 
   return (
     <View
+      accessibilityRole="radiogroup"
+      accessibilityLabel={t("label")}
       style={[
         styles.group,
         { backgroundColor: theme.card, borderColor: theme.border },
       ]}
     >
-      {options.map((value) => {
-        const active = preference === value;
+      {locales.map((value) => {
+        const active = locale === value;
 
         return (
           <Pressable
             key={value}
-            accessibilityRole="button"
+            accessibilityRole="radio"
             accessibilityState={{ selected: active }}
             onPress={() => {
-              setPreference(value);
+              setLocale(value);
             }}
             style={[
               styles.option,
@@ -38,7 +47,7 @@ export function ThemeToggle() {
                 color: active ? theme["primary-foreground"] : theme.foreground,
               }}
             >
-              {t(value)}
+              {t(labelKeys[value])}
             </Text>
           </Pressable>
         );

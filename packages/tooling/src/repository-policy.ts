@@ -31,13 +31,19 @@ const allowedWorkspaceDependencies: Readonly<
   "@ai-starter/db": [],
   "@ai-starter/domain": [],
   "@ai-starter/email": ["@ai-starter/api"],
-  "@ai-starter/mobile": ["@ai-starter/api", "@ai-starter/tokens"],
+  "@ai-starter/i18n": [],
+  "@ai-starter/mobile": [
+    "@ai-starter/api",
+    "@ai-starter/i18n",
+    "@ai-starter/tokens",
+  ],
   "@ai-starter/tokens": [],
   "@ai-starter/tooling": [],
   "@ai-starter/web": [
     "@ai-starter/api",
     "@ai-starter/db",
     "@ai-starter/email",
+    "@ai-starter/i18n",
     "@ai-starter/tokens",
   ],
 };
@@ -48,6 +54,7 @@ const libraryPackages = [
   "@ai-starter/db",
   "@ai-starter/domain",
   "@ai-starter/email",
+  "@ai-starter/i18n",
   "@ai-starter/tokens",
 ];
 

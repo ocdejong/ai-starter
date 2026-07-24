@@ -1,14 +1,14 @@
 import { render, screen, waitFor } from "@testing-library/react-native";
 
-import { ThemeProvider } from "../theme/theme-provider";
+import { TestProviders } from "../test/providers";
 import { HomeCard } from "./home-card";
 
 describe("HomeCard", () => {
   it("renders API status for the user", async () => {
     render(
-      <ThemeProvider>
+      <TestProviders>
         <HomeCard message="Hello from the API" />
-      </ThemeProvider>,
+      </TestProviders>,
     );
 
     // waitFor lets the provider's async hydration settle inside act.

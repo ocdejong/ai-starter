@@ -3,13 +3,16 @@ import userEvent from "@testing-library/user-event";
 import { ThemeProvider } from "next-themes";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { IntlTestProvider } from "~/test/intl";
 import { ThemeToggle } from "./theme-toggle";
 
 function renderToggle() {
   return render(
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <ThemeToggle />
-    </ThemeProvider>,
+    <IntlTestProvider>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeToggle />
+      </ThemeProvider>
+    </IntlTestProvider>,
   );
 }
 

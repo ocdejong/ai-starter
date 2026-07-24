@@ -2,26 +2,38 @@ import "~/styles/globals.css";
 
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 
 import { ThemeProvider } from "~/components/theme-provider";
 import { TRPCReactProvider } from "~/trpc/react";
 
-export const metadata: Metadata = {
-  title: "AI Starter",
-  description: "A typed full-stack starter for web and native products.",
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("metadata");
+  return {
+    title: t("title"),
+    description: t("description"),
+    icons: [{ rel: "icon", url: "/favicon.ico" }],
+  };
+}
 
 const geist = Geist({
   subsets: ["latin"],
   variable: "--font-geist-sans",
 });
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="en" className={`${geist.variable}`} suppressHydrationWarning>
+    <html
+      lang={locale}
+      className={`${geist.variable}`}
+      suppressHydrationWarning
+    >
       <body>
         <ThemeProvider
           attribute="class"
@@ -29,7 +41,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <TRPCReactProvider>{children}</TRPCReactProvider>
+          <NextIntlClientProvider locale={locale} messages={messages}>
+            <TRPCReactProvider>{children}</TRPCReactProvider>
+          </NextIntlClientProvider>
         </ThemeProvider>
       </body>
     </html>

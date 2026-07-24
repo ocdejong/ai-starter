@@ -1,8 +1,12 @@
+// Patch Intl (Hermes has no Intl.PluralRules) before anything formats a message.
+import "../i18n/polyfills";
+
 import * as Sentry from "@sentry/react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 
 import { mobileEnv } from "../env";
+import { LocaleProvider } from "../i18n/locale-provider";
 import { ThemeProvider, useTheme } from "../theme/theme-provider";
 import { TRPCProvider } from "../trpc/provider";
 
@@ -35,9 +39,11 @@ function ThemedNavigation() {
 function RootLayout() {
   return (
     <ThemeProvider>
-      <TRPCProvider>
-        <ThemedNavigation />
-      </TRPCProvider>
+      <LocaleProvider>
+        <TRPCProvider>
+          <ThemedNavigation />
+        </TRPCProvider>
+      </LocaleProvider>
     </ThemeProvider>
   );
 }

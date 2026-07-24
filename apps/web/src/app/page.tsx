@@ -1,7 +1,9 @@
+import { getTranslations } from "next-intl/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { LatestPost } from "~/app/_components/post";
+import { LocaleSwitcher } from "~/components/locale-switcher";
 import { ThemeToggle } from "~/components/theme-toggle";
 import { Button } from "~/components/ui/button";
 import { auth, primarySocialProvider } from "~/server/better-auth";
@@ -9,6 +11,7 @@ import { getSession } from "~/server/better-auth/server";
 import { api, HydrateClient } from "~/trpc/server";
 
 export default async function Home() {
+  const t = await getTranslations("home");
   const hello = await api.post.hello({ text: "from tRPC" });
   const session = await getSession();
   const socialProvider = primarySocialProvider;
@@ -20,21 +23,26 @@ export default async function Home() {
   return (
     <HydrateClient>
       <main className="bg-background text-foreground relative flex min-h-screen flex-col items-center justify-center">
-        <div className="absolute right-4 top-4">
+        <div className="absolute right-4 top-4 flex items-center gap-2">
+          <LocaleSwitcher />
           <ThemeToggle />
         </div>
         <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
           <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
-            AI Starter
+            {t("title")}
           </h1>
           <div className="flex flex-col items-center gap-2">
             <p className="text-2xl">
-              {hello ? hello.greeting : "Loading tRPC query..."}
+              {hello ? hello.greeting : t("greetingFallback")}
             </p>
 
             <div className="flex flex-col items-center justify-center gap-4">
               <p className="text-center text-2xl">
-                {session && <span>Logged in as {session.user?.name}</span>}
+                {session && (
+                  <span>
+                    {t("loggedInAs", { name: session.user?.name ?? "" })}
+                  </span>
+                )}
               </p>
               {!session && socialProvider ? (
                 <form>
@@ -54,7 +62,7 @@ export default async function Home() {
                       redirect(res.url);
                     }}
                   >
-                    Sign in with {socialProvider}
+                    {t("signInWith", { provider: socialProvider })}
                   </Button>
                 </form>
               ) : session ? (
@@ -69,12 +77,12 @@ export default async function Home() {
                       redirect("/");
                     }}
                   >
-                    Sign out
+                    {t("signOut")}
                   </Button>
                 </form>
               ) : (
                 <p className="text-muted-foreground text-sm">
-                  Add Google or GitHub OAuth credentials to enable sign-in.
+                  {t("oauthHint")}
                 </p>
               )}
             </div>
