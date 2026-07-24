@@ -40,7 +40,8 @@
         {
           "supportedLocales": ["en", "nl"]
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,

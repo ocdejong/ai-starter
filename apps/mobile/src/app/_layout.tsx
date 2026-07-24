@@ -5,6 +5,7 @@ import * as Sentry from "@sentry/react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 
+import { SessionGate } from "../auth/session-gate";
 import { mobileEnv } from "../env";
 import { LocaleProvider } from "../i18n/locale-provider";
 import { ThemeProvider, useTheme } from "../theme/theme-provider";
@@ -41,7 +42,9 @@ function RootLayout() {
     <ThemeProvider>
       <LocaleProvider>
         <TRPCProvider>
-          <ThemedNavigation />
+          <SessionGate>
+            <ThemedNavigation />
+          </SessionGate>
         </TRPCProvider>
       </LocaleProvider>
     </ThemeProvider>

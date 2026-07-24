@@ -35,6 +35,7 @@ const allowedWorkspaceDependencies: Readonly<
   "@ai-starter/i18n": [],
   "@ai-starter/mobile": [
     "@ai-starter/api",
+    "@ai-starter/domain",
     "@ai-starter/i18n",
     "@ai-starter/tokens",
   ],
@@ -71,8 +72,10 @@ const vendorSdkLocations: Readonly<Record<string, readonly string[]>> = {
   "@prisma/client": ["@ai-starter/db"],
   "@prisma/engines": ["@ai-starter/db"],
   // The auth factory owns the server SDK; apps/web keeps the React client and
-  // the Next.js handler adapter, so better-auth legitimately lives in both.
-  "better-auth": ["@ai-starter/auth", "@ai-starter/web"],
+  // the Next.js handler adapter, and apps/mobile keeps the React client plus the
+  // Expo storage plugin — the SDK legitimately lives in all three, because the
+  // client half cannot be reached through the server-only auth package.
+  "better-auth": ["@ai-starter/auth", "@ai-starter/mobile", "@ai-starter/web"],
   ai: ["@ai-starter/web"],
   prisma: ["@ai-starter/db"],
   resend: ["@ai-starter/email"],

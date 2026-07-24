@@ -32,6 +32,7 @@
       "passwordTooShort": "Use at least {min} characters."
     },
     "errors": {
+      "network": "The server could not be reached. Check your connection and try again.",
       "invalidCredentials": "That email address and password do not match an account.",
       "resetLinkRejected": "That reset link is no longer valid. Request a new one.",
       "unexpected": "Something went wrong. Please try again."
@@ -87,6 +88,8 @@
       "requestNew": "Request a new link"
     },
     "verifyEmail": {
+      "confirmedTitle": "Email address confirmed",
+      "confirmed": "Your email address is confirmed. Sign in to continue.",
       "failedTitle": "We could not confirm your email address",
       "failed": "That confirmation link is invalid or has expired. Sign in again and we will send you a new one.",
       "pendingTitle": "Confirm your email address",
@@ -128,7 +131,9 @@
   "mobile": {
     "homeTitle": "AI Starter mobile",
     "apiUnavailable": "The API is unavailable. Start the web app and check EXPO_PUBLIC_API_URL.",
-    "apiConnecting": "Connecting to the typed API…"
+    "apiConnecting": "Connecting to the typed API…",
+    "signedInAs": "Signed in as {name}",
+    "openLinkOnThisDevice": "Open the link on this device to continue in the app."
   },
   "plural": {
     "posts": "{count, plural, =0 {You have no posts yet} one {You have # post} other {You have # posts}}"

@@ -32,6 +32,7 @@
       "passwordTooShort": "Gebruik minimaal {min} tekens."
     },
     "errors": {
+      "network": "De server is niet bereikbaar. Controleer je verbinding en probeer het opnieuw.",
       "invalidCredentials": "Dit e-mailadres en wachtwoord horen niet bij een account.",
       "resetLinkRejected": "Deze herstellink is niet meer geldig. Vraag een nieuwe aan.",
       "unexpected": "Er ging iets mis. Probeer het opnieuw."
@@ -87,6 +88,8 @@
       "requestNew": "Vraag een nieuwe link aan"
     },
     "verifyEmail": {
+      "confirmedTitle": "E-mailadres bevestigd",
+      "confirmed": "Je e-mailadres is bevestigd. Log in om verder te gaan.",
       "failedTitle": "We konden je e-mailadres niet bevestigen",
       "failed": "Die bevestigingslink is ongeldig of verlopen. Log opnieuw in, dan sturen we je een nieuwe.",
       "pendingTitle": "Bevestig je e-mailadres",
@@ -128,7 +131,9 @@
   "mobile": {
     "homeTitle": "AI Starter mobiel",
     "apiUnavailable": "De API is niet beschikbaar. Start de webapp en controleer EXPO_PUBLIC_API_URL.",
-    "apiConnecting": "Verbinden met de getypeerde API…"
+    "apiConnecting": "Verbinden met de getypeerde API…",
+    "signedInAs": "Ingelogd als {name}",
+    "openLinkOnThisDevice": "Open de link op dit apparaat om verder te gaan in de app."
   },
   "plural": {
     "posts": "{count, plural, =0 {Je hebt nog geen posts} one {Je hebt # post} other {Je hebt # posts}}"
