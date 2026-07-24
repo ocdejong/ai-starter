@@ -4,8 +4,10 @@ import path from "node:path";
 
 import { runCapture, runInherit } from "./command.ts";
 import {
+  containerPublishingPort,
   containerState,
   createContainer,
+  postgresContainerName,
   probeContainerRuntime,
   startContainer,
   type ContainerRuntime,
@@ -159,7 +161,7 @@ async function ensureDatabase(
   const container: PostgresContainer = {
     database: connection.database,
     image: postgresImage,
-    name: `${connection.database}-postgres`,
+    name: postgresContainerName(connection.database, connection.port),
     password: connection.password,
     port: connection.port,
     user: connection.user,
@@ -191,6 +193,17 @@ async function ensureDatabase(
     log(`started container "${container.name}"`);
   } else {
     if (await isPortAccepting(connection.host, connection.port, 2000)) {
+      const occupant = containerPublishingPort(
+        probe.runtime,
+        connection.port,
+        root,
+      );
+      if (occupant !== undefined) {
+        throw new BootstrapError(
+          `Port ${connection.port} is published by container "${occupant}", not by the expected "${container.name}".`,
+          `"${occupant}" is likely a PostgreSQL from an earlier bootstrap or an orphaned worktree. Remove it with \`${probe.runtime} rm --force ${occupant}\` (this discards its data) or move the DATABASE_URL port in ${webEnvPath} to a free one, then run \`pnpm bootstrap\` again.`,
+        );
+      }
       throw new BootstrapError(
         `Port ${connection.port} is already in use by something other than "${container.name}".`,
         `Free the port, or change the DATABASE_URL port in ${webEnvPath}.`,

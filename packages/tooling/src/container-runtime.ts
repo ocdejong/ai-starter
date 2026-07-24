@@ -59,6 +59,38 @@ export type PostgresContainer = {
   readonly image: string;
 };
 
+/**
+ * Every worktree of one repository shares the database name but gets its own
+ * port, so the port must be part of the name: without it, sibling worktrees
+ * all claim one container and each bootstrap after the first waits on a port
+ * that container never publishes.
+ */
+export function postgresContainerName(database: string, port: number): string {
+  return `${database}-postgres-${port}`;
+}
+
+/**
+ * Names the container publishing a host port, so a port conflict can report
+ * its actual owner instead of a bare "something else is listening".
+ */
+export function containerPublishingPort(
+  runtime: ContainerRuntime,
+  port: number,
+  cwd: string,
+): string | undefined {
+  const result = runCapture(
+    runtime,
+    ["ps", "--filter", `publish=${port}`, "--format", "{{.Names}}"],
+    { cwd },
+  );
+  if (result.code !== 0) {
+    return undefined;
+  }
+
+  const name = result.stdout.trim().split("\n")[0]?.trim();
+  return name === undefined || name === "" ? undefined : name;
+}
+
 export function startContainer(
   runtime: ContainerRuntime,
   container: PostgresContainer,
