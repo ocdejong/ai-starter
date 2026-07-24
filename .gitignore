@@ -63,3 +63,6 @@ yarn-error.log*
 
 # idea files
 .idea
+
+# coding-agent local state, including nested worktrees under .claude/worktrees/
+.claude/
