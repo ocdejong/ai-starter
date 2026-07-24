@@ -6,6 +6,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react-native";
+import * as SplashScreen from "expo-splash-screen";
 import * as ReactNative from "react-native";
 import { Text } from "react-native";
 
@@ -27,31 +28,31 @@ function Probe() {
 afterEach(async () => {
   await AsyncStorage.clear();
   jest.restoreAllMocks();
+  jest.clearAllMocks();
 });
 
 describe("ThemeProvider", () => {
   it("lets a manual override beat the system scheme", async () => {
     jest.spyOn(ReactNative, "useColorScheme").mockReturnValue("light");
 
-    render(
+    await render(
       <ThemeProvider>
         <Probe />
       </ThemeProvider>,
     );
 
-    await waitFor(() =>
-      expect(screen.getByTestId("preference")).toHaveTextContent("system"),
-    );
+    // The splash screen hides only once the stored preference has been read,
+    // so this doubles as the barrier for the provider's async hydration.
+    await waitFor(() => expect(SplashScreen.hideAsync).toHaveBeenCalled());
+    expect(screen.getByTestId("preference")).toHaveTextContent("system");
     expect(screen.getByTestId("background")).toHaveTextContent(
       colors.light.background,
     );
 
-    fireEvent.press(screen.getByTestId("choose-dark"));
+    await fireEvent.press(screen.getByTestId("choose-dark"));
 
-    await waitFor(() =>
-      expect(screen.getByTestId("background")).toHaveTextContent(
-        colors.dark.background,
-      ),
+    expect(screen.getByTestId("background")).toHaveTextContent(
+      colors.dark.background,
     );
     expect(screen.getByTestId("preference")).toHaveTextContent("dark");
     await waitFor(async () =>
@@ -63,7 +64,7 @@ describe("ThemeProvider", () => {
     await AsyncStorage.setItem("theme-preference", "dark");
     jest.spyOn(ReactNative, "useColorScheme").mockReturnValue("light");
 
-    render(
+    await render(
       <ThemeProvider>
         <Probe />
       </ThemeProvider>,

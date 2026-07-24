@@ -50,7 +50,7 @@ function LocaleProbe() {
 
 describe("native i18n", () => {
   it("renders a real component against the Dutch catalog", async () => {
-    render(
+    await render(
       <TestProviders locale="nl">
         <HomeCard message="hallo" />
       </TestProviders>,
@@ -73,14 +73,14 @@ describe("native i18n", () => {
       expect(screen.getByText("current:en")).toBeOnTheScreen(),
     );
 
-    fireEvent.press(screen.getByText("to-nl"));
+    await fireEvent.press(screen.getByText("to-nl"));
     await waitFor(() =>
       expect(screen.getByText("current:nl")).toBeOnTheScreen(),
     );
     expect(await AsyncStorage.getItem("locale-override")).toBe("nl");
-    first.unmount();
+    await first.unmount();
 
-    render(
+    await render(
       <LocaleProvider>
         <LocaleProbe />
       </LocaleProvider>,

@@ -5,13 +5,13 @@ import { HomeCard } from "./home-card";
 
 describe("HomeCard", () => {
   it("renders API status for the user", async () => {
-    render(
+    await render(
       <TestProviders>
         <HomeCard message="Hello from the API" />
       </TestProviders>,
     );
 
-    // waitFor lets the provider's async hydration settle inside act.
+    // waitFor gives the theme provider's async storage read room to settle.
     await waitFor(() =>
       expect(screen.getByText("AI Starter mobile")).toBeOnTheScreen(),
     );
