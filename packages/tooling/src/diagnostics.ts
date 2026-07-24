@@ -24,10 +24,57 @@ export type Check = {
   readonly fix?: string;
 };
 
-/** Reads the minimum major version out of an `engines.node` range such as `>=24`. */
+/** Reads the minimum major version out of an `engines.node` range such as `^24 || >=26`. */
 export function minimumMajor(range: string): number | undefined {
   const match = /(\d+)/.exec(range);
   return match?.[1] === undefined ? undefined : Number(match[1]);
+}
+
+/**
+ * Evaluates an `engines.node` range against one major version: `||`-separated
+ * clauses, each a space-separated list of `^`, `~`, `>=`, `<` or bare
+ * comparators that must all hold. Major granularity is deliberate — Node
+ * support (and the LTS distinction dependency-cruiser enforces) moves per
+ * major, and staying dependency-free rules out a full semver library. Returns
+ * undefined when any clause is unreadable so callers degrade to a warning.
+ */
+export function rangeAllowsMajor(
+  range: string,
+  major: number,
+): boolean | undefined {
+  let allowed = false;
+  for (const clause of range.split("||")) {
+    const satisfied = clauseAllowsMajor(clause.trim(), major);
+    if (satisfied === undefined) {
+      return undefined;
+    }
+    allowed ||= satisfied;
+  }
+  return allowed;
+}
+
+function clauseAllowsMajor(clause: string, major: number): boolean | undefined {
+  const comparators = clause.split(/\s+/).filter((part) => part !== "");
+  if (comparators.length === 0) {
+    return undefined;
+  }
+
+  let satisfied = true;
+  for (const comparator of comparators) {
+    const match = /^(\^|~|>=|<)?v?(\d+)(?:\.\d+(?:\.\d+)?)?$/.exec(comparator);
+    if (match?.[2] === undefined) {
+      return undefined;
+    }
+
+    const bound = Number(match[2]);
+    satisfied &&=
+      match[1] === ">="
+        ? major >= bound
+        : match[1] === "<"
+          ? major < bound
+          : major === bound;
+  }
+  return satisfied;
 }
 
 export function majorOf(version: string): number | undefined {
@@ -81,27 +128,55 @@ export async function runDiagnostics(root: string): Promise<Check[]> {
 }
 
 function checkNode(root: string): Check {
-  const range = readRootManifest(root).requiredNodeRange;
-  const required = range === undefined ? undefined : minimumMajor(range);
-  const actual = majorOf(process.versions.node);
+  return nodeCheck(
+    readRootManifest(root).requiredNodeRange,
+    process.versions.node,
+  );
+}
 
-  if (required === undefined || actual === undefined) {
+/**
+ * Pure so the range logic is unit-testable. The range must be evaluated in
+ * full, not reduced to its floor: engines.node excludes the non-LTS majors
+ * that dependency-cruiser (`pnpm arch`, part of `pnpm verify`) hard-exits on,
+ * so a Node this check blesses cannot fail verify on version alone.
+ */
+export function nodeCheck(range: string | undefined, version: string): Check {
+  const major = majorOf(version);
+  const allowed =
+    range === undefined || major === undefined
+      ? undefined
+      : rangeAllowsMajor(range, major);
+
+  if (range === undefined || major === undefined || allowed === undefined) {
     return {
-      detail: `Running Node.js ${process.versions.node}; package.json declares no readable engines.node range.`,
+      detail: `Running Node.js ${version}; package.json declares no readable engines.node range.`,
       name: "Node.js",
       status: "warning",
     };
   }
 
-  return actual >= required
+  if (allowed) {
+    return {
+      detail: `Node.js ${version} satisfies ${range}.`,
+      name: "Node.js",
+      status: "ok",
+    };
+  }
+
+  const floor = minimumMajor(range);
+  const fix =
+    "Switch to Node.js 24 — the repository pins it in .node-version; `nvm use`, `fnm use`, or `mise use` picks it up.";
+
+  return floor !== undefined && major < floor
     ? {
-        detail: `Node.js ${process.versions.node} satisfies ${range}.`,
+        detail: `Node.js ${version} is older than the required ${range}.`,
+        fix,
         name: "Node.js",
-        status: "ok",
+        status: "failure",
       }
     : {
-        detail: `Node.js ${process.versions.node} is older than the required ${range}.`,
-        fix: "Install Node.js 24 (the repository pins it in .node-version; `nvm use` or `fnm use` picks it up).",
+        detail: `Node.js ${version} does not satisfy ${range}; dependency-cruiser (\`pnpm arch\`, part of \`pnpm verify\`) refuses non-LTS majors.`,
+        fix,
         name: "Node.js",
         status: "failure",
       };
