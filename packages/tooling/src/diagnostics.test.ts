@@ -6,7 +6,9 @@ import {
   hasFailure,
   majorOf,
   minimumMajor,
+  nodeCheck,
   pinnedVersion,
+  rangeAllowsMajor,
   type Check,
 } from "./diagnostics.ts";
 
@@ -25,6 +27,68 @@ describe("version parsing", () => {
   it("reads the version out of a packageManager pin", () => {
     expect(pinnedVersion("pnpm@10.32.1")).toBe("10.32.1");
     expect(pinnedVersion("pnpm@10.32.1+sha512.abc")).toBe("10.32.1");
+  });
+});
+
+describe("engines range evaluation", () => {
+  it("evaluates every ||-clause, so a gap between clauses is rejected", () => {
+    expect(rangeAllowsMajor("^24 || >=26", 24)).toBe(true);
+    expect(rangeAllowsMajor("^24 || >=26", 25)).toBe(false);
+    expect(rangeAllowsMajor("^24 || >=26", 26)).toBe(true);
+    expect(rangeAllowsMajor("^24 || >=26", 27)).toBe(true);
+    expect(rangeAllowsMajor("^24 || >=26", 23)).toBe(false);
+  });
+
+  it("reads dependency-cruiser's unspaced clause form", () => {
+    expect(rangeAllowsMajor("^22||^24||>=26", 22)).toBe(true);
+    expect(rangeAllowsMajor("^22||^24||>=26", 23)).toBe(false);
+    expect(rangeAllowsMajor("^22||^24||>=26", 25)).toBe(false);
+    expect(rangeAllowsMajor("^22||^24||>=26", 30)).toBe(true);
+  });
+
+  it("still accepts a plain floor", () => {
+    expect(rangeAllowsMajor(">=24", 25)).toBe(true);
+    expect(rangeAllowsMajor(">=24", 23)).toBe(false);
+  });
+
+  it("handles comparator pairs and full versions at major granularity", () => {
+    expect(rangeAllowsMajor(">=22 <25", 24)).toBe(true);
+    expect(rangeAllowsMajor(">=22 <25", 25)).toBe(false);
+    expect(rangeAllowsMajor("^20.11.0", 20)).toBe(true);
+    expect(rangeAllowsMajor("^20.11.0", 21)).toBe(false);
+  });
+
+  it("returns undefined for a range it cannot read", () => {
+    expect(rangeAllowsMajor("latest", 24)).toBeUndefined();
+    expect(rangeAllowsMajor("^24 || latest", 24)).toBeUndefined();
+  });
+});
+
+describe("Node.js check", () => {
+  it("passes a version inside the range", () => {
+    const check = nodeCheck("^24 || >=26", "24.18.0");
+    expect(check.status).toBe("ok");
+    expect(check.fix).toBeUndefined();
+  });
+
+  it("fails an excluded non-LTS major and names the arch gate", () => {
+    const check = nodeCheck("^24 || >=26", "25.9.0");
+    expect(check.status).toBe("failure");
+    expect(check.detail).toContain("pnpm arch");
+    expect(check.fix).toContain("nvm");
+    expect(check.fix).toContain("mise");
+  });
+
+  it("fails a version below the floor as too old", () => {
+    const check = nodeCheck("^24 || >=26", "22.4.0");
+    expect(check.status).toBe("failure");
+    expect(check.detail).toContain("older");
+    expect(check.fix).toBeDefined();
+  });
+
+  it("warns when no range is declared or readable", () => {
+    expect(nodeCheck(undefined, "24.18.0").status).toBe("warning");
+    expect(nodeCheck("latest", "24.18.0").status).toBe("warning");
   });
 });
 

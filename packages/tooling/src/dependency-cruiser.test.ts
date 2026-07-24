@@ -5,7 +5,12 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { runCapture } from "./command.ts";
-import { repositoryPath, repositoryRoot } from "./repository.ts";
+import { rangeAllowsMajor } from "./diagnostics.ts";
+import {
+  readRootManifest,
+  repositoryPath,
+  repositoryRoot,
+} from "./repository.ts";
 
 /**
  * The graph guard runs the real `.dependency-cruiser.cjs` two ways. Against the
@@ -216,5 +221,34 @@ describe("architecture graph rules", () => {
       .filter((rule) => !configuredRules.has(rule));
 
     expect(undefinedRules).toEqual([]);
+  });
+});
+
+describe("node version agreement", () => {
+  /**
+   * `pnpm diagnose` blesses a Node when it satisfies engines.node, but
+   * dependency-cruiser hard-exits on majors outside its own engines range
+   * (non-LTS majors such as 25). Every major our manifest admits must also be
+   * one dependency-cruiser runs on, or `pnpm arch` fails in an environment
+   * diagnose called healthy.
+   */
+  it("engines.node only admits majors dependency-cruiser supports", () => {
+    const repoRange = readRootManifest(repositoryRoot).requiredNodeRange ?? "";
+    const cruiserRange =
+      readRootManifest(repositoryPath("node_modules", "dependency-cruiser"))
+        .requiredNodeRange ?? "";
+
+    expect(rangeAllowsMajor(repoRange, 24)).toBe(true);
+    expect(rangeAllowsMajor(cruiserRange, 24)).toBe(true);
+
+    const blessedButRefused: number[] = [];
+    for (let major = 18; major <= 40; major += 1) {
+      const blessed = rangeAllowsMajor(repoRange, major) === true;
+      if (blessed && rangeAllowsMajor(cruiserRange, major) !== true) {
+        blessedButRefused.push(major);
+      }
+    }
+
+    expect(blessedButRefused).toEqual([]);
   });
 });

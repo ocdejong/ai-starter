@@ -44,7 +44,7 @@ pnpm verify
 
 ## Start locally
 
-Requirements: Node.js 24, pnpm 10, and Docker or Podman.
+Requirements: Node.js 24 or 26+ (25 is not supported — dependency-cruiser refuses non-LTS majors), pnpm 10, and Docker or Podman.
 
 ```bash
 pnpm bootstrap
