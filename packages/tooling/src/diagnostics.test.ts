@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  chatCheck,
   emailCheck,
   formatChecks,
   hasFailure,
@@ -155,5 +156,36 @@ describe("transactional email check", () => {
     const check = emailCheck("re_abc123", "AI Starter <a@b.com>");
     expect(check.status).toBe("ok");
     expect(check.detail).toContain("Resend");
+  });
+});
+
+describe("LLM chat check", () => {
+  it("passes and says chat is unconfigured when no key is set", () => {
+    const check = chatCheck(undefined, undefined);
+    expect(check.status).toBe("ok");
+    expect(check.detail).toContain("not configured");
+    expect(check.fix).toBeUndefined();
+  });
+
+  it("treats an empty key like an absent one", () => {
+    expect(chatCheck("", "claude-sonnet-5").status).toBe("ok");
+  });
+
+  it("fails when the key does not begin with sk-ant-", () => {
+    const check = chatCheck("re_abc123", "claude-sonnet-5");
+    expect(check.status).toBe("failure");
+    expect(check.fix).toContain("sk-ant-");
+  });
+
+  it("names the default model when a key is set without one", () => {
+    const check = chatCheck("sk-ant-abc123", "");
+    expect(check.status).toBe("ok");
+    expect(check.detail).toContain("claude-sonnet-5");
+  });
+
+  it("names the configured model when both are set", () => {
+    const check = chatCheck("sk-ant-abc123", "claude-opus-4-8");
+    expect(check.status).toBe("ok");
+    expect(check.detail).toContain("claude-opus-4-8");
   });
 });

@@ -44,6 +44,7 @@ const allowedWorkspaceDependencies: Readonly<
     "@ai-starter/api",
     "@ai-starter/auth",
     "@ai-starter/db",
+    "@ai-starter/domain",
     "@ai-starter/email",
     "@ai-starter/i18n",
     "@ai-starter/tokens",
@@ -63,11 +64,16 @@ const libraryPackages = [
 
 /** Vendor SDKs that belong to one layer only, keyed to the packages allowed to hold them. */
 const vendorSdkLocations: Readonly<Record<string, readonly string[]>> = {
+  // The chat route handler, its model factory and the chat component are the
+  // only consumers; a mobile chat screen would add @ai-starter/mobile here.
+  "@ai-sdk/anthropic": ["@ai-starter/web"],
+  "@ai-sdk/react": ["@ai-starter/web"],
   "@prisma/client": ["@ai-starter/db"],
   "@prisma/engines": ["@ai-starter/db"],
   // The auth factory owns the server SDK; apps/web keeps the React client and
   // the Next.js handler adapter, so better-auth legitimately lives in both.
   "better-auth": ["@ai-starter/auth", "@ai-starter/web"],
+  ai: ["@ai-starter/web"],
   prisma: ["@ai-starter/db"],
   resend: ["@ai-starter/email"],
 };

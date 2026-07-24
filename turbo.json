@@ -5,6 +5,8 @@
     "build": {
       "dependsOn": ["^build"],
       "env": [
+        "AI_CHAT_MODEL",
+        "ANTHROPIC_API_KEY",
         "BETTER_AUTH_GITHUB_CLIENT_ID",
         "BETTER_AUTH_GITHUB_CLIENT_SECRET",
         "BETTER_AUTH_SECRET",

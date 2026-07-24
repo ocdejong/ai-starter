@@ -2,10 +2,12 @@ import { getTranslations } from "next-intl/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { Chat } from "~/app/_components/chat";
 import { LatestPost } from "~/app/_components/post";
 import { LocaleSwitcher } from "~/components/locale-switcher";
 import { ThemeToggle } from "~/components/theme-toggle";
 import { Button } from "~/components/ui/button";
+import { isChatConfigured } from "~/server/ai";
 import { auth, primarySocialProvider } from "~/server/better-auth";
 import { getSession } from "~/server/better-auth/server";
 import { api, HydrateClient } from "~/trpc/server";
@@ -87,6 +89,11 @@ export default async function Home() {
               )}
             </div>
           </div>
+
+          <Chat
+            isConfigured={isChatConfigured()}
+            isSignedIn={session !== null}
+          />
 
           {session?.user && <LatestPost />}
         </div>

@@ -22,6 +22,20 @@
     "signOut": "Uitloggen",
     "oauthHint": "Voeg Google- of GitHub-OAuth-gegevens toe om inloggen mogelijk te maken."
   },
+  "chat": {
+    "title": "Vraag het de assistent",
+    "empty": "Stuur een bericht om het gesprek te beginnen.",
+    "you": "Jij",
+    "assistant": "Assistent",
+    "placeholder": "Typ een bericht…",
+    "send": "Verzenden",
+    "sending": "Verzenden…",
+    "stop": "Stoppen",
+    "error": "De assistent kon niet antwoorden. Probeer het opnieuw.",
+    "signInPrompt": "Log in om met de assistent te chatten.",
+    "signIn": "Inloggen",
+    "notConfigured": "Chat is niet geconfigureerd. Stel ANTHROPIC_API_KEY in om het aan te zetten."
+  },
   "post": {
     "latest": "Je meest recente post: {name}",
     "empty": "Je hebt nog geen posts.",

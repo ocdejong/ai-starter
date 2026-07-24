@@ -121,6 +121,7 @@ export async function runDiagnostics(root: string): Promise<Check[]> {
   checks.push(environment.check);
   checks.push(checkMobileEnvironment(root));
   checks.push(checkEmail(root));
+  checks.push(checkChat(root));
   checks.push(await checkPostgres(environment.databaseUrl));
   checks.push(checkGeneratedClient(root));
 
@@ -386,6 +387,67 @@ export function emailCheck(
     name: "Transactional email",
     status: "ok",
   };
+}
+
+/**
+ * The default the web app falls back to when `AI_CHAT_MODEL` is unset. Kept in
+ * step with the schema in apps/web/src/env.js so the report names the model the
+ * app would actually use.
+ */
+const defaultChatModel = "claude-sonnet-5";
+
+/**
+ * Chat configuration is optional in the same way email is: a keyless clone must
+ * boot and say so rather than fail. Pure so the branch logic is unit-testable
+ * without an env-file fixture.
+ */
+export function chatCheck(
+  apiKey: string | undefined,
+  model: string | undefined,
+): Check {
+  if (apiKey === undefined || apiKey === "") {
+    return {
+      detail:
+        "No ANTHROPIC_API_KEY; the landing-page chat renders its not configured state instead of answering.",
+      name: "LLM chat",
+      status: "ok",
+    };
+  }
+
+  if (!apiKey.startsWith("sk-ant-")) {
+    return {
+      detail: "ANTHROPIC_API_KEY is set but does not begin with sk-ant-.",
+      fix: 'Use an Anthropic API key that begins with "sk-ant-", or clear ANTHROPIC_API_KEY to leave chat unconfigured.',
+      name: "LLM chat",
+      status: "failure",
+    };
+  }
+
+  const resolved =
+    model === undefined || model === "" ? defaultChatModel : model;
+  return {
+    detail: `ANTHROPIC_API_KEY is set; chat answers with ${resolved}.`,
+    name: "LLM chat",
+    status: "ok",
+  };
+}
+
+function checkChat(root: string): Check {
+  const absolute = path.join(root, webEnvPath);
+  if (!existsSync(absolute)) {
+    return {
+      detail: `${webEnvPath} is missing, so the chat model cannot be configured.`,
+      fix: "Run `pnpm bootstrap`, which creates it from apps/web/.env.example.",
+      name: "LLM chat",
+      status: "warning",
+    };
+  }
+
+  const values = parseEnvFile(readFileSync(absolute, "utf8"));
+  return chatCheck(
+    values.get("ANTHROPIC_API_KEY"),
+    values.get("AI_CHAT_MODEL"),
+  );
 }
 
 function checkEmail(root: string): Check {

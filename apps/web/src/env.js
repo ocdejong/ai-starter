@@ -7,6 +7,8 @@ export const env = createEnv({
    * isn't built with invalid env vars.
    */
   server: {
+    AI_CHAT_MODEL: z.string().min(1).default("claude-sonnet-5"),
+    ANTHROPIC_API_KEY: z.string().startsWith("sk-ant-").optional(),
     BETTER_AUTH_SECRET:
       process.env.NODE_ENV === "production"
         ? z.string()
@@ -47,6 +49,8 @@ export const env = createEnv({
    * middlewares) or client-side so we need to destruct manually.
    */
   runtimeEnv: {
+    AI_CHAT_MODEL: process.env.AI_CHAT_MODEL,
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
     BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
     BETTER_AUTH_GITHUB_CLIENT_ID: process.env.BETTER_AUTH_GITHUB_CLIENT_ID,

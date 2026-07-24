@@ -6,23 +6,24 @@
 apps/mobile ──> packages/api/client (types only)
 
 apps/web ─────> packages/api ──────> packages/domain
-    │                 ↑
+    │                 ↑                       ↑
     │                 └── injects consumer-owned ports
+    ├─────────────────────────────────────────┘  non-tRPC route handlers parse with domain schemas
     └─────────> packages/db ───────> PostgreSQL
 
 apps/web + apps/mobile ──> packages/tokens, packages/i18n
 all workspaces ──────────> packages/config (tooling only)
 ```
 
-| Layer    | May contain                                               | Must not contain                                 |
-| -------- | --------------------------------------------------------- | ------------------------------------------------ |
-| `domain` | Zod schemas, value objects, deterministic rules           | React, Next.js, Expo, Prisma, environment reads  |
-| `tokens` | Plain colors, spacing, typography values                  | Components, runtime/platform imports             |
-| `i18n`   | ICU message catalogs, `Locale` schema, locale negotiation | Components, framework or platform imports        |
-| `db`     | Prisma client, schema, migrations, persistence adapters   | Client code, web framework adapters, API routing |
-| `api`    | tRPC, authorization, use cases, consumer-owned ports      | Prisma/service SDKs, Next.js/Expo UI             |
-| `web`    | App Router, UI, Better Auth, transport/composition root   | Direct database access from UI/transport folders |
-| `mobile` | Expo Router, native UI, typed API client                  | Prisma, Next.js, server API implementation       |
+| Layer    | May contain                                                                    | Must not contain                                 |
+| -------- | ------------------------------------------------------------------------------ | ------------------------------------------------ |
+| `domain` | Zod schemas, value objects, deterministic rules                                | React, Next.js, Expo, Prisma, environment reads  |
+| `tokens` | Plain colors, spacing, typography values                                       | Components, runtime/platform imports             |
+| `i18n`   | ICU message catalogs, `Locale` schema, locale negotiation                      | Components, framework or platform imports        |
+| `db`     | Prisma client, schema, migrations, persistence adapters                        | Client code, web framework adapters, API routing |
+| `api`    | tRPC, authorization, use cases, consumer-owned ports                           | Prisma/service SDKs, Next.js/Expo UI             |
+| `web`    | App Router, UI, Better Auth, transport/composition root, AI SDK route handlers | Direct database access from UI/transport folders |
+| `mobile` | Expo Router, native UI, typed API client                                       | Prisma, Next.js, server API implementation       |
 
 ESLint import restrictions enforce the most important boundaries per file. `pnpm arch` runs dependency-cruiser (`.dependency-cruiser.cjs`) over the whole graph to enforce this direction and forbid cycles and deep imports into a package's internals; `pnpm policy` enforces the structural rules the graph cannot see (workspace dependency allowlists, public export surfaces, strict compiler flags in every tsconfig, vendor SDK locations, silenced guardrails, generated-client cleanliness, and the verification scripts). Both run inside `pnpm verify`. The database package also imports `server-only`, providing a runtime/build-time backstop.
 
@@ -84,4 +85,6 @@ Sentry initializes on Next.js and Expo only when a DSN exists. Build-time org/pr
 
 An adapter must expose a narrow product-oriented contract and keep vendor request/response types private. Centralize retries, rate-limit handling, idempotency, observability, and error translation there. Keep authorization visible at the use-case or procedure boundary; never rely on an implicit UI check.
 
-Realtime AI chat should stream from a server route (SSE/streamed HTTP by default; WebSockets only when bidirectional realtime is required). Persist final messages and important tool results, but keep transport chunks ephemeral. Never expose model/provider secrets to either client.
+Realtime AI chat streams from a server route (SSE/streamed HTTP by default; WebSockets only when bidirectional realtime is required), not through tRPC — `useChat` speaks the UI message stream protocol and tRPC streams its own envelope. `apps/web/src/app/api/chat/route.ts` is the composition root for that seam and `getChatModel()` in `apps/web/src/server/ai.ts` is the only place a model or vendor is chosen; `LanguageModel` is already provider-neutral, so nothing wraps `streamText`. Guard every turn in order: session, then the shared wire contract in `packages/domain`, then a per-user rate limit. Never expose model/provider secrets to either client, and never log prompts, completions, or provider payloads.
+
+The starter's example chat keeps history ephemeral on purpose — nothing is persisted, so the example stays a vertical slice rather than a schema decision made on a product's behalf. A product that needs history persists final messages and important tool results while keeping transport chunks ephemeral.

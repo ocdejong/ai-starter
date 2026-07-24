@@ -22,6 +22,20 @@
     "signOut": "Sign out",
     "oauthHint": "Add Google or GitHub OAuth credentials to enable sign-in."
   },
+  "chat": {
+    "title": "Ask the assistant",
+    "empty": "Send a message to start the conversation.",
+    "you": "You",
+    "assistant": "Assistant",
+    "placeholder": "Type a message…",
+    "send": "Send",
+    "sending": "Sending…",
+    "stop": "Stop",
+    "error": "The assistant could not answer. Try again.",
+    "signInPrompt": "Sign in to chat with the assistant.",
+    "signIn": "Sign in",
+    "notConfigured": "Chat is not configured. Set ANTHROPIC_API_KEY to enable it."
+  },
   "post": {
     "latest": "Your most recent post: {name}",
     "empty": "You have no posts yet.",
