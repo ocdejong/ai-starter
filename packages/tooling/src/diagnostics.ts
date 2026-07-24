@@ -73,6 +73,7 @@ export async function runDiagnostics(root: string): Promise<Check[]> {
   const environment = checkWebEnvironment(root);
   checks.push(environment.check);
   checks.push(checkMobileEnvironment(root));
+  checks.push(checkEmail(root));
   checks.push(await checkPostgres(environment.databaseUrl));
   checks.push(checkGeneratedClient(root));
 
@@ -265,6 +266,66 @@ function checkMobileEnvironment(root: string): Check {
         name: "Mobile environment",
         status: "warning",
       };
+}
+
+/**
+ * The transactional-email configuration is deliberately optional: a keyless
+ * clone must still boot and degrade to the local dev mailbox. Pure so the
+ * branch logic is unit-testable without an env-file fixture.
+ */
+export function emailCheck(
+  apiKey: string | undefined,
+  from: string | undefined,
+): Check {
+  if (apiKey === undefined || apiKey === "") {
+    return {
+      detail:
+        "No RESEND_API_KEY; email is written to the local dev mailbox (.mail/) instead of sent.",
+      name: "Transactional email",
+      status: "ok",
+    };
+  }
+
+  if (!apiKey.startsWith("re_")) {
+    return {
+      detail: "RESEND_API_KEY is set but does not begin with re_.",
+      fix: 'Use a Resend API key that begins with "re_", or clear RESEND_API_KEY to use the dev mailbox.',
+      name: "Transactional email",
+      status: "failure",
+    };
+  }
+
+  if (from === undefined || from === "") {
+    return {
+      detail:
+        "RESEND_API_KEY is set but EMAIL_FROM is empty, so Resend falls back to onboarding@resend.dev.",
+      fix: 'Set EMAIL_FROM to an email address or "Name <address>" in apps/web/.env.',
+      name: "Transactional email",
+      status: "warning",
+    };
+  }
+
+  return {
+    detail:
+      "RESEND_API_KEY and EMAIL_FROM are set; email sends through Resend.",
+    name: "Transactional email",
+    status: "ok",
+  };
+}
+
+function checkEmail(root: string): Check {
+  const absolute = path.join(root, webEnvPath);
+  if (!existsSync(absolute)) {
+    return {
+      detail: `${webEnvPath} is missing, so transactional email cannot be configured.`,
+      fix: "Run `pnpm bootstrap`, which creates it from apps/web/.env.example.",
+      name: "Transactional email",
+      status: "warning",
+    };
+  }
+
+  const values = parseEnvFile(readFileSync(absolute, "utf8"));
+  return emailCheck(values.get("RESEND_API_KEY"), values.get("EMAIL_FROM"));
 }
 
 async function checkPostgres(databaseUrl: string | undefined): Promise<Check> {

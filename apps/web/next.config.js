@@ -11,6 +11,7 @@ const config = {
     "@ai-starter/api",
     "@ai-starter/domain",
     "@ai-starter/db",
+    "@ai-starter/email",
   ],
 };
 

@@ -49,6 +49,9 @@ yarn-error.log*
 .env
 .env*.local
 
+# local transactional-email dev mailbox
+.mail/
+
 # vercel
 .vercel
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  emailCheck,
   formatChecks,
   hasFailure,
   majorOf,
@@ -59,5 +60,36 @@ describe("reporting", () => {
 
   it("prints no fix line for a passing check", () => {
     expect(formatChecks(checks.slice(0, 1))).not.toContain("fix:");
+  });
+});
+
+describe("transactional email check", () => {
+  it("passes and points at the dev mailbox when no key is set", () => {
+    const check = emailCheck(undefined, undefined);
+    expect(check.status).toBe("ok");
+    expect(check.detail).toContain("dev mailbox");
+    expect(check.fix).toBeUndefined();
+  });
+
+  it("treats an empty key like an absent one", () => {
+    expect(emailCheck("", "AI Starter <a@b.com>").status).toBe("ok");
+  });
+
+  it("fails when the key does not begin with re_", () => {
+    const check = emailCheck("sk_live_123", "AI Starter <a@b.com>");
+    expect(check.status).toBe("failure");
+    expect(check.fix).toContain("re_");
+  });
+
+  it("warns when a key is set without a from address", () => {
+    const check = emailCheck("re_abc123", "");
+    expect(check.status).toBe("warning");
+    expect(check.fix).toContain("EMAIL_FROM");
+  });
+
+  it("passes when both the key and from address are set", () => {
+    const check = emailCheck("re_abc123", "AI Starter <a@b.com>");
+    expect(check.status).toBe("ok");
+    expect(check.detail).toContain("Resend");
   });
 });
