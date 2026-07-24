@@ -59,6 +59,61 @@ export type PostgresContainer = {
   readonly image: string;
 };
 
+/** The port PostgreSQL listens on inside the container. */
+const postgresContainerPort = 5432;
+
+/** Reads the host port the named container publishes for PostgreSQL. */
+export function publishedPort(
+  runtime: ContainerRuntime,
+  name: string,
+  cwd: string,
+): number | undefined {
+  const result = runCapture(runtime, ["inspect", name], { cwd });
+  return result.code === 0 ? parsePublishedPort(result.stdout) : undefined;
+}
+
+/**
+ * Extracts the published PostgreSQL host port from `inspect` output. A running
+ * container reports the live binding under `NetworkSettings.Ports`; a stopped
+ * one only carries the creation-time `HostConfig.PortBindings`, so both are
+ * accepted, live binding first.
+ */
+export function parsePublishedPort(inspectOutput: string): number | undefined {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(inspectOutput);
+  } catch {
+    return undefined;
+  }
+
+  const container = Array.isArray(parsed) ? asRecord(parsed[0]) : undefined;
+  return (
+    boundHostPort(asRecord(container?.NetworkSettings)?.Ports) ??
+    boundHostPort(asRecord(container?.HostConfig)?.PortBindings)
+  );
+}
+
+function boundHostPort(portMap: unknown): number | undefined {
+  const bindings = asRecord(portMap)?.[`${postgresContainerPort}/tcp`];
+  if (!Array.isArray(bindings)) {
+    return undefined;
+  }
+
+  for (const binding of bindings) {
+    const hostPort = Number(asRecord(binding)?.HostPort);
+    if (Number.isInteger(hostPort) && hostPort > 0) {
+      return hostPort;
+    }
+  }
+  return undefined;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
+}
+
 export function startContainer(
   runtime: ContainerRuntime,
   container: PostgresContainer,
@@ -86,7 +141,7 @@ export function createContainer(
       "--env",
       `POSTGRES_DB=${container.database}`,
       "--publish",
-      `${container.port}:5432`,
+      `${container.port}:${postgresContainerPort}`,
       container.image,
     ],
     { cwd },

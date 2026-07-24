@@ -7,6 +7,7 @@ import {
   containerState,
   createContainer,
   probeContainerRuntime,
+  publishedPort,
   startContainer,
   type ContainerRuntime,
   type PostgresContainer,
@@ -156,7 +157,7 @@ async function ensureDatabase(
   databaseUrl: string,
 ): Promise<void> {
   const connection = parseDatabaseUrl(databaseUrl);
-  const container: PostgresContainer = {
+  let container: PostgresContainer = {
     database: connection.database,
     image: postgresImage,
     name: `${connection.database}-postgres`,
@@ -181,15 +182,7 @@ async function ensureDatabase(
 
   const state = containerState(probe.runtime, container.name, root);
 
-  if (state === "running") {
-    log(`container "${container.name}" is already running`);
-  } else if (state === "stopped") {
-    requireContainerCommand(
-      startContainer(probe.runtime, container, root),
-      `start the existing container "${container.name}"`,
-    );
-    log(`started container "${container.name}"`);
-  } else {
+  if (state === "absent") {
     if (await isPortAccepting(connection.host, connection.port, 2000)) {
       throw new BootstrapError(
         `Port ${connection.port} is already in use by something other than "${container.name}".`,
@@ -201,9 +194,57 @@ async function ensureDatabase(
       `create the container "${container.name}"`,
     );
     log(`created container "${container.name}" on port ${container.port}`);
+  } else {
+    container = followPublishedPort(probe.runtime, container, root);
+    if (state === "running") {
+      log(`container "${container.name}" is already running`);
+    } else {
+      requireContainerCommand(
+        startContainer(probe.runtime, container, root),
+        `start the existing container "${container.name}"`,
+      );
+      log(`started container "${container.name}"`);
+    }
   }
 
   await waitForDatabase(probe.runtime, container, connection.host, root);
+}
+
+/**
+ * Every checkout of one product resolves to the same container name, but each
+ * checkout's `.env` picks its own port when the file is first created. The
+ * existing container is the truth, so its published port is read back and the
+ * file follows it.
+ */
+function followPublishedPort(
+  runtime: ContainerRuntime,
+  container: PostgresContainer,
+  root: string,
+): PostgresContainer {
+  const published = publishedPort(runtime, container.name, root);
+  if (published === undefined || published === container.port) {
+    return container;
+  }
+
+  log(
+    `container "${container.name}" publishes port ${published}, not ${container.port}; updating ${webEnvPath}`,
+  );
+  updateDatabasePort(root, published);
+  return { ...container, port: published };
+}
+
+/** Rewrites the DATABASE_URL port in `apps/web/.env`, leaving the rest alone. */
+export function updateDatabasePort(root: string, port: number): void {
+  const absolute = path.join(root, webEnvPath);
+  const content = readFileSync(absolute, "utf8");
+  writeFileSync(
+    absolute,
+    setEnvValue(
+      content,
+      "DATABASE_URL",
+      withPort(readDatabaseUrl(content, webEnvPath), port),
+    ),
+  );
 }
 
 function requireContainerCommand(
