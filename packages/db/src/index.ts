@@ -1,4 +1,4 @@
 import "server-only";
 
-export { db } from "./client";
+export { createDatabaseClient, db, type Database } from "./client";
 export { prismaPostRepository } from "./post-repository";

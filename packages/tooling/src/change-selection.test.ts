@@ -61,6 +61,21 @@ describe("selectChecks", () => {
     ).toContain("test:integration");
   });
 
+  it("runs the real-PostgreSQL tests when a database-backed flow package changes", () => {
+    expect(names(["packages/auth/src/init-auth.ts"])).toContain(
+      "test:integration",
+    );
+  });
+
+  it("selects the integration suite only once when schema and auth both change", () => {
+    const selected = names([
+      "packages/db/prisma/schema.prisma",
+      "packages/auth/src/init-auth.ts",
+    ]).filter((name) => name === "test:integration");
+
+    expect(selected).toHaveLength(1);
+  });
+
   it("adds the browser journey for web-observable behaviour", () => {
     expect(names(["apps/web/src/app/page.tsx"])).toContain("test:e2e");
     expect(names(["packages/api/src/root.ts"])).toContain("test:e2e");

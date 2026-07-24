@@ -27,6 +27,7 @@ const allowedWorkspaceDependencies: Readonly<
   Record<string, readonly string[]>
 > = {
   "@ai-starter/api": ["@ai-starter/domain"],
+  "@ai-starter/auth": ["@ai-starter/db"],
   "@ai-starter/config": [],
   "@ai-starter/db": [],
   "@ai-starter/domain": [],
@@ -41,6 +42,7 @@ const allowedWorkspaceDependencies: Readonly<
   "@ai-starter/tooling": [],
   "@ai-starter/web": [
     "@ai-starter/api",
+    "@ai-starter/auth",
     "@ai-starter/db",
     "@ai-starter/email",
     "@ai-starter/i18n",
@@ -51,6 +53,7 @@ const allowedWorkspaceDependencies: Readonly<
 /** Packages whose internals must stay unreachable behind a curated exports map. */
 const libraryPackages = [
   "@ai-starter/api",
+  "@ai-starter/auth",
   "@ai-starter/db",
   "@ai-starter/domain",
   "@ai-starter/email",
@@ -62,7 +65,9 @@ const libraryPackages = [
 const vendorSdkLocations: Readonly<Record<string, readonly string[]>> = {
   "@prisma/client": ["@ai-starter/db"],
   "@prisma/engines": ["@ai-starter/db"],
-  "better-auth": ["@ai-starter/web"],
+  // The auth factory owns the server SDK; apps/web keeps the React client and
+  // the Next.js handler adapter, so better-auth legitimately lives in both.
+  "better-auth": ["@ai-starter/auth", "@ai-starter/web"],
   prisma: ["@ai-starter/db"],
   resend: ["@ai-starter/email"],
 };

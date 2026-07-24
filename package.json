@@ -32,7 +32,7 @@
     "test": "turbo run test",
     "test:e2e": "pnpm --filter @ai-starter/web test:e2e",
     "test:e2e:mobile": "pnpm --filter @ai-starter/mobile test:e2e",
-    "test:integration": "pnpm --filter @ai-starter/db test:integration",
+    "test:integration": "pnpm --filter @ai-starter/db --filter @ai-starter/auth test:integration",
     "test:unit": "turbo run test",
     "typecheck": "turbo run typecheck",
     "verify": "node packages/tooling/src/bin/verify.ts",

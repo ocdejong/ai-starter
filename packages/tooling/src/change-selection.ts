@@ -28,6 +28,13 @@ const harnessPaths = [
 const schemaPaths = ["packages/db/prisma/"];
 
 /**
+ * Packages whose behaviour is only proven against a real database and so run
+ * under `test:integration` rather than the affected unit graph — the auth flows
+ * (register, verify, reset, change email, delete) live here.
+ */
+const integrationBehaviourPaths = ["packages/auth/"];
+
+/**
  * Instruction and documentation surfaces. Turborepo cannot see these at all,
  * yet an edit here is exactly what makes a pointer stale or a link dangle.
  */
@@ -120,6 +127,12 @@ export function selectChecks(
     );
     reasons.push(
       "The Prisma schema or a migration changed; validating it and running the real-PostgreSQL tests.",
+    );
+  } else if (touches(changedPaths, integrationBehaviourPaths)) {
+    // Guarded by the schema branch so `test:integration` is never selected twice.
+    steps.push(requireStep("test:integration"));
+    reasons.push(
+      "A database-backed flow package changed; running the real-PostgreSQL integration tests.",
     );
   }
 

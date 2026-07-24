@@ -10,6 +10,11 @@ export default mergeConfig(
     plugins: [react()],
     resolve: {
       alias: {
+        // Server modules under test carry the `server-only` marker; Next aliases
+        // it away in its build and this mirrors it for vitest.
+        "server-only": fileURLToPath(
+          new URL("./src/test/server-only-stub.ts", import.meta.url),
+        ),
         "~": fileURLToPath(new URL("./src", import.meta.url)),
       },
     },

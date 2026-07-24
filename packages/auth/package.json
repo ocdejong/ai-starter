@@ -1,0 +1,29 @@
+{
+  "name": "@ai-starter/auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-starter/db": "workspace:*",
+    "@better-auth/expo": "1.6.24",
+    "better-auth": "^1.6"
+  },
+  "devDependencies": {
+    "@ai-starter/config": "workspace:*",
+    "@testcontainers/postgresql": "^12.0.4",
+    "@types/node": "^20.14.10",
+    "eslint": "^9.23.0",
+    "typescript": "^5.8.2",
+    "vitest": "^4.1.10"
+  }
+}
