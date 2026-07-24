@@ -5,7 +5,7 @@ import { HomeCard } from "./home-card";
 
 describe("HomeCard", () => {
   it("renders API status for the user", async () => {
-    render(
+    await render(
       <TestProviders>
         <HomeCard message="Hello from the API" />
       </TestProviders>,

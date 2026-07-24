@@ -33,7 +33,7 @@ describe("ThemeProvider", () => {
   it("lets a manual override beat the system scheme", async () => {
     jest.spyOn(ReactNative, "useColorScheme").mockReturnValue("light");
 
-    render(
+    await render(
       <ThemeProvider>
         <Probe />
       </ThemeProvider>,
@@ -46,7 +46,7 @@ describe("ThemeProvider", () => {
       colors.light.background,
     );
 
-    fireEvent.press(screen.getByTestId("choose-dark"));
+    await fireEvent.press(screen.getByTestId("choose-dark"));
 
     await waitFor(() =>
       expect(screen.getByTestId("background")).toHaveTextContent(
@@ -63,7 +63,7 @@ describe("ThemeProvider", () => {
     await AsyncStorage.setItem("theme-preference", "dark");
     jest.spyOn(ReactNative, "useColorScheme").mockReturnValue("light");
 
-    render(
+    await render(
       <ThemeProvider>
         <Probe />
       </ThemeProvider>,
