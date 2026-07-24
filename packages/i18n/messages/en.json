@@ -14,13 +14,95 @@
     "english": "English",
     "dutch": "Nederlands"
   },
+  "auth": {
+    "fields": {
+      "name": "Name",
+      "email": "Email address",
+      "password": "Password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm new password"
+    },
+    "validation": {
+      "emailInvalid": "Enter a valid email address.",
+      "nameRequired": "Enter your name.",
+      "nameTooLong": "Use 100 characters or fewer.",
+      "passwordMismatch": "Both passwords must match.",
+      "passwordRequired": "Enter your password.",
+      "passwordTooLong": "Use {max} characters or fewer.",
+      "passwordTooShort": "Use at least {min} characters."
+    },
+    "errors": {
+      "invalidCredentials": "That email address and password do not match an account.",
+      "resetLinkRejected": "That reset link is no longer valid. Request a new one.",
+      "unexpected": "Something went wrong. Please try again."
+    },
+    "resend": {
+      "action": "Send a new link",
+      "sending": "Sending…",
+      "sent": "Sent. Check your inbox for the new link.",
+      "failed": "We could not send a new link. Please try again."
+    },
+    "signIn": {
+      "title": "Sign in",
+      "description": "Welcome back. Sign in to continue.",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "forgotPassword": "Forgot your password?",
+      "noAccount": "No account yet?",
+      "createAccount": "Create one"
+    },
+    "signUp": {
+      "title": "Create your account",
+      "description": "It takes a moment. You will confirm your email address next.",
+      "submit": "Create account",
+      "submitting": "Creating your account…",
+      "haveAccount": "Already have an account?",
+      "signInLink": "Sign in",
+      "sentTitle": "Confirm your email address",
+      "sent": "We sent a confirmation link to {email}. Open it to finish creating your account."
+    },
+    "unverified": {
+      "title": "Confirm your email address first",
+      "description": "Your account is not confirmed yet, so we sent a fresh link to {email}."
+    },
+    "forgotPassword": {
+      "title": "Reset your password",
+      "description": "Enter your email address and we will send you a link to choose a new password.",
+      "submit": "Send reset link",
+      "submitting": "Sending…",
+      "sentTitle": "Check your email",
+      "sent": "If an account exists for {email}, a reset link is on its way.",
+      "backToSignIn": "Back to sign in"
+    },
+    "resetPassword": {
+      "title": "Choose a new password",
+      "description": "Pick a password you have not used here before.",
+      "submit": "Save new password",
+      "submitting": "Saving…",
+      "doneTitle": "Password updated",
+      "done": "Signing in elsewhere has been ended. Use your new password from now on.",
+      "signInLink": "Sign in",
+      "invalidTitle": "This reset link is no longer valid",
+      "invalid": "Reset links expire an hour after they are sent. Request a new one.",
+      "requestNew": "Request a new link"
+    },
+    "verifyEmail": {
+      "failedTitle": "We could not confirm your email address",
+      "failed": "That confirmation link is invalid or has expired. Sign in again and we will send you a new one.",
+      "pendingTitle": "Confirm your email address",
+      "pending": "Open the link we emailed you to finish signing in.",
+      "backToSignIn": "Back to sign in"
+    }
+  },
   "home": {
     "title": "AI Starter",
+    "signIn": "Sign in",
+    "signUp": "Create an account",
     "greetingFallback": "Loading tRPC query…",
     "loggedInAs": "Logged in as {name}",
     "signInWith": "Sign in with {provider}",
     "signOut": "Sign out",
-    "oauthHint": "Add Google or GitHub OAuth credentials to enable sign-in."
+    "oauthHint": "Add Google or GitHub OAuth credentials to offer social sign-in as well."
   },
   "chat": {
     "title": "Ask the assistant",

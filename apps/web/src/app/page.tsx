@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { headers } from "next/headers";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { Chat } from "~/app/_components/chat";
@@ -86,6 +87,22 @@ export default async function Home() {
                 <p className="text-muted-foreground text-sm">
                   {t("oauthHint")}
                 </p>
+              )}
+              {!session && (
+                <div className="flex items-center gap-4 text-sm">
+                  <Link
+                    className="text-primary underline-offset-4 hover:underline"
+                    href="/sign-in"
+                  >
+                    {t("signIn")}
+                  </Link>
+                  <Link
+                    className="text-primary underline-offset-4 hover:underline"
+                    href="/sign-up"
+                  >
+                    {t("signUp")}
+                  </Link>
+                </div>
               )}
             </div>
           </div>

@@ -190,7 +190,11 @@ const cases = [
 ] as const;
 
 describe("architecture graph rules", () => {
-  it("accepts this repository", () => {
+  // This case spawns depcruise over every workspace file, and `pnpm verify` runs
+  // it beside the other packages' suites. The assertion is about violations, not
+  // speed, so it gets a timeout that survives a loaded machine rather than
+  // failing for a reason that says nothing about the graph.
+  it("accepts this repository", { timeout: 60_000 }, () => {
     const result = cruise(repositoryRoot, configPath, ["apps", "packages"]);
     const named = result.summary.violations.map(
       (violation) => `${violation.rule.name}: ${violation.from}`,
@@ -198,6 +202,7 @@ describe("architecture graph rules", () => {
     expect(named).toEqual([]);
   });
 
+  // Each planted case spawns depcruise too, so it gets the same leeway.
   it.each(cases)(
     "reports $rule and names the offending file",
     ({ rule, from, files }) => {
@@ -206,6 +211,7 @@ describe("architecture graph rules", () => {
 
       expect(forFile.map((violation) => violation.rule.name)).toContain(rule);
     },
+    60_000,
   );
 
   it("has a planted fixture for every configured rule", () => {

@@ -25,6 +25,8 @@ Integration tests use Testcontainers and do not touch the development database. 
 
 Playwright starts the Next.js development server locally. Under `CI=true`, it starts the existing production build. Install its browser once with `pnpm exec playwright install chromium`.
 
+It serves and drives `http://localhost:3000` unless `E2E_BASE_URL` names another origin, which also sets the port the server listens on. Set it together with `BETTER_AUTH_URL` in `.env`: the auth server builds emailed action links from that variable, and a session cookie set on one origin is invisible to another, so the journey that follows a confirmation link only works when the two agree. Overriding both is how a second checkout runs the browser level without reusing — and silently asserting against — the first one's server.
+
 ## Native evidence
 
 `pnpm verify` does not run Maestro, because a native journey needs an app build and a simulator that a GitHub-hosted runner does not have. The suite still carries three levels of native evidence:

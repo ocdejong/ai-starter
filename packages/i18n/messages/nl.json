@@ -14,13 +14,95 @@
     "english": "English",
     "dutch": "Nederlands"
   },
+  "auth": {
+    "fields": {
+      "name": "Naam",
+      "email": "E-mailadres",
+      "password": "Wachtwoord",
+      "newPassword": "Nieuw wachtwoord",
+      "confirmPassword": "Bevestig nieuw wachtwoord"
+    },
+    "validation": {
+      "emailInvalid": "Vul een geldig e-mailadres in.",
+      "nameRequired": "Vul je naam in.",
+      "nameTooLong": "Gebruik maximaal 100 tekens.",
+      "passwordMismatch": "Beide wachtwoorden moeten gelijk zijn.",
+      "passwordRequired": "Vul je wachtwoord in.",
+      "passwordTooLong": "Gebruik maximaal {max} tekens.",
+      "passwordTooShort": "Gebruik minimaal {min} tekens."
+    },
+    "errors": {
+      "invalidCredentials": "Dit e-mailadres en wachtwoord horen niet bij een account.",
+      "resetLinkRejected": "Deze herstellink is niet meer geldig. Vraag een nieuwe aan.",
+      "unexpected": "Er ging iets mis. Probeer het opnieuw."
+    },
+    "resend": {
+      "action": "Stuur een nieuwe link",
+      "sending": "Versturen…",
+      "sent": "Verstuurd. Kijk in je inbox voor de nieuwe link.",
+      "failed": "We konden geen nieuwe link versturen. Probeer het opnieuw."
+    },
+    "signIn": {
+      "title": "Inloggen",
+      "description": "Welkom terug. Log in om verder te gaan.",
+      "submit": "Inloggen",
+      "submitting": "Inloggen…",
+      "forgotPassword": "Wachtwoord vergeten?",
+      "noAccount": "Nog geen account?",
+      "createAccount": "Maak er een aan"
+    },
+    "signUp": {
+      "title": "Maak je account aan",
+      "description": "Het duurt maar even. Daarna bevestig je je e-mailadres.",
+      "submit": "Account aanmaken",
+      "submitting": "Je account wordt aangemaakt…",
+      "haveAccount": "Heb je al een account?",
+      "signInLink": "Inloggen",
+      "sentTitle": "Bevestig je e-mailadres",
+      "sent": "We hebben een bevestigingslink naar {email} gestuurd. Open die om je account af te ronden."
+    },
+    "unverified": {
+      "title": "Bevestig eerst je e-mailadres",
+      "description": "Je account is nog niet bevestigd, dus we hebben een nieuwe link naar {email} gestuurd."
+    },
+    "forgotPassword": {
+      "title": "Wachtwoord herstellen",
+      "description": "Vul je e-mailadres in, dan sturen we je een link om een nieuw wachtwoord te kiezen.",
+      "submit": "Stuur herstellink",
+      "submitting": "Versturen…",
+      "sentTitle": "Kijk in je e-mail",
+      "sent": "Als er een account bestaat voor {email}, is er een herstellink onderweg.",
+      "backToSignIn": "Terug naar inloggen"
+    },
+    "resetPassword": {
+      "title": "Kies een nieuw wachtwoord",
+      "description": "Kies een wachtwoord dat je hier nog niet eerder gebruikt hebt.",
+      "submit": "Nieuw wachtwoord opslaan",
+      "submitting": "Opslaan…",
+      "doneTitle": "Wachtwoord bijgewerkt",
+      "done": "Je bent overal elders uitgelogd. Gebruik vanaf nu je nieuwe wachtwoord.",
+      "signInLink": "Inloggen",
+      "invalidTitle": "Deze herstellink is niet meer geldig",
+      "invalid": "Herstellinks verlopen een uur nadat ze verstuurd zijn. Vraag een nieuwe aan.",
+      "requestNew": "Vraag een nieuwe link aan"
+    },
+    "verifyEmail": {
+      "failedTitle": "We konden je e-mailadres niet bevestigen",
+      "failed": "Die bevestigingslink is ongeldig of verlopen. Log opnieuw in, dan sturen we je een nieuwe.",
+      "pendingTitle": "Bevestig je e-mailadres",
+      "pending": "Open de link die we je gemaild hebben om het inloggen af te ronden.",
+      "backToSignIn": "Terug naar inloggen"
+    }
+  },
   "home": {
     "title": "AI Starter",
+    "signIn": "Inloggen",
+    "signUp": "Account aanmaken",
     "greetingFallback": "tRPC-query laden…",
     "loggedInAs": "Ingelogd als {name}",
     "signInWith": "Inloggen met {provider}",
     "signOut": "Uitloggen",
-    "oauthHint": "Voeg Google- of GitHub-OAuth-gegevens toe om inloggen mogelijk te maken."
+    "oauthHint": "Voeg Google- of GitHub-OAuth-gegevens toe om ook met social login in te loggen."
   },
   "chat": {
     "title": "Vraag het de assistent",

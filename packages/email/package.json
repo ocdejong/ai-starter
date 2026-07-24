@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./mailbox": "./src/mailbox.ts"
   },
   "scripts": {
     "email": "email dev --dir src/templates",

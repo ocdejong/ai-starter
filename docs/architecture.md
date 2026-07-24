@@ -8,10 +8,10 @@ apps/mobile ──> packages/api/client (types only)
 apps/web ─────> packages/api ──────> packages/domain
     │                 ↑                       ↑
     │                 └── injects consumer-owned ports
-    ├─────────────────────────────────────────┘  non-tRPC route handlers parse with domain schemas
+    ├─────────────────────────────────────────┘  route handlers and forms parse with domain schemas
     └─────────> packages/db ───────> PostgreSQL
 
-apps/web + apps/mobile ──> packages/tokens, packages/i18n
+apps/web + apps/mobile ──> packages/domain, packages/tokens, packages/i18n
 all workspaces ──────────> packages/config (tooling only)
 ```
 
