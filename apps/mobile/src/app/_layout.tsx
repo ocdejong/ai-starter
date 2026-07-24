@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 
 import { mobileEnv } from "../env";
+import { ThemeProvider, useTheme } from "../theme/theme-provider";
 import { TRPCProvider } from "../trpc/provider";
 
 Sentry.init({
@@ -14,12 +15,30 @@ Sentry.init({
   tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1,
 });
 
+/** Applies the resolved scheme to the navigator background and status bar. */
+function ThemedNavigation() {
+  const { scheme, theme } = useTheme();
+
+  return (
+    <>
+      <Stack
+        screenOptions={{
+          contentStyle: { backgroundColor: theme.background },
+          headerShown: false,
+        }}
+      />
+      <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+    </>
+  );
+}
+
 function RootLayout() {
   return (
-    <TRPCProvider>
-      <Stack screenOptions={{ headerShown: false }} />
-      <StatusBar style="auto" />
-    </TRPCProvider>
+    <ThemeProvider>
+      <TRPCProvider>
+        <ThemedNavigation />
+      </TRPCProvider>
+    </ThemeProvider>
   );
 }
 

@@ -1,13 +1,14 @@
-import { colors, spacing } from "@ai-starter/tokens";
-import { StyleSheet, useColorScheme } from "react-native";
+import { spacing } from "@ai-starter/tokens";
+import { StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { HomeCard } from "../components/home-card";
+import { ThemeToggle } from "../components/theme-toggle";
+import { useTheme } from "../theme/theme-provider";
 import { api } from "../trpc/provider";
 
 export default function HomeScreen() {
-  const colorScheme = useColorScheme();
-  const theme = colorScheme === "dark" ? colors.dark : colors.light;
+  const { theme } = useTheme();
   const hello = api.post.hello.useQuery({ text: "from Expo" });
 
   return (
@@ -22,6 +23,7 @@ export default function HomeScreen() {
             : "Connecting to the typed API…")
         }
       />
+      <ThemeToggle />
     </SafeAreaView>
   );
 }
@@ -29,6 +31,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    gap: spacing.lg,
     justifyContent: "center",
     padding: spacing.lg,
   },

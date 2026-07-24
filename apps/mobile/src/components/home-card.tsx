@@ -1,16 +1,19 @@
-import { colors, spacing } from "@ai-starter/tokens";
-import { StyleSheet, Text, useColorScheme, View } from "react-native";
+import { spacing } from "@ai-starter/tokens";
+import { StyleSheet, Text, View } from "react-native";
+
+import { useTheme } from "../theme/theme-provider";
 
 export function HomeCard({ message }: { message: string }) {
-  const colorScheme = useColorScheme();
-  const theme = colorScheme === "dark" ? colors.dark : colors.light;
+  const { theme } = useTheme();
 
   return (
-    <View style={[styles.card, { backgroundColor: theme.surface }]}>
-      <Text style={[styles.title, { color: theme.text }]}>
+    <View style={[styles.card, { backgroundColor: theme.card }]}>
+      <Text style={[styles.title, { color: theme.foreground }]}>
         AI Starter mobile
       </Text>
-      <Text style={[styles.body, { color: theme.textMuted }]}>{message}</Text>
+      <Text style={[styles.body, { color: theme["muted-foreground"] }]}>
+        {message}
+      </Text>
     </View>
   );
 }
