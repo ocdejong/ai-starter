@@ -4,8 +4,10 @@ import path from "node:path";
 
 import { runCapture, runInherit } from "./command.ts";
 import {
+  containerPublishingPort,
   containerState,
   createContainer,
+  postgresContainerName,
   probeContainerRuntime,
   publishedPort,
   startContainer,
@@ -157,10 +159,10 @@ async function ensureDatabase(
   databaseUrl: string,
 ): Promise<void> {
   const connection = parseDatabaseUrl(databaseUrl);
-  let container: PostgresContainer = {
+  const container: PostgresContainer = {
     database: connection.database,
     image: postgresImage,
-    name: `${connection.database}-postgres`,
+    name: postgresContainerName(connection.database, connection.port),
     password: connection.password,
     port: connection.port,
     user: connection.user,
@@ -184,6 +186,17 @@ async function ensureDatabase(
 
   if (state === "absent") {
     if (await isPortAccepting(connection.host, connection.port, 2000)) {
+      const occupant = containerPublishingPort(
+        probe.runtime,
+        connection.port,
+        root,
+      );
+      if (occupant !== undefined) {
+        throw new BootstrapError(
+          `Port ${connection.port} is published by container "${occupant}", not by the expected "${container.name}".`,
+          `"${occupant}" is likely a PostgreSQL from an earlier bootstrap or an orphaned worktree. Remove it with \`${probe.runtime} rm --force ${occupant}\` (this discards its data) or move the DATABASE_URL port in ${webEnvPath} to a free one, then run \`pnpm bootstrap\` again.`,
+        );
+      }
       throw new BootstrapError(
         `Port ${connection.port} is already in use by something other than "${container.name}".`,
         `Free the port, or change the DATABASE_URL port in ${webEnvPath}.`,
@@ -195,7 +208,14 @@ async function ensureDatabase(
     );
     log(`created container "${container.name}" on port ${container.port}`);
   } else {
-    container = followPublishedPort(probe.runtime, container, root);
+    const conflict = publishedPortConflict(
+      probe.runtime,
+      container,
+      publishedPort(probe.runtime, container.name, root),
+    );
+    if (conflict !== undefined) {
+      throw conflict;
+    }
     if (state === "running") {
       log(`container "${container.name}" is already running`);
     } else {
@@ -211,39 +231,24 @@ async function ensureDatabase(
 }
 
 /**
- * Every checkout of one product resolves to the same container name, but each
- * checkout's `.env` picks its own port when the file is first created. The
- * existing container is the truth, so its published port is read back and the
- * file follows it.
+ * The container's name embeds the port `apps/web/.env` configures, so a
+ * container found under that name must publish exactly that port. A different
+ * published port means the container was created or altered outside
+ * bootstrap; waiting on the configured port would time out after 90 seconds,
+ * so bootstrap stops immediately, naming both ports and the way out.
  */
-function followPublishedPort(
+export function publishedPortConflict(
   runtime: ContainerRuntime,
   container: PostgresContainer,
-  root: string,
-): PostgresContainer {
-  const published = publishedPort(runtime, container.name, root);
+  published: number | undefined,
+): BootstrapError | undefined {
   if (published === undefined || published === container.port) {
-    return container;
+    return undefined;
   }
 
-  log(
-    `container "${container.name}" publishes port ${published}, not ${container.port}; updating ${webEnvPath}`,
-  );
-  updateDatabasePort(root, published);
-  return { ...container, port: published };
-}
-
-/** Rewrites the DATABASE_URL port in `apps/web/.env`, leaving the rest alone. */
-export function updateDatabasePort(root: string, port: number): void {
-  const absolute = path.join(root, webEnvPath);
-  const content = readFileSync(absolute, "utf8");
-  writeFileSync(
-    absolute,
-    setEnvValue(
-      content,
-      "DATABASE_URL",
-      withPort(readDatabaseUrl(content, webEnvPath), port),
-    ),
+  return new BootstrapError(
+    `Container "${container.name}" publishes host port ${published}, not the ${container.port} that ${webEnvPath} configures.`,
+    `Remove the container with \`${runtime} rm --force ${container.name}\` (this discards its data), or set the DATABASE_URL port in ${webEnvPath} to ${published}, then run \`pnpm bootstrap\` again.`,
   );
 }
 

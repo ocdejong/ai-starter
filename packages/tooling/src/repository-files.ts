@@ -2,10 +2,12 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
 /**
- * Directories that are generated, installed, or hold build output. Rewriting
- * them is pointless and, for `node_modules`, destructive.
+ * Directories that are generated, installed, or hold build output — plus
+ * `.claude`, where coding agents keep local state and nested worktrees.
+ * Rewriting them is pointless and, for `node_modules`, destructive.
  */
 const skippedDirectories = new Set([
+  ".claude",
   ".git",
   ".expo",
   ".next",
