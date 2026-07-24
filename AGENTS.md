@@ -16,7 +16,7 @@ This file is the only place repository rules are written. The files each agent l
 - Keep web and native UI separate. Share schemas, business logic, API types, and tokens—not DOM or React Native components.
 - Prefer the smallest change that satisfies the requirement. Add dependencies and abstractions only when the product needs them.
 
-ESLint encodes many of these boundaries. Do not weaken a rule to make a change pass; fix the dependency direction. The ordered golden principles and anti-rationalization rules in `docs/engineering-principles.md` are binding even where automation cannot yet enforce them.
+ESLint encodes many of these boundaries per file; `pnpm arch` (dependency-cruiser) enforces the direction and acyclicity across the whole module graph, and `pnpm policy` enforces the structural rules the graph cannot see. Do not weaken a rule to make a change pass; fix the dependency direction. The ordered golden principles and anti-rationalization rules in `docs/engineering-principles.md` are binding even where automation cannot yet enforce them.
 
 ## Where code belongs
 
@@ -27,7 +27,7 @@ ESLint encodes many of these boundaries. Do not weaken a rule to make a change p
 - `packages/db`: Prisma schema, migrations, server-only client, and persistence adapters.
 - `packages/config`: shared compiler, lint, and test configuration.
 - `packages/tokens`: plain cross-platform design values.
-- `packages/tooling`: repository commands (`bootstrap`, `diagnose`, `instructions`, `verify`, `verify:changed`, `starter:init`). Node built-ins only: `diagnose` must inspect a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency. Editing it also requires `packages/tooling/AGENTS.md`.
+- `packages/tooling`: repository commands (`bootstrap`, `diagnose`, `instructions`, `policy`, `verify`, `verify:changed`, `starter:init`). Node built-ins only: `diagnose` must inspect a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency. Editing it also requires `packages/tooling/AGENTS.md`.
 
 ## Getting a checkout running
 

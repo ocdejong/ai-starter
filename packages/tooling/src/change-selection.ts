@@ -81,6 +81,8 @@ export function selectChecks(
 
   const steps: VerificationStep[] = [
     requireStep("format:check"),
+    requireStep("policy"),
+    requireStep("arch"),
     {
       args: [
         "exec",
@@ -96,6 +98,7 @@ export function selectChecks(
     },
   ];
   const reasons = [
+    "Checking repository structure and the architecture graph, which any change can affect.",
     `Linting, typechecking and unit-testing packages affected since ${base}.`,
   ];
 

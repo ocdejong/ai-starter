@@ -23,7 +23,7 @@ all workspaces ──────────> packages/config (tooling only)
 | `web`    | App Router, UI, Better Auth, transport/composition root | Direct database access from UI/transport folders |
 | `mobile` | Expo Router, native UI, typed API client                | Prisma, Next.js, server API implementation       |
 
-ESLint import restrictions enforce the most important boundaries. The database package also imports `server-only`, providing a runtime/build-time backstop.
+ESLint import restrictions enforce the most important boundaries per file. `pnpm arch` runs dependency-cruiser (`.dependency-cruiser.cjs`) over the whole graph to enforce this direction and forbid cycles and deep imports into a package's internals; `pnpm policy` enforces the structural rules the graph cannot see (workspace dependency allowlists, public export surfaces, strict compiler flags in every tsconfig, vendor SDK locations, silenced guardrails, generated-client cleanliness, and the verification scripts). Both run inside `pnpm verify`. The database package also imports `server-only`, providing a runtime/build-time backstop.
 
 ## Domain-driven structure and dependency inversion
 

@@ -2,20 +2,22 @@
 
 ## Commands
 
-| Command                 | Purpose                                            | Prerequisite                                     |
-| ----------------------- | -------------------------------------------------- | ------------------------------------------------ |
-| `pnpm verify`           | The complete authoritative suite, in CI's order    | A bootstrapped environment                       |
-| `pnpm verify:changed`   | Only the checks the current diff can affect        | A git checkout with a resolvable base revision   |
-| `pnpm test:unit`        | Domain, web component, and native component suites | Dependencies installed                           |
-| `pnpm test:integration` | Prisma migrations and integrity against PostgreSQL | Docker/Podman running                            |
-| `pnpm test:e2e`         | Playwright Chromium web journey                    | Local database running and migrated              |
-| `pnpm test:e2e:mobile`  | Maestro native smoke flow                          | Maestro plus an installed simulator/device build |
-| `pnpm check`            | Lint, typecheck, and unit/component tests          | Dependencies installed                           |
-| `pnpm instructions`     | Agent instruction surfaces and document references | A git checkout                                   |
+| Command                 | Purpose                                                         | Prerequisite                                     |
+| ----------------------- | --------------------------------------------------------------- | ------------------------------------------------ |
+| `pnpm verify`           | The complete authoritative suite, in CI's order                 | A bootstrapped environment                       |
+| `pnpm verify:changed`   | Only the checks the current diff can affect                     | A git checkout with a resolvable base revision   |
+| `pnpm test:unit`        | Domain, web component, and native component suites              | Dependencies installed                           |
+| `pnpm test:integration` | Prisma migrations and integrity against PostgreSQL              | Docker/Podman running                            |
+| `pnpm test:e2e`         | Playwright Chromium web journey                                 | Local database running and migrated              |
+| `pnpm test:e2e:mobile`  | Maestro native smoke flow                                       | Maestro plus an installed simulator/device build |
+| `pnpm check`            | Lint, typecheck, and unit/component tests                       | Dependencies installed                           |
+| `pnpm instructions`     | Agent instruction surfaces and document references              | A git checkout                                   |
+| `pnpm arch`             | Dependency direction, cycles, and deep imports across the graph | Dependencies installed                           |
+| `pnpm policy`           | Structural rules the module graph cannot see                    | Dependencies installed                           |
 
 `packages/tooling/src/verification.ts` holds the one ordered definition of the authoritative suite. `pnpm verify`, `pnpm verify:changed` and the CI workflow all read it, so the required checks cannot drift apart. Adding a check means adding it there.
 
-`pnpm verify:changed` selects work from Turborepo's affected graph, plus the rules the graph cannot infer from imports: a change under `packages/db/prisma/` adds schema validation and the real-PostgreSQL tests, a change under `apps/web/`, `packages/api/` or `packages/domain/` adds the browser journey, a change to an instruction surface or a documentation file rechecks the instruction policy, and a change to the harness itself (`turbo.json`, the root manifest, the lockfile, `packages/config`, `packages/tooling`, or a workflow) falls back to the full suite. `verify:changed` is a fast local filter, never the handoff gate.
+`pnpm verify:changed` always runs `pnpm arch` and `pnpm policy` alongside formatting, because any change can shift the dependency graph or the repository structure. On top of that it selects work from Turborepo's affected graph, plus the rules the graph cannot infer from imports: a change under `packages/db/prisma/` adds schema validation and the real-PostgreSQL tests, a change under `apps/web/`, `packages/api/` or `packages/domain/` adds the browser journey, a change to an instruction surface or a documentation file rechecks the instruction policy, and a change to the harness itself (`turbo.json`, the root manifest, the lockfile, `packages/config`, `packages/tooling`, or a workflow) falls back to the full suite. `verify:changed` is a fast local filter, never the handoff gate.
 
 Run `pnpm bootstrap` before the integration and browser levels; run `pnpm diagnose` when one of them fails for an environmental reason.
 

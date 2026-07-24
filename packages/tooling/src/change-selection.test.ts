@@ -12,19 +12,23 @@ describe("selectChecks", () => {
     expect(selectChecks([], base).steps).toEqual([]);
   });
 
-  it("always checks formatting and the affected package graph", () => {
+  it("always checks formatting, structure, the graph and the affected package graph", () => {
     expect(names(["packages/domain/src/post.ts"])).toEqual([
       "format:check",
+      "policy",
+      "arch",
       "affected lint, typecheck and unit tests",
       "test:e2e",
     ]);
   });
 
   it("passes the resolved base to the Turborepo filter", () => {
-    const [, affected] = selectChecks(
+    const affected = selectChecks(
       ["apps/mobile/src/app/index.tsx"],
       base,
-    ).steps;
+    ).steps.find(
+      (step) => step.name === "affected lint, typecheck and unit tests",
+    );
 
     expect(affected?.args).toContain(`--filter=...[${base}]`);
   });

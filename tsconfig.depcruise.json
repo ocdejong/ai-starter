@@ -1,0 +1,18 @@
+{
+  "extends": "./packages/config/typescript/base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "~/*": ["apps/web/src/*"],
+      "@/*": ["apps/mobile/src/*"],
+      "@/assets/*": ["apps/mobile/assets/*"]
+    }
+  },
+  "include": [
+    "apps/**/*.ts",
+    "apps/**/*.tsx",
+    "packages/**/*.ts",
+    "packages/**/*.tsx"
+  ],
+  "exclude": ["node_modules", "**/generated/**", "**/.next/**", "**/dist/**"]
+}

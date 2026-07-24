@@ -22,6 +22,7 @@ describe("command entry points", () => {
       "db-push-prototype.ts",
       "diagnose.ts",
       "instructions.ts",
+      "policy.ts",
       "starter-init.ts",
       "verify-changed.ts",
       "verify.ts",
