@@ -20,6 +20,7 @@ describe("command entry points", () => {
     expect(commands.sort()).toEqual([
       "bootstrap.ts",
       "db-push-prototype.ts",
+      "db-seed.ts",
       "diagnose.ts",
       "instructions.ts",
       "policy.ts",

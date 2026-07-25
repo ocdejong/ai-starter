@@ -87,10 +87,17 @@ export function selectChecks(
     };
   }
 
+  // The affected packages typecheck against the generated Prisma client, so a
+  // schema change must regenerate it before that step, not after.
+  const schemaChanged = touches(changedPaths, schemaPaths);
+
   const steps: VerificationStep[] = [
     requireStep("format:check"),
     requireStep("policy"),
     requireStep("arch"),
+    ...(schemaChanged
+      ? [requireStep("db:validate"), requireStep("db:generate")]
+      : []),
     {
       args: [
         "exec",
@@ -120,14 +127,10 @@ export function selectChecks(
     );
   }
 
-  if (touches(changedPaths, schemaPaths)) {
-    steps.push(
-      requireStep("db:validate"),
-      requireStep("db:generate"),
-      requireStep("test:integration"),
-    );
+  if (schemaChanged) {
+    steps.push(requireStep("test:integration"));
     reasons.push(
-      "The Prisma schema or a migration changed; validating it and running the real-PostgreSQL tests.",
+      "The Prisma schema or a migration changed; validating it, regenerating the client, and running the real-PostgreSQL tests.",
     );
   } else if (touches(changedPaths, integrationBehaviourPaths)) {
     // Guarded by the schema branch so `test:integration` is never selected twice.

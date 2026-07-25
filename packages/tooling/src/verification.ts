@@ -13,6 +13,10 @@ function script(name: string): VerificationStep {
 /**
  * The authoritative verification suite, in the order CI runs it: cheap
  * deterministic feedback first, then integration, build and browser evidence.
+ * The generated Prisma client is an input to every step that compiles
+ * TypeScript, so `db:generate` runs before `lint` and `typecheck` — a checkout
+ * whose client predates a pulled schema change would otherwise fail typecheck
+ * with property errors that never name `pnpm db:generate` as the fix.
  * `pnpm verify`, the CI workflow and `docs/testing.md` all read this one list.
  */
 export const verificationSteps: readonly VerificationStep[] = [
@@ -20,10 +24,10 @@ export const verificationSteps: readonly VerificationStep[] = [
   script("instructions"),
   script("policy"),
   script("arch"),
-  script("lint"),
-  script("typecheck"),
   script("db:validate"),
   script("db:generate"),
+  script("lint"),
+  script("typecheck"),
   script("test:unit"),
   script("test:integration"),
   script("build"),
