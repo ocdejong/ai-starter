@@ -70,6 +70,12 @@ export async function runBootstrap(root: string): Promise<void> {
     "pnpm db:migrate",
   );
 
+  log("seeding the demo sign-in");
+  requireSuccess(
+    runInherit("pnpm", ["db:seed"], { cwd: root }),
+    "pnpm db:seed",
+  );
+
   log("ready — run `pnpm verify` for the authoritative check suite");
 }
 
