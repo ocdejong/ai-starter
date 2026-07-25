@@ -208,12 +208,58 @@ describe("group membership flows", () => {
     });
 
     const guestHeaders = await signedInUser("slow@example.com");
+    // An expired invitation is reported as a missing one, so a stale link never
+    // confirms that the group — or the invitation — exists.
     await expect(
       auth.api.acceptInvitation({
         body: { invitationId: invitation.id },
         headers: guestHeaders,
       }),
-    ).rejects.toThrow();
+    ).rejects.toMatchObject({
+      body: { code: "INVITATION_NOT_FOUND" },
+      status: "BAD_REQUEST",
+    });
+    expect(
+      await client.member.count({ where: { organizationId: group?.id ?? "" } }),
+    ).toBe(1);
+  });
+
+  it("refuses an invitation the recipient has not proved the address for", async () => {
+    const ownerHeaders = await signedInUser("proof@example.com");
+    const group = await auth.api.createOrganization({
+      body: { name: "Proof Club", slug: "proof-club" },
+      headers: ownerHeaders,
+    });
+    const invitation = await auth.api.createInvitation({
+      body: {
+        email: "unproven@example.com",
+        organizationId: group?.id ?? "",
+        role: "member",
+      },
+      headers: ownerHeaders,
+    });
+
+    // Sign-in already requires a verified address, so the only way to hold a
+    // session with an unverified one is for verification to be revoked after
+    // the fact. That is the case `requireEmailVerificationOnInvitation` exists
+    // for: the invitation id alone must never be enough to join.
+    const guestHeaders = await signedInUser("unproven@example.com");
+    await client.user.update({
+      data: { emailVerified: false },
+      where: { email: "unproven@example.com" },
+    });
+
+    await expect(
+      auth.api.acceptInvitation({
+        body: { invitationId: invitation.id },
+        headers: guestHeaders,
+      }),
+    ).rejects.toMatchObject({
+      body: {
+        code: "EMAIL_VERIFICATION_REQUIRED_BEFORE_ACCEPTING_OR_REJECTING_INVITATION",
+      },
+      status: "FORBIDDEN",
+    });
     expect(
       await client.member.count({ where: { organizationId: group?.id ?? "" } }),
     ).toBe(1);
@@ -324,7 +370,10 @@ describe("group membership flows", () => {
         body: { organizationId: groupId },
         headers: memberHeaders,
       }),
-    ).rejects.toThrow();
+    ).rejects.toMatchObject({
+      body: { code: "YOU_ARE_NOT_ALLOWED_TO_DELETE_THIS_ORGANIZATION" },
+      status: "FORBIDDEN",
+    });
     expect(await client.organization.count({ where: { id: groupId } })).toBe(1);
 
     await auth.api.deleteOrganization({
