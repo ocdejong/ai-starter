@@ -1,3 +1,4 @@
+import { chatRequestSchema } from "@ai-starter/domain";
 import { expect, test } from "@playwright/test";
 
 import { registerVerifiedAccount } from "./support/account";
@@ -57,6 +58,14 @@ test("signs in, chats on the dashboard and opens settings", async ({
 
   await test.step("send a message and read the answer", async () => {
     await page.route("**/api/chat", async (route) => {
+      // The stub answers instead of the handler, so this is the only place the
+      // body the transport really builds meets the envelope the server really
+      // parses. Without this assertion nothing proves the two agree, and the
+      // first request against a configured deployment would be the test.
+      expect(
+        chatRequestSchema.safeParse(route.request().postDataJSON()),
+      ).toMatchObject({ success: true });
+
       await route.fulfill({
         body: uiMessageStream(stubbedAnswer),
         headers: {
