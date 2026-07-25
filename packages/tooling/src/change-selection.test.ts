@@ -72,6 +72,19 @@ describe("selectChecks", () => {
     );
   });
 
+  it("regenerates the Prisma client before the affected typecheck when the schema changes", () => {
+    const selected = names(["packages/db/prisma/schema.prisma"]);
+    const affected = selected.indexOf(
+      "affected lint, typecheck and unit tests",
+    );
+
+    expect(selected.indexOf("db:generate")).toBeGreaterThan(-1);
+    expect(selected.indexOf("db:generate")).toBeLessThan(affected);
+    expect(selected.indexOf("db:validate")).toBeLessThan(
+      selected.indexOf("db:generate"),
+    );
+  });
+
   it("selects the integration suite only once when schema and auth both change", () => {
     const selected = names([
       "packages/db/prisma/schema.prisma",
