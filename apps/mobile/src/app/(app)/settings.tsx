@@ -27,7 +27,17 @@ export default function SettingsScreen() {
         <Text style={[styles.title, { color: theme.foreground }]}>
           {t("title")}
         </Text>
-        <AccountSection name={session?.user.name ?? null} />
+        <AccountSection
+          identity={
+            session === null || session === undefined
+              ? null
+              : {
+                  email: session.user.email,
+                  name: session.user.name,
+                  sessionToken: session.session.token,
+                }
+          }
+        />
         <GroupSection />
         <LocaleSwitcher />
         <ThemeToggle />

@@ -163,6 +163,18 @@ export function initAuth(options: InitAuthOptions) {
       ...(options.plugins ?? []),
     ],
     ...(options.secret === undefined ? {} : { secret: options.secret }),
+    session: {
+      // Better Auth's session-freshness window (24 hours by default) gates
+      // exactly two endpoints: `/list-sessions` and `/unlink-account`. Left on,
+      // the settings screen's device list refuses anyone who signed in
+      // yesterday — while `/revoke-session`, the destructive half of the same
+      // screen, is not gated at all, so the window protects the read and not the
+      // write. Nothing else here leans on it: changing a password re-proves the
+      // current one, and deleting an account is gated by an emailed link, which
+      // is a stronger proof of ownership than a recent sign-in. A product that
+      // later exposes account unlinking should decide this again.
+      freshAge: 0,
+    },
     ...(options.socialProviders === undefined
       ? {}
       : { socialProviders: options.socialProviders }),

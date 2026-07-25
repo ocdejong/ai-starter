@@ -24,6 +24,7 @@
     },
     "validation": {
       "emailInvalid": "Enter a valid email address.",
+      "emailUnchanged": "That is already your email address.",
       "nameRequired": "Enter your name.",
       "nameTooLong": "Use 100 characters or fewer.",
       "passwordMismatch": "Both passwords must match.",
@@ -119,6 +120,79 @@
       "group": "Group",
       "accountEmpty": "Your account settings will appear here.",
       "groupEmpty": "Your group settings will appear here.",
+      "errors": {
+        "incorrectPassword": "That is not your current password.",
+        "network": "The server could not be reached. Check your connection and try again.",
+        "unexpected": "Something went wrong. Please try again."
+      },
+      "profile": {
+        "title": "Profile",
+        "description": "The name shown to you and to the people you share a group with.",
+        "submit": "Save name",
+        "submitting": "Saving…",
+        "saved": "Your name has been updated."
+      },
+      "email": {
+        "title": "Email address",
+        "description": "Changing your address takes two links: one from your current inbox to approve the change, then one from the new inbox to complete it.",
+        "current": "Current address",
+        "newEmail": "New email address",
+        "submit": "Send confirmation link",
+        "submitting": "Sending…",
+        "sent": "Check {email} — the address you are signed in with — and open the link there. We will then email {newEmail}; opening that second link is what changes your address.",
+        "linkAccepted": "Link accepted. Your account address is the one shown below — if it has not changed yet, open the final link we sent to your new inbox.",
+        "linkRejected": "That link is no longer valid. Start the change again."
+      },
+      "password": {
+        "title": "Password",
+        "description": "Choose a new password. You need your current one to make the change.",
+        "current": "Current password",
+        "revokeOthers": "Sign out my other devices",
+        "revokeOthersHint": "Ends every other session. This device stays signed in.",
+        "submit": "Change password",
+        "submitting": "Changing…",
+        "changed": "Your password has been changed."
+      },
+      "sessions": {
+        "title": "Active sessions",
+        "description": "Where your account is signed in. Revoke anything you do not recognise, then change your password.",
+        "current": "This device",
+        "lastActive": "Last active {when}",
+        "revoke": "Sign out",
+        "revoking": "Signing out…",
+        "revokeOthers": "Sign out all other devices",
+        "revokingOthers": "Signing out…",
+        "onlyThisDevice": "This is the only device signed in to your account.",
+        "unknownDevice": "Unrecognised device",
+        "device": "{browser} on {platform}",
+        "browser": {
+          "chrome": "Chrome",
+          "edge": "Edge",
+          "firefox": "Firefox",
+          "safari": "Safari",
+          "unknown": "Unknown browser"
+        },
+        "platform": {
+          "android": "Android",
+          "ios": "iOS",
+          "linux": "Linux",
+          "macos": "macOS",
+          "windows": "Windows",
+          "unknown": "an unknown platform"
+        }
+      },
+      "danger": {
+        "title": "Delete account",
+        "description": "Deleting your account removes it permanently, along with any group in which you are the only member. This cannot be undone.",
+        "delete": "Delete account",
+        "cancel": "Keep my account",
+        "confirmInstruction": "Type {email} below to confirm.",
+        "confirmLabel": "Your email address",
+        "confirm": "Permanently delete account",
+        "confirming": "Sending…",
+        "sent": "Check {email} and open the link to finish deleting your account. Nothing has been deleted yet.",
+        "webOnly": "Open the link on a device where you are signed in to the web application — the emailed link needs that session to finish."
+      },
       "groups": {
         "switcherLabel": "Active group",
         "loading": "Loading your groups…",

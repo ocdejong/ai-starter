@@ -13,3 +13,16 @@ export const dashboardPath = "/dashboard";
 export const settingsPath = "/settings";
 export const accountSettingsPath = "/settings/account";
 export const groupSettingsPath = "/settings/group";
+
+/**
+ * Where both halves of an email change come back to.
+ *
+ * Better Auth carries one `callbackURL` through the whole journey: the link sent
+ * to the address on the account redirects here after approving the change, and
+ * the link sent to the new address redirects here again after making it. The
+ * marker is what lets the account page say the link was accepted — it cannot say
+ * which of the two it was, so the address the page shows is the answer.
+ */
+export const emailChangeParam = "emailChange";
+export const emailChangeConfirmed = "confirmed";
+export const emailChangeCallbackPath = `${accountSettingsPath}?${emailChangeParam}=${emailChangeConfirmed}`;

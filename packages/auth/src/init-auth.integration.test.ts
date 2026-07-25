@@ -197,3 +197,86 @@ describe("account flows", () => {
     expect(await client.user.count()).toBe(0);
   });
 });
+
+describe("session management", () => {
+  it("lists a session that is older than Better Auth's default freshness window", async () => {
+    // Better Auth gates `/list-sessions` behind `freshSessionMiddleware`, whose
+    // default window is 24 hours — so without a deliberate setting the settings
+    // screen's device list would answer FORBIDDEN for anyone who signed in
+    // yesterday, which is most people. Backdating the row is what proves the
+    // configuration rather than the passage of time.
+    await registerAndVerify("stale@example.com");
+    const cookie = await signIn("stale@example.com");
+    const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    await client.session.updateMany({ data: { createdAt: twoDaysAgo } });
+
+    const sessions = await auth.api.listSessions({
+      headers: new Headers({ cookie }),
+    });
+
+    expect(sessions.length).toBeGreaterThan(0);
+  });
+
+  it("revokes one named session and leaves the caller's own signed in", async () => {
+    await registerAndVerify("devices@example.com");
+    const first = await signIn("devices@example.com");
+    const second = await signIn("devices@example.com");
+
+    const listed = await auth.api.listSessions({
+      headers: new Headers({ cookie: second }),
+    });
+    // Verifying the address signs the account in as well, so more than two
+    // sessions exist: the one to revoke has to be named, not merely "the other".
+    const target = listed.find((session) => first.includes(session.token));
+    expect(target).toBeDefined();
+
+    await auth.api.revokeSession({
+      body: { token: target?.token ?? "" },
+      headers: new Headers({ cookie: second }),
+    });
+
+    expect(
+      await auth.api.getSession({ headers: new Headers({ cookie: first }) }),
+    ).toBeNull();
+    expect(
+      await auth.api.getSession({ headers: new Headers({ cookie: second }) }),
+    ).not.toBeNull();
+  });
+
+  it("changes the password, re-issues the caller's session, and drops the others", async () => {
+    await registerAndVerify("rotate@example.com");
+    const stale = await signIn("rotate@example.com");
+    const current = await signIn("rotate@example.com");
+
+    // Asking to revoke the other devices deletes *every* session, the caller's
+    // included, and issues a replacement in the response. A browser or the Expo
+    // client follows that `Set-Cookie` and stays signed in without noticing;
+    // anything driving the API by hand has to adopt the new cookie.
+    const response = await auth.api.changePassword({
+      asResponse: true,
+      body: {
+        currentPassword: password,
+        newPassword,
+        revokeOtherSessions: true,
+      },
+      headers: new Headers({ cookie: current }),
+    });
+    const reissued = sessionCookie(response);
+
+    expect(reissued).not.toBe("");
+    expect(reissued).not.toBe(current);
+    expect(
+      await auth.api.getSession({ headers: new Headers({ cookie: stale }) }),
+    ).toBeNull();
+    expect(
+      await auth.api.getSession({ headers: new Headers({ cookie: reissued }) }),
+    ).not.toBeNull();
+    // The new secret is what works from here; the old one is spent.
+    const refused = await auth.api.signInEmail({
+      asResponse: true,
+      body: { email: "rotate@example.com", password },
+    });
+    expect(refused.status).toBe(401);
+    expect(await signIn("rotate@example.com", newPassword)).not.toBe("");
+  });
+});

@@ -51,7 +51,7 @@ pnpm bootstrap
 pnpm dev
 ```
 
-`bootstrap` creates the environment files, installs dependencies, starts a local PostgreSQL container, generates the Prisma client and applies every migration. It is idempotent, so run it again whenever a checkout drifts. When the configured database port is already taken, the generated `apps/web/.env` moves to the next free port, and the container is named after the database and that port (`ai-starter-postgres-5433`), so parallel checkouts — sibling git worktrees included — each keep their own database.
+`bootstrap` creates the environment files, installs dependencies, starts a local PostgreSQL container, generates the Prisma client, applies every migration, and seeds a demo account so the app can be signed into immediately: `demo@example.com` with password `demo-password`. It is idempotent, so run it again whenever a checkout drifts. `pnpm db:seed` re-runs the seed alone; because the demo credentials are public documentation, it refuses any database that is not local. When the configured database port is already taken, the generated `apps/web/.env` moves to the next free port, and the container is named after the database and that port (`ai-starter-postgres-5433`), so parallel checkouts — sibling git worktrees included — each keep their own database.
 
 Run `pnpm diagnose` when something does not work: it reports Node, pnpm, the container runtime, the environment files, PostgreSQL and the generated Prisma client, and names the command that fixes each problem. The command is `diagnose` rather than `doctor` because pnpm reserves `doctor` for a built-in that would silently shadow it.
 
