@@ -6,6 +6,7 @@ import { initAuth, type AuthEmailDispatchers } from "./init-auth";
 const noopDispatchers: AuthEmailDispatchers = {
   sendChangeEmailVerification: () => undefined,
   sendDeleteAccountVerification: () => undefined,
+  sendGroupInvitation: () => undefined,
   sendPasswordReset: () => undefined,
   sendVerification: () => undefined,
 };
@@ -31,12 +32,27 @@ describe("initAuth", () => {
     expect(ids.at(-1)).toBe("next-cookies");
   });
 
-  it("registers the expo plugin even when no plugins are appended", () => {
+  it("registers the group and expo plugins even when none are appended", () => {
     const auth = build([]);
 
     const ids = (auth.options.plugins ?? []).map((plugin) => plugin.id);
 
-    expect(ids).toEqual(["expo"]);
+    expect(ids).toEqual(["organization", "expo"]);
+  });
+
+  it("makes the group creator an owner and expires invitations", () => {
+    const auth = build([]);
+
+    const groups = (auth.options.plugins ?? []).find(
+      (plugin) => plugin.id === "organization",
+    );
+
+    expect(groups?.options).toMatchObject({
+      cancelPendingInvitationsOnReInvite: true,
+      creatorRole: "owner",
+      invitationExpiresIn: 48 * 60 * 60,
+      requireEmailVerificationOnInvitation: true,
+    });
   });
 
   it("requires email verification and revokes sessions on password reset", () => {

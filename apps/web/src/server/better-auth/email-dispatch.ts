@@ -3,13 +3,21 @@ import type { AuthEmailDispatch, AuthEmailDispatchers } from "@ai-starter/auth";
 import {
   renderChangeEmailEmail,
   renderDeleteAccountEmail,
+  renderGroupInvitationEmail,
   renderPasswordResetEmail,
   renderVerificationEmail,
   type RenderedEmail,
 } from "@ai-starter/email";
 
 /**
- * Builds the four account-flow dispatchers the auth factory calls, wiring each
+ * Where an emailed group invitation lands. Better Auth never builds this URL,
+ * so the route lives here, in the application that serves it, and the page at
+ * `${groupInvitationPath}/[invitationId]` must honour it.
+ */
+export const groupInvitationPath = "/invitations";
+
+/**
+ * Builds the dispatchers the auth factory calls, wiring each
  * to a template and a subject and sending through the injected `EmailSender`
  * port. The port is a parameter so this wiring is testable against a fake sender
  * without standing up the composition root's real adapter or environment.
@@ -22,6 +30,7 @@ import {
  */
 export function createAuthEmailDispatchers(
   sender: EmailSender,
+  options: { readonly appUrl: string },
 ): AuthEmailDispatchers {
   const dispatch =
     (
@@ -39,6 +48,11 @@ export function createAuthEmailDispatchers(
       })();
     };
 
+  const sendInvitation = dispatch(
+    renderGroupInvitationEmail,
+    "You have been invited to a group",
+  );
+
   return {
     sendChangeEmailVerification: dispatch(
       renderChangeEmailEmail,
@@ -48,6 +62,15 @@ export function createAuthEmailDispatchers(
       renderDeleteAccountEmail,
       "Confirm your account deletion",
     ),
+    sendGroupInvitation: ({ invitationId, to }) => {
+      sendInvitation({
+        to,
+        url: new URL(
+          `${groupInvitationPath}/${invitationId}`,
+          options.appUrl,
+        ).toString(),
+      });
+    },
     sendPasswordReset: dispatch(
       renderPasswordResetEmail,
       "Reset your password",

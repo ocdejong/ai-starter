@@ -45,7 +45,9 @@ const socialProviders = {
 export const auth = initAuth({
   baseURL: env.BETTER_AUTH_URL,
   database: db,
-  email: createAuthEmailDispatchers(emailSender),
+  email: createAuthEmailDispatchers(emailSender, {
+    appUrl: env.BETTER_AUTH_URL,
+  }),
   // nextCookies() must stay the last plugin; initAuth appends these after expo().
   plugins: [nextCookies()],
   secret: env.BETTER_AUTH_SECRET,

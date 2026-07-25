@@ -65,6 +65,11 @@ describe("selectChecks", () => {
     expect(names(["packages/auth/src/init-auth.ts"])).toContain(
       "test:integration",
     );
+    // A persistence adapter's queries are proven only against real PostgreSQL,
+    // and its source sits outside the schema directory.
+    expect(names(["packages/db/src/group-repository.ts"])).toContain(
+      "test:integration",
+    );
   });
 
   it("selects the integration suite only once when schema and auth both change", () => {

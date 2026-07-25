@@ -38,21 +38,24 @@ model User {
   sessions      Session[]
   accounts      Account[]
   posts         Post[]
+  members       Member[]
+  invitations   Invitation[]
 
   @@unique([email])
   @@map("user")
 }
 
 model Session {
-  id        String   @id
-  expiresAt DateTime
-  token     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  ipAddress String? //@db.Text
-  userAgent String? //@db.Text
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                   String   @id
+  expiresAt            DateTime
+  token                String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  ipAddress            String? //@db.Text
+  userAgent            String? //@db.Text
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeOrganizationId String?
 
   @@unique([token])
   @@index([userId])
@@ -89,4 +92,56 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+// Better Auth's organization plugin backs the product's "groups". The model and
+// table names stay the plugin's own — the adapter resolves them by name — so the
+// product word lives in the UI and the API, not in the schema.
+model Organization {
+  id          String       @id
+  name        String
+  slug        String
+  logo        String? //@db.Text
+  createdAt   DateTime
+  metadata    String? //@db.Text
+  members     Member[]
+  invitations Invitation[]
+
+  @@unique([slug])
+  @@map("organization")
+}
+
+model Member {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String       @default("member")
+  createdAt      DateTime
+
+  // One membership per user per group: the plugin enforces this in application
+  // code, and the database enforces it too, so a race cannot produce a second
+  // row that would make a member's role ambiguous.
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+  @@index([userId])
+  @@map("member")
+}
+
+model Invitation {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           String?
+  status         String       @default("pending")
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  inviterId      String
+  user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([email])
+  @@map("invitation")
 }

@@ -26,16 +26,29 @@ export type CapturedEmail = {
   readonly url: string;
 };
 
+/**
+ * A captured group invitation. Better Auth does not build the accept URL — the
+ * composition root does, from the app's own routing — so the factory hands over
+ * the invitation id and this records exactly that.
+ */
+export type CapturedInvitation = {
+  readonly to: string;
+  readonly invitationId: string;
+};
+
 /** A fake `EmailSender`-side dispatch record: the flows never send real mail. */
 export type EmailInbox = {
   readonly messages: CapturedEmail[];
+  readonly invitations: CapturedInvitation[];
   readonly dispatchers: AuthEmailDispatchers;
   latest: (flow: CapturedEmail["flow"]) => CapturedEmail | undefined;
+  latestInvitation: () => CapturedInvitation | undefined;
   clear: () => void;
 };
 
 export function createEmailInbox(): EmailInbox {
   const messages: CapturedEmail[] = [];
+  const invitations: CapturedInvitation[] = [];
   const record =
     (flow: CapturedEmail["flow"]) => (message: { to: string; url: string }) => {
       messages.push({ flow, to: message.to, url: message.url });
@@ -44,15 +57,21 @@ export function createEmailInbox(): EmailInbox {
   return {
     clear: () => {
       messages.length = 0;
+      invitations.length = 0;
     },
     dispatchers: {
       sendChangeEmailVerification: record("change"),
       sendDeleteAccountVerification: record("delete"),
+      sendGroupInvitation: ({ invitationId, to }) => {
+        invitations.push({ invitationId, to });
+      },
       sendPasswordReset: record("reset"),
       sendVerification: record("verify"),
     },
+    invitations,
     latest: (flow) =>
       messages.filter((message) => message.flow === flow).at(-1),
+    latestInvitation: () => invitations.at(-1),
     messages,
   };
 }
