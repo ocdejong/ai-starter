@@ -77,9 +77,37 @@ test("an owner invites, promotes and removes a member", async ({ browser }) => {
   await owner.getByLabel("Role of Alan Turing").selectOption("admin");
   await expect(owner.getByLabel("Role of Alan Turing")).toHaveValue("admin");
 
+  // Switching is the one thing only a browser can prove: the choice is written
+  // into the session, and the page has to come back showing the other group
+  // rather than a stale name and someone else's members.
+  await owner
+    .getByLabel("Active group")
+    .selectOption({ label: "Ada Lovelace" });
+  await expect(owner.getByLabel("Group name")).toHaveValue("Ada Lovelace", {
+    timeout: 30_000,
+  });
+  await expect(owner.getByRole("row", { name: /Alan Turing/ })).toHaveCount(0);
+
+  await owner.getByLabel("Active group").selectOption({ label: "Book Club" });
+  await expect(owner.getByLabel("Group name")).toHaveValue("Book Club", {
+    timeout: 30_000,
+  });
+  await expect(owner.getByRole("row", { name: /Alan Turing/ })).toBeVisible();
+
   await owner.getByRole("button", { name: "Remove" }).click();
   await owner.getByRole("button", { name: "Yes, remove" }).click();
   await expect(owner.getByRole("row", { name: /Alan Turing/ })).toHaveCount(0);
+
+  // Deleting the active group leaves the session without one, so the page has
+  // to re-point it at what the account still belongs to.
+  await owner.getByRole("button", { name: "Delete group" }).click();
+  await owner.getByRole("button", { name: "Yes, continue" }).click();
+  await expect(owner.getByLabel("Group name")).toHaveValue("Ada Lovelace", {
+    timeout: 30_000,
+  });
+  await expect(
+    owner.locator("#group-switcher option", { hasText: "Book Club" }),
+  ).toHaveCount(0);
 
   await ownerContext.close();
   await memberContext.close();
@@ -169,6 +197,21 @@ test("a plain member is refused the group's owner actions", async ({
   await expect(
     owner.getByText("Nobody is waiting for an answer."),
   ).toBeVisible();
+
+  // What a member may do is leave. That clears the session's active group, so
+  // the page has to put them back in the one group they still have.
+  await member.getByRole("button", { name: "Leave group" }).click();
+  await member.getByRole("button", { name: "Yes, continue" }).click();
+  await expect(
+    member.getByText("Only an owner or an admin can rename this group."),
+  ).toHaveCount(0, { timeout: 30_000 });
+  await expect(member.getByLabel("Group name")).toHaveValue(
+    "Katherine Johnson",
+  );
+  await owner.reload();
+  await expect(
+    owner.getByRole("row", { name: /Katherine Johnson/ }),
+  ).toHaveCount(0, { timeout: 30_000 });
 
   await ownerContext.close();
   await memberContext.close();
