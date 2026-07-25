@@ -222,6 +222,7 @@
         "title": "Deze uitnodiging is niet meer geldig",
         "description": "Uitnodigingen verlopen, en een uitnodiging die al gebruikt of ingetrokken is werkt niet meer. Vraag degene die je uitnodigde om een nieuwe."
       },
+      "failed": "Er ging iets mis. Probeer het opnieuw.",
       "declined": {
         "title": "Uitnodiging afgewezen",
         "description": "Er is niets met de groep gedeeld."

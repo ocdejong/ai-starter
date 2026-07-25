@@ -1,4 +1,6 @@
 import type { EmailMessage, EmailSender } from "@ai-starter/api";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -90,6 +92,23 @@ describe("createAuthEmailDispatchers", () => {
     expect(sent[0]?.text).toContain(
       `${appUrl}${groupInvitationPath}/invitation-2`,
     );
+  });
+
+  it("links to a route this application actually serves", () => {
+    // The path is written here and the page is a directory somewhere else, so
+    // nothing but this connects them. Without it the emailed link 404s and only
+    // its recipient finds out.
+    expect(
+      existsSync(
+        path.join(
+          process.cwd(),
+          "src/app",
+          groupInvitationPath,
+          "[invitationId]",
+          "page.tsx",
+        ),
+      ),
+    ).toBe(true);
   });
 
   it("does not throw out of the request path when a render fails", async () => {

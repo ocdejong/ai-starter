@@ -222,6 +222,7 @@
         "title": "This invitation is no longer valid",
         "description": "Invitations expire, and one that was already used or withdrawn stops working. Ask whoever invited you for a new one."
       },
+      "failed": "Something went wrong. Please try again.",
       "declined": {
         "title": "Invitation declined",
         "description": "Nothing was shared with the group."
