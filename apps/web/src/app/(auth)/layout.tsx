@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { LocaleSwitcher } from "~/components/locale-switcher";
 import { ThemeToggle } from "~/components/theme-toggle";
+import { dashboardPath } from "~/lib/routes";
 import { getSession } from "~/server/better-auth/server";
 
 /**
@@ -9,12 +10,15 @@ import { getSession } from "~/server/better-auth/server";
  * redirect contract: a signed-in visitor has no business on a sign-in page, and
  * this is what makes a confirmation link land on the application rather than on
  * a form the visitor no longer needs. The other half is `requireSession`.
+ *
+ * The destination is the dashboard rather than the landing page: a visitor who
+ * just proved they have an account wants the application, not its sales pitch.
  */
 export default async function AuthLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   if (await getSession()) {
-    redirect("/");
+    redirect(dashboardPath);
   }
 
   return (

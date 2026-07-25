@@ -65,10 +65,12 @@ const libraryPackages = [
 
 /** Vendor SDKs that belong to one layer only, keyed to the packages allowed to hold them. */
 const vendorSdkLocations: Readonly<Record<string, readonly string[]>> = {
-  // The chat route handler, its model factory and the chat component are the
-  // only consumers; a mobile chat screen would add @ai-starter/mobile here.
+  // The provider SDK stays where the model is chosen: apps/web's composition
+  // root. The client half — the hook and the transport — belongs to both chat
+  // screens, because a native app cannot reach the server's route handler
+  // through anything else.
   "@ai-sdk/anthropic": ["@ai-starter/web"],
-  "@ai-sdk/react": ["@ai-starter/web"],
+  "@ai-sdk/react": ["@ai-starter/mobile", "@ai-starter/web"],
   "@prisma/client": ["@ai-starter/db"],
   "@prisma/engines": ["@ai-starter/db"],
   // The auth factory owns the server SDK; apps/web keeps the React client and
@@ -76,7 +78,7 @@ const vendorSdkLocations: Readonly<Record<string, readonly string[]>> = {
   // Expo storage plugin — the SDK legitimately lives in all three, because the
   // client half cannot be reached through the server-only auth package.
   "better-auth": ["@ai-starter/auth", "@ai-starter/mobile", "@ai-starter/web"],
-  ai: ["@ai-starter/web"],
+  ai: ["@ai-starter/mobile", "@ai-starter/web"],
   prisma: ["@ai-starter/db"],
   resend: ["@ai-starter/email"],
 };

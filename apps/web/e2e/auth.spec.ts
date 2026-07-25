@@ -1,54 +1,7 @@
-import path from "node:path";
-
-import { readMailbox, type StoredEmail } from "@ai-starter/email/mailbox";
 import { expect, test } from "@playwright/test";
 
-/**
- * With no `RESEND_API_KEY` the composition root writes mail to this directory
- * instead of sending it, and the dev server runs from `apps/web` — the same cwd
- * this file is run from. Reading it is how the journey follows a real link
- * rather than reaching into the database for a token the user never sees.
- */
-const mailboxDir = path.join(process.cwd(), ".mail");
-
-/**
- * Auth callbacks dispatch mail fire-and-forget, so the response arrives before
- * the message does. `index` counts messages to this address within this run;
- * every run uses a fresh address, so the mailbox surviving between runs is fine.
- */
-async function emailTo(to: string, index: number): Promise<StoredEmail> {
-  let messages: StoredEmail[] = [];
-
-  await expect
-    .poll(
-      () => {
-        messages = readMailbox(mailboxDir).filter(
-          (message) => message.to === to,
-        );
-        return messages.length;
-      },
-      { message: `Expected at least ${index + 1} messages to ${to}.` },
-    )
-    .toBeGreaterThan(index);
-
-  const message = messages[index];
-  if (message === undefined) {
-    throw new Error(`No message ${index} for ${to}.`);
-  }
-  return message;
-}
-
-/**
- * Every template prints its action URL in the plaintext body, which is what
- * makes a dev-mailbox message clickable without parsing HTML.
- */
-function actionUrl(message: StoredEmail): string {
-  const match = /https?:\/\/[^\s<>"\]]+/.exec(message.text);
-  if (match === null) {
-    throw new Error(`No action URL in the "${message.subject}" email.`);
-  }
-  return match[0];
-}
+import { registerVerifiedAccount } from "./support/account";
+import { actionUrl, emailTo } from "./support/mailbox";
 
 test("registers, confirms by email, resets the password and signs in again", async ({
   page,
@@ -58,38 +11,23 @@ test("registers, confirms by email, resets the password and signs in again", asy
   // is for a single interaction, not a journey this long.
   test.setTimeout(180_000);
 
-  const email = `ada-${String(Date.now())}@example.com`;
-  const firstPassword = "the first correct password";
+  const { email, name } = await registerVerifiedAccount(page);
   const secondPassword = "the second correct password";
 
-  await test.step("register", async () => {
-    await page.goto("/sign-up");
-    await page.getByLabel("Name", { exact: true }).fill("Ada Lovelace");
-    await page.getByLabel("Email address", { exact: true }).fill(email);
-    await page.getByLabel("Password", { exact: true }).fill(firstPassword);
-    await page.getByRole("button", { name: "Create account" }).click();
-
-    // Registration renders and writes the confirmation email before it answers,
-    // and against the development server this is the request that first compiles
-    // that path — so it gets a longer leash than the default assertion timeout.
-    await expect(
-      page.getByRole("heading", { name: "Confirm your email address" }),
-    ).toBeVisible({ timeout: 30_000 });
-  });
-
-  await test.step("follow the confirmation link and land signed in", async () => {
-    await page.goto(actionUrl(await emailTo(email, 0)));
-
-    // Confirming signs the account in, so the auth layout sends it home.
-    await expect(page).toHaveURL("/");
-    await expect(page.getByText("Logged in as Ada Lovelace")).toBeVisible();
+  await test.step("the confirmation left the visitor signed in", async () => {
+    await expect(page.getByRole("button", { name })).toBeVisible();
   });
 
   await test.step("sign out", async () => {
+    await page.getByRole("button", { name }).click();
     await page.getByRole("button", { name: "Sign out" }).click();
 
-    await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
-    await expect(page.getByText("Logged in as")).toBeHidden();
+    await expect(page).toHaveURL("/", { timeout: 30_000 });
+    await expect(
+      page
+        .getByRole("navigation", { name: "Get started" })
+        .getByRole("link", { name: "Create an account" }),
+    ).toBeVisible();
   });
 
   await test.step("ask for a password reset", async () => {
@@ -121,12 +59,14 @@ test("registers, confirms by email, resets the password and signs in again", asy
   });
 
   await test.step("sign in with the new password", async () => {
+    // The confirmation panel of the reset page offers this link; the visitor
+    // never returns to the landing page in this journey.
     await page.getByRole("link", { name: "Sign in" }).click();
     await page.getByLabel("Email address", { exact: true }).fill(email);
     await page.getByLabel("Password", { exact: true }).fill(secondPassword);
     await page.getByRole("button", { name: "Sign in" }).click();
 
-    await expect(page).toHaveURL("/");
-    await expect(page.getByText("Logged in as Ada Lovelace")).toBeVisible();
+    await expect(page).toHaveURL("/dashboard", { timeout: 30_000 });
+    await expect(page.getByRole("button", { name })).toBeVisible();
   });
 });

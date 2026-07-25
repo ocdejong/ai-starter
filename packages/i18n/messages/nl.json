@@ -97,14 +97,40 @@
       "backToSignIn": "Terug naar inloggen"
     }
   },
+  "app": {
+    "nav": {
+      "label": "Onderdelen",
+      "dashboard": "Dashboard",
+      "settings": "Instellingen"
+    },
+    "userMenu": {
+      "profile": "Profiel",
+      "signOut": "Uitloggen",
+      "signingOut": "Uitloggen…"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "description": "De voorbeeldfunctie is een live gesprek met het model dat deze omgeving instelt."
+    },
+    "settings": {
+      "title": "Instellingen",
+      "sectionsLabel": "Instellingsonderdelen",
+      "account": "Account",
+      "group": "Groep",
+      "accountEmpty": "Je accountinstellingen verschijnen hier.",
+      "groupEmpty": "Je groepsinstellingen verschijnen hier."
+    }
+  },
   "home": {
     "title": "AI Starter",
+    "tagline": "Een full-stack starter die je coding agents kunnen uitbreiden.",
+    "description": "Accounts, transactionele e-mail, thema's, Engels en Nederlands, en een beveiligde LLM-chat — werkend op web en native vóór de eerste regel productcode.",
+    "ctaLabel": "Aan de slag",
+    "openDashboard": "Naar het dashboard",
     "signIn": "Inloggen",
     "signUp": "Account aanmaken",
-    "greetingFallback": "tRPC-query laden…",
     "loggedInAs": "Ingelogd als {name}",
     "signInWith": "Inloggen met {provider}",
-    "signOut": "Uitloggen",
     "oauthHint": "Voeg Google- of GitHub-OAuth-gegevens toe om ook met social login in te loggen."
   },
   "chat": {

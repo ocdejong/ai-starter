@@ -1,62 +1,85 @@
 import { getTranslations } from "next-intl/server";
-import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { Chat } from "~/app/_components/chat";
-import { LatestPost } from "~/app/_components/post";
 import { LocaleSwitcher } from "~/components/locale-switcher";
 import { ThemeToggle } from "~/components/theme-toggle";
 import { Button } from "~/components/ui/button";
+import { dashboardPath } from "~/lib/routes";
 import { isChatConfigured } from "~/server/ai";
 import { auth, primarySocialProvider } from "~/server/better-auth";
 import { getSession } from "~/server/better-auth/server";
-import { api, HydrateClient } from "~/trpc/server";
 
+/**
+ * The landing page: what this repository is, and the two ways in.
+ *
+ * It stays reachable while signed in — a visitor who follows a bookmark should
+ * see where they are rather than be bounced — so it names the account and points
+ * at the dashboard instead of duplicating the application's own chrome.
+ */
 export default async function Home() {
   const t = await getTranslations("home");
-  const hello = await api.post.hello({ text: "from tRPC" });
   const session = await getSession();
   const socialProvider = primarySocialProvider;
 
-  if (session) {
-    void api.post.getLatest.prefetch();
-  }
-
   return (
-    <HydrateClient>
-      <main className="bg-background text-foreground relative flex min-h-screen flex-col items-center justify-center">
-        <div className="absolute right-4 top-4 flex items-center gap-2">
-          <LocaleSwitcher />
-          <ThemeToggle />
-        </div>
-        <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
+    <main className="bg-background text-foreground relative flex min-h-screen flex-col items-center justify-center">
+      <div className="absolute right-4 top-4 flex items-center gap-2">
+        <LocaleSwitcher />
+        <ThemeToggle />
+      </div>
+      <div className="container flex max-w-3xl flex-col items-center justify-center gap-12 px-4 py-16">
+        <div className="flex flex-col items-center gap-4 text-center">
           <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
             {t("title")}
           </h1>
-          <div className="flex flex-col items-center gap-2">
-            <p className="text-2xl">
-              {hello ? hello.greeting : t("greetingFallback")}
-            </p>
+          <p className="text-2xl">{t("tagline")}</p>
+          <p className="text-muted-foreground max-w-xl">{t("description")}</p>
+        </div>
 
-            <div className="flex flex-col items-center justify-center gap-4">
-              <p className="text-center text-2xl">
-                {session && (
-                  <span>
-                    {t("loggedInAs", { name: session.user?.name ?? "" })}
-                  </span>
-                )}
+        {/*
+         * The ways in are a navigation landmark, not a loose pair of links: the
+         * chat below offers its own "Sign in" gate, and naming this region is
+         * what keeps "the way in" addressable — for a screen reader reaching for
+         * the primary action, and for the journey that asserts on it.
+         */}
+        <nav
+          aria-label={t("ctaLabel")}
+          className="flex flex-col items-center gap-4"
+        >
+          {session ? (
+            <>
+              <p className="text-lg">
+                {t("loggedInAs", { name: session.user.name })}
               </p>
-              {!session && socialProvider ? (
+              <Button asChild className="rounded-full px-10 py-3">
+                <Link href={dashboardPath}>{t("openDashboard")}</Link>
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <Button asChild className="rounded-full px-10 py-3">
+                  <Link href="/sign-up">{t("signUp")}</Link>
+                </Button>
+                <Button
+                  asChild
+                  className="rounded-full px-10 py-3"
+                  variant="secondary"
+                >
+                  <Link href="/sign-in">{t("signIn")}</Link>
+                </Button>
+              </div>
+              {socialProvider ? (
                 <form>
                   <Button
-                    className="rounded-full px-10 py-3"
                     formAction={async () => {
                       "use server";
                       const res = await auth.api.signInSocial({
                         body: {
                           provider: socialProvider,
-                          callbackURL: "/",
+                          callbackURL: dashboardPath,
                         },
                       });
                       if (!res.url) {
@@ -64,23 +87,9 @@ export default async function Home() {
                       }
                       redirect(res.url);
                     }}
+                    variant="ghost"
                   >
                     {t("signInWith", { provider: socialProvider })}
-                  </Button>
-                </form>
-              ) : session ? (
-                <form>
-                  <Button
-                    className="rounded-full px-10 py-3"
-                    formAction={async () => {
-                      "use server";
-                      await auth.api.signOut({
-                        headers: await headers(),
-                      });
-                      redirect("/");
-                    }}
-                  >
-                    {t("signOut")}
                   </Button>
                 </form>
               ) : (
@@ -88,33 +97,14 @@ export default async function Home() {
                   {t("oauthHint")}
                 </p>
               )}
-              {!session && (
-                <div className="flex items-center gap-4 text-sm">
-                  <Link
-                    className="text-primary underline-offset-4 hover:underline"
-                    href="/sign-in"
-                  >
-                    {t("signIn")}
-                  </Link>
-                  <Link
-                    className="text-primary underline-offset-4 hover:underline"
-                    href="/sign-up"
-                  >
-                    {t("signUp")}
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
+            </>
+          )}
+        </nav>
 
-          <Chat
-            isConfigured={isChatConfigured()}
-            isSignedIn={session !== null}
-          />
-
-          {session?.user && <LatestPost />}
-        </div>
-      </main>
-    </HydrateClient>
+        {/* The chat is the starter's example feature; the dashboard hosts the
+            signed-in copy of it, and here it doubles as the demo. */}
+        <Chat isConfigured={isChatConfigured()} isSignedIn={session !== null} />
+      </div>
+    </main>
   );
 }

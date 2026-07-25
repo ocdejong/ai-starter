@@ -29,10 +29,11 @@ const schemaPaths = ["packages/db/prisma/"];
 
 /**
  * Packages whose behaviour is only proven against a real database and so run
- * under `test:integration` rather than the affected unit graph — the auth flows
- * (register, verify, reset, change email, delete) live here.
+ * under `test:integration` rather than the affected unit graph — the auth and
+ * group flows, and the persistence adapters whose queries are the thing under
+ * test, live here.
  */
-const integrationBehaviourPaths = ["packages/auth/"];
+const integrationBehaviourPaths = ["packages/auth/", "packages/db/"];
 
 /**
  * Instruction and documentation surfaces. Turborepo cannot see these at all,

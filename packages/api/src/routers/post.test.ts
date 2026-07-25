@@ -12,9 +12,14 @@ const storedPost = {
 };
 
 const createContext = (posts: PostRepository): TRPCContext => ({
+  groups: {
+    findMembership: vi.fn(async () => null),
+    listMembers: vi.fn(async () => []),
+    listMemberships: vi.fn(async () => []),
+  },
   headers: new Headers(),
   posts,
-  session: { user: { id: "user-1" } },
+  session: { activeGroupId: null, user: { id: "user-1" } },
 });
 
 describe("postRouter", () => {

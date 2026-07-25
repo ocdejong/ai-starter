@@ -33,6 +33,14 @@ export default defineConfig({
     command: process.env.CI
       ? `pnpm start --port ${port}`
       : `pnpm dev --port ${port}`,
+    env: {
+      // The chat composer is disabled unless a provider key is configured, and
+      // the model factory reads this once at module scope — so the dashboard
+      // journey needs it set before the server starts. No request reaches the
+      // provider: the journey stubs `/api/chat` in the browser.
+      ANTHROPIC_API_KEY:
+        process.env.ANTHROPIC_API_KEY ?? "sk-ant-not-a-real-key",
+    },
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
     url: baseURL,

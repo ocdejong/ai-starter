@@ -69,7 +69,7 @@ describe("SignInForm", () => {
     expect(mocks.signInEmail).not.toHaveBeenCalled();
   });
 
-  it("signs in with the normalized address and returns the visitor home", async () => {
+  it("signs in with the normalized address and opens the dashboard", async () => {
     const user = userEvent.setup();
     renderForm();
 
@@ -81,7 +81,7 @@ describe("SignInForm", () => {
         password: "a password",
       });
     });
-    expect(mocks.push).toHaveBeenCalledWith("/");
+    expect(mocks.push).toHaveBeenCalledWith("/dashboard");
     expect(mocks.refresh).toHaveBeenCalled();
   });
 

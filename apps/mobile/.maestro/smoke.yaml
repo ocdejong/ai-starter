@@ -1,4 +1,10 @@
 appId: com.example.aistarter
 ---
-- launchApp
-- assertVisible: "AI Starter mobile"
+# A fresh install has no stored session, so the gate sends the launch straight to
+# sign-in. That screen — not the dashboard — is what "the app starts" now means;
+# the previous assertion on the home card has been unreachable since the account
+# flows landed.
+- launchApp:
+    clearState: true
+- assertVisible: "Welcome back. Sign in to continue."
+- assertVisible: "Create one"

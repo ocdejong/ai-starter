@@ -25,6 +25,9 @@ beforeAll(async () => {
 
 afterEach(async () => {
   inbox.clear();
+  await client.invitation.deleteMany();
+  await client.member.deleteMany();
+  await client.organization.deleteMany();
   await client.post.deleteMany();
   await client.session.deleteMany();
   await client.account.deleteMany();

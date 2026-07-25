@@ -6,6 +6,21 @@ import {
   type BetterAuthPlugin,
 } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { organization } from "better-auth/plugins";
+
+import {
+  createPersonalGroup,
+  deleteSoleMemberGroups,
+  firstGroupIdFor,
+  groupOwnerRole,
+} from "./personal-group";
+
+/**
+ * How long an emailed group invitation stays acceptable. Two days is long
+ * enough to survive a weekend and short enough that a forwarded mailbox is not
+ * a standing key to the group.
+ */
+const invitationLifetimeSeconds = 48 * 60 * 60;
 
 /**
  * One transactional-email dispatch the auth flows trigger. It is deliberately
@@ -21,7 +36,18 @@ export type AuthEmailDispatch = (message: {
 }) => void;
 
 /**
- * The four account-flow emails the factory routes through the injected sender.
+ * The group invitation dispatch. Better Auth deliberately does not build an
+ * accept URL — the link points at a page this package knows nothing about — so
+ * the factory hands over the invitation id and the composition root turns it
+ * into a link against its own routing.
+ */
+export type AuthGroupInvitationDispatch = (message: {
+  readonly to: string;
+  readonly invitationId: string;
+}) => void;
+
+/**
+ * The account-flow emails the factory routes through the injected sender.
  * Keeping them as an explicit record (rather than one generic function) makes
  * each call site name the flow it serves.
  */
@@ -30,6 +56,7 @@ export type AuthEmailDispatchers = {
   readonly sendPasswordReset: AuthEmailDispatch;
   readonly sendChangeEmailVerification: AuthEmailDispatch;
   readonly sendDeleteAccountVerification: AuthEmailDispatch;
+  readonly sendGroupInvitation: AuthGroupInvitationDispatch;
 };
 
 export type InitAuthOptions = {
@@ -65,6 +92,36 @@ export function initAuth(options: InitAuthOptions) {
   return betterAuth({
     baseURL: options.baseURL,
     database: prismaAdapter(database, { provider: "postgresql" }),
+    databaseHooks: {
+      session: {
+        create: {
+          // Seeds the active group so a signed-in user is never groupless. It
+          // is a convenience, not an authorization decision: the value travels
+          // in the session and may go stale, so every group-scoped procedure
+          // re-derives membership instead of trusting it.
+          before: async (session) => {
+            const groupId = await firstGroupIdFor(database, session.userId);
+            return groupId === null
+              ? undefined
+              : { data: { ...session, activeOrganizationId: groupId } };
+          },
+        },
+      },
+      user: {
+        create: {
+          after: async (user) => {
+            await createPersonalGroup(database, user);
+          },
+        },
+        delete: {
+          // Memberships cascade with the user, so without this the personal
+          // group would survive its only member as an unreachable row.
+          before: async (user) => {
+            await deleteSoleMemberGroups(database, user.id);
+          },
+        },
+      },
+    },
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: true,
@@ -87,7 +144,24 @@ export function initAuth(options: InitAuthOptions) {
         email.sendVerification({ to: user.email, url });
       },
     },
-    plugins: [expo(), ...(options.plugins ?? [])],
+    plugins: [
+      organization({
+        // A second invitation to the same address retires the first, so an
+        // address never holds two live keys to one group.
+        cancelPendingInvitationsOnReInvite: true,
+        creatorRole: groupOwnerRole,
+        invitationExpiresIn: invitationLifetimeSeconds,
+        // Accepting by invitation id proves nothing on its own; requiring a
+        // verified address makes the mailbox the invitation was sent to the
+        // proof of ownership.
+        requireEmailVerificationOnInvitation: true,
+        sendInvitationEmail: async ({ email: to, id }) => {
+          email.sendGroupInvitation({ invitationId: id, to });
+        },
+      }),
+      expo(),
+      ...(options.plugins ?? []),
+    ],
     ...(options.secret === undefined ? {} : { secret: options.secret }),
     ...(options.socialProviders === undefined
       ? {}

@@ -52,3 +52,39 @@ export const protectedProcedure = t.procedure
       },
     });
   });
+
+/**
+ * A procedure scoped to one group. It takes no group identifier from the
+ * caller: the candidate comes from the session, and the membership behind it is
+ * re-derived from the database on every call. Neither half is trusted alone —
+ * the session says which group was last chosen, the database says whether this
+ * user may still be there — and the procedure hands downstream code only the
+ * verified `ctx.group`.
+ *
+ * Serving a group because the session named it is the Dokploy cross-group IDOR
+ * (GHSA-f8wj-5c4w-frhg). Every group-scoped query filters by `ctx.group.groupId`
+ * and never by an input, which is what makes reaching another group impossible
+ * rather than merely checked.
+ */
+export const groupProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+  const { activeGroupId } = ctx.session;
+  if (activeGroupId === null) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "This request needs an active group.",
+    });
+  }
+
+  const group = await ctx.groups.findMembership({
+    groupId: activeGroupId,
+    userId: ctx.session.user.id,
+  });
+  if (group === null) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You are not a member of the active group.",
+    });
+  }
+
+  return next({ ctx: { group } });
+});

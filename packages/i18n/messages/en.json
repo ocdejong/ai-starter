@@ -97,14 +97,40 @@
       "backToSignIn": "Back to sign in"
     }
   },
+  "app": {
+    "nav": {
+      "label": "Sections",
+      "dashboard": "Dashboard",
+      "settings": "Settings"
+    },
+    "userMenu": {
+      "profile": "Profile",
+      "signOut": "Sign out",
+      "signingOut": "Signing out…"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "description": "The example feature is a live conversation with the model this deployment configures."
+    },
+    "settings": {
+      "title": "Settings",
+      "sectionsLabel": "Settings sections",
+      "account": "Account",
+      "group": "Group",
+      "accountEmpty": "Your account settings will appear here.",
+      "groupEmpty": "Your group settings will appear here."
+    }
+  },
   "home": {
     "title": "AI Starter",
+    "tagline": "A full-stack starter your coding agents can extend.",
+    "description": "Accounts, transactional email, theming, English and Dutch, and a guarded LLM chat — working on web and native before the first line of product code.",
+    "ctaLabel": "Get started",
+    "openDashboard": "Open the dashboard",
     "signIn": "Sign in",
     "signUp": "Create an account",
-    "greetingFallback": "Loading tRPC query…",
     "loggedInAs": "Logged in as {name}",
     "signInWith": "Sign in with {provider}",
-    "signOut": "Sign out",
     "oauthHint": "Add Google or GitHub OAuth credentials to offer social sign-in as well."
   },
   "chat": {
