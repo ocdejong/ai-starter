@@ -14,12 +14,11 @@ import { SubmitButton } from "./submit-button";
  *
  * Signing out clears the keychain entry through the Expo plugin, which is what
  * makes the session gate send the reader back to sign-in — this component does
- * not navigate itself. The authenticated shell is stage 10's work; this is the
- * minimum that proves the loop closes.
+ * not navigate itself, and the tab shell around it needs no say in the matter.
  */
 export function SessionSummary({ name }: { name: string }) {
   const t = useTranslations("auth");
-  const tHome = useTranslations("home");
+  const tMenu = useTranslations("app.userMenu");
   const tMobile = useTranslations("mobile");
   const [errorKey, setErrorKey] = useState<AuthErrorKey | null>(null);
   const [pending, setPending] = useState(false);
@@ -40,7 +39,7 @@ export function SessionSummary({ name }: { name: string }) {
         <Notice message={t(`errors.${errorKey}`)} tone="error" />
       )}
       <SubmitButton
-        label={tHome("signOut")}
+        label={tMenu("signOut")}
         onPress={() => void signOut()}
         pending={pending}
       />

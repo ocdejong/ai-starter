@@ -63,4 +63,27 @@ describe("resolveAuthRedirect", () => {
       }),
     ).toBeNull();
   });
+
+  // The signed-in screens moved into an `(app)` group with a tab layout, so the
+  // segments the gate sees are now group-prefixed. Nothing about the decision
+  // changes — which is the point of asserting it.
+  it("leaves a signed-in user on a tab of the app group alone", () => {
+    expect(
+      resolveAuthRedirect({
+        pending: false,
+        segments: ["(app)", "settings"],
+        signedIn: true,
+      }),
+    ).toBeNull();
+  });
+
+  it("sends a signed-out visitor out of the app group", () => {
+    expect(
+      resolveAuthRedirect({
+        pending: false,
+        segments: ["(app)"],
+        signedIn: false,
+      }),
+    ).toBe("/sign-in");
+  });
 });

@@ -27,11 +27,13 @@ Playwright starts the Next.js development server locally. Under `CI=true`, it st
 
 It serves and drives `http://localhost:3000` unless `E2E_BASE_URL` names another origin, which also sets the port the server listens on. Set it together with `BETTER_AUTH_URL` in `.env`: the auth server builds emailed action links from that variable, and a session cookie set on one origin is invisible to another, so the journey that follows a confirmation link only works when the two agree. Overriding both is how a second checkout runs the browser level without reusing — and silently asserting against — the first one's server.
 
+Journeys share `apps/web/e2e/support/`: `apps/web/e2e/support/mailbox.ts` reads the dev mailbox the way a person reads their inbox, and `apps/web/e2e/support/account.ts` registers an account and confirms it, which is how a spec that is about something else arrives signed in. The dashboard journey stubs `POST /api/chat` in the browser with a hand-written UI message stream, so it proves the composer, the transport and the transcript without spending a provider token or depending on what a model happens to say; the model factory still needs a key at process start, which `apps/web/playwright.config.ts` supplies. Never point a journey at a real provider — the assertion would be probabilistic and the run would cost money.
+
 ## Native evidence
 
 `pnpm verify` does not run Maestro, because a native journey needs an app build and a simulator that a GitHub-hosted runner does not have. The suite still carries three levels of native evidence:
 
-- `test:unit` runs the Jest/RNTL component suites.
+- `test:unit` runs the Jest/RNTL component suites. A screen file under `apps/mobile/src/app/` cannot hold its own test — expo-router would register the test as a route — so the testable component lives in `src/components/` and the route file only wires it up. ESM-only dependencies need their package added to the `transformIgnorePatterns` allowlist in `apps/mobile/package.json`; pnpm's nested `node_modules` segment re-triggers the pattern, and a `.mjs` entry point cannot be transformed at all, in which case mock the module boundary instead.
 - `typecheck` covers the Expo app against the same shared API and domain contracts as web.
 - `build` runs `expo export --platform all`, so a bundle that no longer resolves or compiles fails the authoritative suite.
 
