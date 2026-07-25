@@ -16,6 +16,7 @@ import {
 } from "~/components/auth/form-error";
 import { ResendVerificationButton } from "~/components/auth/resend-verification-button";
 import { Button } from "~/components/ui/button";
+import { dashboardPath } from "~/lib/routes";
 import { authClient } from "~/server/better-auth/client";
 
 export function SignInForm() {
@@ -61,7 +62,7 @@ export function SignInForm() {
           const { error } = await authClient.signIn.email({ email, password });
 
           if (!error) {
-            router.push("/");
+            router.push(dashboardPath);
             router.refresh();
             return;
           }
