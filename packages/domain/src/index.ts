@@ -19,4 +19,22 @@ export {
   maxChatMessagesPerRequest,
   type ChatRequest,
 } from "./chat";
+export {
+  assignableGroupRoles,
+  createGroupInputSchema,
+  groupNamePolicy,
+  groupRoleSchema,
+  groupRoles,
+  groupSlug,
+  groupValidationCodes,
+  inviteMemberInputSchema,
+  parseGroupRole,
+  parseGroupValidationCode,
+  renameGroupInputSchema,
+  type CreateGroupInput,
+  type GroupRole,
+  type GroupValidationCode,
+  type InviteMemberInput,
+  type RenameGroupInput,
+} from "./group";
 export { createPostInputSchema, helloInputSchema } from "./post";

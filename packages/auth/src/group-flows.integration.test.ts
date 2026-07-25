@@ -386,6 +386,323 @@ describe("group membership flows", () => {
       await client.member.count({ where: { organizationId: groupId } }),
     ).toBe(0);
   });
+
+  it("reports a second acceptance of the same invitation as a missing one", async () => {
+    const ownerHeaders = await signedInUser("twice-host@example.com");
+    const group = await auth.api.createOrganization({
+      body: { name: "Once", slug: "once" },
+      headers: ownerHeaders,
+    });
+    const invitation = await auth.api.createInvitation({
+      body: {
+        email: "eager@example.com",
+        organizationId: group?.id ?? "",
+        role: "member",
+      },
+      headers: ownerHeaders,
+    });
+    const guestHeaders = await signedInUser("eager@example.com");
+    await auth.api.acceptInvitation({
+      body: { invitationId: invitation.id },
+      headers: guestHeaders,
+    });
+
+    // Accepting again is how a recipient who is already a member reaches this
+    // link, and it answers exactly as an expired one does — so the accept page
+    // has a single "no longer valid" state rather than a reachable
+    // already-a-member state it could never actually render.
+    await expect(
+      auth.api.acceptInvitation({
+        body: { invitationId: invitation.id },
+        headers: guestHeaders,
+      }),
+    ).rejects.toMatchObject({
+      body: { code: "INVITATION_NOT_FOUND" },
+      status: "BAD_REQUEST",
+    });
+  });
+});
+
+/**
+ * A group always has an owner.
+ *
+ * The last owner of a group cannot leave it, cannot be removed from it and
+ * cannot be demoted out of it: the only way out is to hand ownership to someone
+ * else first, or to delete the group. That answers what happens to a group whose
+ * last owner leaves — it never becomes ownerless, so nothing has to inherit it
+ * and no unowned group can accumulate. The affordances the settings screens
+ * render follow from these three refusals, and they are refusals of the server,
+ * not of the user interface.
+ */
+describe("group ownership", () => {
+  it("refuses to let the only owner leave the group", async () => {
+    const ownerHeaders = await signedInUser("sole@example.com");
+    const group = await auth.api.createOrganization({
+      body: { name: "Solo", slug: "solo" },
+      headers: ownerHeaders,
+    });
+    const groupId = group?.id ?? "";
+    const memberHeaders = await signedInUser("bystander@example.com");
+    await joinGroup(groupId, ownerHeaders, "bystander@example.com", {
+      as: memberHeaders,
+    });
+
+    await expect(
+      auth.api.leaveOrganization({
+        body: { organizationId: groupId },
+        headers: ownerHeaders,
+      }),
+    ).rejects.toMatchObject({
+      body: { code: "YOU_CANNOT_LEAVE_THE_ORGANIZATION_AS_THE_ONLY_OWNER" },
+      status: "BAD_REQUEST",
+    });
+    expect(
+      await client.member.count({ where: { organizationId: groupId } }),
+    ).toBe(2);
+  });
+
+  it("refuses to demote or remove the only owner", async () => {
+    const ownerHeaders = await signedInUser("keeper2@example.com");
+    const group = await auth.api.createOrganization({
+      body: { name: "Kept", slug: "kept" },
+      headers: ownerHeaders,
+    });
+    const groupId = group?.id ?? "";
+    const owner = await client.member.findFirstOrThrow({
+      where: {
+        organizationId: groupId,
+        user: { email: "keeper2@example.com" },
+      },
+    });
+
+    await expect(
+      auth.api.updateMemberRole({
+        body: { memberId: owner.id, organizationId: groupId, role: "member" },
+        headers: ownerHeaders,
+      }),
+    ).rejects.toMatchObject({
+      body: { code: "YOU_CANNOT_LEAVE_THE_ORGANIZATION_WITHOUT_AN_OWNER" },
+      status: "BAD_REQUEST",
+    });
+    await expect(
+      auth.api.removeMember({
+        body: {
+          memberIdOrEmail: "keeper2@example.com",
+          organizationId: groupId,
+        },
+        headers: ownerHeaders,
+      }),
+    ).rejects.toMatchObject({
+      body: { code: "YOU_CANNOT_LEAVE_THE_ORGANIZATION_AS_THE_ONLY_OWNER" },
+      status: "BAD_REQUEST",
+    });
+    expect(
+      (await client.member.findUniqueOrThrow({ where: { id: owner.id } })).role,
+    ).toBe("owner");
+  });
+
+  it("lets the outgoing owner leave once someone else owns the group", async () => {
+    const ownerHeaders = await signedInUser("handover@example.com");
+    const group = await auth.api.createOrganization({
+      body: { name: "Handover", slug: "handover" },
+      headers: ownerHeaders,
+    });
+    const groupId = group?.id ?? "";
+    const successorHeaders = await signedInUser("successor@example.com");
+    await joinGroup(groupId, ownerHeaders, "successor@example.com", {
+      as: successorHeaders,
+    });
+    const successor = await client.member.findFirstOrThrow({
+      where: {
+        organizationId: groupId,
+        user: { email: "successor@example.com" },
+      },
+    });
+
+    await auth.api.updateMemberRole({
+      body: { memberId: successor.id, organizationId: groupId, role: "owner" },
+      headers: ownerHeaders,
+    });
+    await auth.api.leaveOrganization({
+      body: { organizationId: groupId },
+      headers: ownerHeaders,
+    });
+
+    const remaining = await client.member.findMany({
+      where: { organizationId: groupId },
+      include: { user: { select: { email: true } } },
+    });
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0]?.user.email).toBe("successor@example.com");
+    expect(remaining[0]?.role).toBe("owner");
+  });
+
+  it("leaves the departing member without an active group", async () => {
+    const ownerHeaders = await signedInUser("host2@example.com");
+    const group = await auth.api.createOrganization({
+      body: { name: "Transit", slug: "transit" },
+      headers: ownerHeaders,
+    });
+    const groupId = group?.id ?? "";
+    const guestHeaders = await signedInUser("transient@example.com");
+    await joinGroup(groupId, ownerHeaders, "transient@example.com", {
+      as: guestHeaders,
+    });
+    // Accepting an invitation switches to the group it was for.
+    expect(await activeGroupId(guestHeaders)).toBe(groupId);
+
+    await auth.api.leaveOrganization({
+      body: { organizationId: groupId },
+      headers: guestHeaders,
+    });
+
+    // Leaving the active group clears it, so the client is responsible for
+    // choosing the next one; a request made in between has no group at all.
+    expect(await activeGroupId(guestHeaders)).toBeNull();
+  });
+
+  it("refuses an admin the owner role, both to invite with and to assign", async () => {
+    const ownerHeaders = await signedInUser("founder@example.com");
+    const group = await auth.api.createOrganization({
+      body: { name: "Ladder", slug: "ladder" },
+      headers: ownerHeaders,
+    });
+    const groupId = group?.id ?? "";
+    const adminHeaders = await signedInUser("deputy@example.com");
+    await joinGroup(groupId, ownerHeaders, "deputy@example.com", {
+      as: adminHeaders,
+    });
+    const deputy = await client.member.findFirstOrThrow({
+      where: { organizationId: groupId, user: { email: "deputy@example.com" } },
+    });
+    await auth.api.updateMemberRole({
+      body: { memberId: deputy.id, organizationId: groupId, role: "admin" },
+      headers: ownerHeaders,
+    });
+    const colleagueHeaders = await signedInUser("colleague@example.com");
+    await joinGroup(groupId, ownerHeaders, "colleague@example.com", {
+      as: colleagueHeaders,
+    });
+    const colleague = await client.member.findFirstOrThrow({
+      where: {
+        organizationId: groupId,
+        user: { email: "colleague@example.com" },
+      },
+    });
+
+    // `assignableGroupRoles` in packages/domain withholds the owner role from an
+    // admin; these are the refusals it mirrors, so the interface never offers a
+    // role the server would reject.
+    await expect(
+      auth.api.createInvitation({
+        body: {
+          email: "heir@example.com",
+          organizationId: groupId,
+          role: "owner",
+        },
+        headers: adminHeaders,
+      }),
+    ).rejects.toMatchObject({
+      body: { code: "YOU_ARE_NOT_ALLOWED_TO_INVITE_USER_WITH_THIS_ROLE" },
+      status: "FORBIDDEN",
+    });
+    await expect(
+      auth.api.updateMemberRole({
+        body: {
+          memberId: colleague.id,
+          organizationId: groupId,
+          role: "owner",
+        },
+        headers: adminHeaders,
+      }),
+    ).rejects.toMatchObject({
+      body: { code: "YOU_ARE_NOT_ALLOWED_TO_UPDATE_THIS_MEMBER" },
+      status: "FORBIDDEN",
+    });
+
+    // The roles an admin may hand out are accepted, so the mirror is a rule and
+    // not a coincidence of the owner role being special.
+    await auth.api.updateMemberRole({
+      body: { memberId: colleague.id, organizationId: groupId, role: "admin" },
+      headers: adminHeaders,
+    });
+    expect(
+      (await client.member.findUniqueOrThrow({ where: { id: colleague.id } }))
+        .role,
+    ).toBe("admin");
+  });
+
+  it("refuses a plain member every affordance the settings screen withholds", async () => {
+    const ownerHeaders = await signedInUser("chief2@example.com");
+    const group = await auth.api.createOrganization({
+      body: { name: "Guarded", slug: "guarded" },
+      headers: ownerHeaders,
+    });
+    const groupId = group?.id ?? "";
+    const memberHeaders = await signedInUser("plain@example.com");
+    await joinGroup(groupId, ownerHeaders, "plain@example.com", {
+      as: memberHeaders,
+    });
+    const owner = await client.member.findFirstOrThrow({
+      where: { organizationId: groupId, user: { email: "chief2@example.com" } },
+    });
+
+    await expect(
+      auth.api.createInvitation({
+        body: {
+          email: "outsider@example.com",
+          organizationId: groupId,
+          role: "member",
+        },
+        headers: memberHeaders,
+      }),
+    ).rejects.toMatchObject({
+      body: {
+        code: "YOU_ARE_NOT_ALLOWED_TO_INVITE_USERS_TO_THIS_ORGANIZATION",
+      },
+      status: "FORBIDDEN",
+    });
+    await expect(
+      auth.api.updateMemberRole({
+        body: { memberId: owner.id, organizationId: groupId, role: "member" },
+        headers: memberHeaders,
+      }),
+    ).rejects.toMatchObject({
+      body: { code: "YOU_ARE_NOT_ALLOWED_TO_UPDATE_THIS_MEMBER" },
+      status: "FORBIDDEN",
+    });
+    await expect(
+      auth.api.removeMember({
+        body: {
+          memberIdOrEmail: "chief2@example.com",
+          organizationId: groupId,
+        },
+        headers: memberHeaders,
+      }),
+    ).rejects.toMatchObject({
+      body: { code: "YOU_CANNOT_LEAVE_THE_ORGANIZATION_AS_THE_ONLY_OWNER" },
+      status: "BAD_REQUEST",
+    });
+    await expect(
+      auth.api.updateOrganization({
+        body: { data: { name: "Renamed" }, organizationId: groupId },
+        headers: memberHeaders,
+      }),
+    ).rejects.toMatchObject({
+      body: { code: "YOU_ARE_NOT_ALLOWED_TO_UPDATE_THIS_ORGANIZATION" },
+      status: "FORBIDDEN",
+    });
+
+    // The only invitation in the group is the accepted one that admitted the
+    // member; nothing they attempted left a trace.
+    expect(
+      await client.invitation.count({ where: { status: "pending" } }),
+    ).toBe(0);
+    expect(
+      (await client.organization.findUniqueOrThrow({ where: { id: groupId } }))
+        .name,
+    ).toBe("Guarded");
+  });
 });
 
 /** Invites `email` to `groupId` and accepts it as the already signed-in guest. */
