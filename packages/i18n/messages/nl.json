@@ -154,6 +154,7 @@
           "actions": "Acties",
           "you": "Jij",
           "roleLabel": "Rol van {name}",
+          "removeLabel": "{name} verwijderen",
           "remove": "Verwijderen",
           "removing": "Verwijderen…",
           "confirmRemove": "{name} uit deze groep verwijderen?",

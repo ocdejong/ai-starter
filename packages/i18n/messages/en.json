@@ -154,6 +154,7 @@
           "actions": "Actions",
           "you": "You",
           "roleLabel": "Role of {name}",
+          "removeLabel": "Remove {name}",
           "remove": "Remove",
           "removing": "Removing…",
           "confirmRemove": "Remove {name} from this group?",
