@@ -118,7 +118,115 @@
       "account": "Account",
       "group": "Groep",
       "accountEmpty": "Je accountinstellingen verschijnen hier.",
-      "groupEmpty": "Je groepsinstellingen verschijnen hier."
+      "groupEmpty": "Je groepsinstellingen verschijnen hier.",
+      "groups": {
+        "switcherLabel": "Actieve groep",
+        "loading": "Je groepen worden geladen…",
+        "roles": {
+          "owner": "Eigenaar",
+          "admin": "Beheerder",
+          "member": "Lid",
+          "unknown": "Onbekende rol"
+        },
+        "current": {
+          "title": "Deze groep",
+          "nameLabel": "Groepsnaam",
+          "submit": "Naam opslaan",
+          "submitting": "Opslaan…",
+          "saved": "De groepsnaam is bijgewerkt.",
+          "readOnly": "Alleen een eigenaar of beheerder kan deze groep hernoemen."
+        },
+        "empty": {
+          "title": "Je zit niet in een groep",
+          "description": "Maak er een aan, dan heb je een plek om mensen voor uit te nodigen."
+        },
+        "create": {
+          "title": "Groep aanmaken",
+          "nameLabel": "Naam van de nieuwe groep",
+          "submit": "Groep aanmaken",
+          "submitting": "Aanmaken…"
+        },
+        "members": {
+          "title": "Leden",
+          "name": "Naam",
+          "email": "E-mailadres",
+          "role": "Rol",
+          "actions": "Acties",
+          "you": "Jij",
+          "roleLabel": "Rol van {name}",
+          "remove": "Verwijderen",
+          "removing": "Verwijderen…",
+          "confirmRemove": "{name} uit deze groep verwijderen?",
+          "confirm": "Ja, verwijderen",
+          "cancel": "Laat maar"
+        },
+        "invite": {
+          "title": "Iemand uitnodigen",
+          "emailLabel": "E-mailadres",
+          "roleLabel": "Rol",
+          "submit": "Uitnodiging versturen",
+          "submitting": "Versturen…",
+          "sent": "Er is een uitnodiging onderweg naar {email}."
+        },
+        "invitations": {
+          "title": "Openstaande uitnodigingen",
+          "none": "Niemand wacht op antwoord.",
+          "expires": "Verloopt {expires, date, medium}",
+          "resend": "Opnieuw versturen",
+          "resending": "Versturen…",
+          "cancel": "Intrekken",
+          "cancelling": "Intrekken…"
+        },
+        "danger": {
+          "title": "Verlaten en verwijderen",
+          "leave": "Groep verlaten",
+          "leaving": "Verlaten…",
+          "confirmLeave": "{name} verlaten? Je hebt een nieuwe uitnodiging nodig om terug te komen.",
+          "delete": "Groep verwijderen",
+          "deleting": "Verwijderen…",
+          "confirmDelete": "{name} voor iedereen verwijderen? Dit kun je niet terugdraaien.",
+          "lastOwner": "Je bent de enige eigenaar van {name}. Maak eerst iemand anders eigenaar, of verwijder de groep.",
+          "confirm": "Ja, doorgaan",
+          "cancel": "Toch niet"
+        },
+        "validation": {
+          "emailInvalid": "Vul een geldig e-mailadres in.",
+          "groupNameRequired": "Vul een naam voor de groep in.",
+          "groupNameTooLong": "Gebruik {max} tekens of minder."
+        },
+        "errors": {
+          "alreadyMember": "Die persoon zit al in deze groep.",
+          "lastOwner": "Een groep heeft altijd een eigenaar nodig. Maak eerst iemand anders eigenaar.",
+          "notAllowed": "Je rol in deze groep staat dat niet toe.",
+          "unexpected": "Er ging iets mis. Probeer het opnieuw."
+        }
+      }
+    },
+    "invitation": {
+      "title": "Groepsuitnodiging",
+      "signedOut": {
+        "title": "Log in om deze uitnodiging te accepteren",
+        "description": "Een uitnodiging hoort bij één adres, dus we moeten weten wie je bent. Log in of maak een account aan en open daarna de link uit je e-mail opnieuw.",
+        "signIn": "Inloggen",
+        "createAccount": "Account aanmaken"
+      },
+      "pending": {
+        "title": "Word lid van {group}",
+        "description": "{inviter} nodigt je uit voor {group} als {role}.",
+        "accept": "Uitnodiging accepteren",
+        "accepting": "Toevoegen…",
+        "decline": "Afwijzen",
+        "declining": "Afwijzen…"
+      },
+      "invalid": {
+        "title": "Deze uitnodiging is niet meer geldig",
+        "description": "Uitnodigingen verlopen, en een uitnodiging die al gebruikt of ingetrokken is werkt niet meer. Vraag degene die je uitnodigde om een nieuwe."
+      },
+      "declined": {
+        "title": "Uitnodiging afgewezen",
+        "description": "Er is niets met de groep gedeeld."
+      },
+      "dashboard": "Naar het dashboard"
     }
   },
   "home": {

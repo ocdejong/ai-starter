@@ -4,6 +4,7 @@ import { type ReactNode } from "react";
 
 import { NavLinks } from "~/components/app-shell/nav-links";
 import { UserMenu, type ShellUser } from "~/components/app-shell/user-menu";
+import { GroupSwitcher } from "~/components/groups/group-switcher";
 import { LocaleSwitcher } from "~/components/locale-switcher";
 import { ThemeToggle } from "~/components/theme-toggle";
 import { dashboardPath, settingsPath } from "~/lib/routes";
@@ -32,10 +33,11 @@ export function AppShell({
           {t("title")}
         </Link>
         {/*
-         * The group switcher belongs between the brand and the navigation; stage
-         * 12 mounts it here, which is why the header is a flex row with the
-         * account controls pinned right rather than a fixed three-column grid.
+         * The switcher sits between the brand and the navigation because it
+         * names the group every page below is about — it belongs beside those
+         * pages rather than inside any one of them.
          */}
+        <GroupSwitcher />
         <NavLinks
           ariaLabel={tNav("label")}
           items={[

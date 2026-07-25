@@ -98,6 +98,49 @@ export function assignableGroupRoles(
   return [];
 }
 
+/**
+ * What a group request can fail with, in terms a person can act on. Each is a
+ * key under `app.settings.groups.errors`.
+ */
+export const groupErrorCodes = [
+  "alreadyMember",
+  "lastOwner",
+  "notAllowed",
+  "unexpected",
+] as const;
+
+export type GroupErrorCode = (typeof groupErrorCodes)[number];
+
+/**
+ * Translates a refusal from the auth server into one of those terms.
+ *
+ * The server has far more codes than a person needs, and it grows more with each
+ * release, so anything unrecognised becomes the generic failure rather than a
+ * missing translation. Only the refusals that tell someone what to do
+ * differently are named: the address is already a member, the group would be
+ * left without an owner, or their role does not allow it.
+ */
+export function groupErrorFor(
+  serverCode: string | null | undefined,
+): GroupErrorCode {
+  if (serverCode === null || serverCode === undefined) {
+    return "unexpected";
+  }
+  if (serverCode === "USER_IS_ALREADY_A_MEMBER_OF_THIS_ORGANIZATION") {
+    return "alreadyMember";
+  }
+  if (serverCode.startsWith("YOU_CANNOT_LEAVE_THE_ORGANIZATION")) {
+    return "lastOwner";
+  }
+  if (
+    serverCode.startsWith("YOU_ARE_NOT_ALLOWED") ||
+    serverCode.startsWith("USER_IS_NOT_A_MEMBER")
+  ) {
+    return "notAllowed";
+  }
+  return "unexpected";
+}
+
 /** How much of the name survives into the slug before the suffix is added. */
 const slugBaseMaxLength = 40;
 

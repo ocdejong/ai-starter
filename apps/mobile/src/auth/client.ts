@@ -1,5 +1,6 @@
 import { expoClient } from "@better-auth/expo/client";
 import type { BetterAuthClientPlugin } from "better-auth/client";
+import { organizationClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import * as SecureStore from "expo-secure-store";
 
@@ -43,8 +44,14 @@ const expoAuthPlugin = {
  * `SecureStore`, not AsyncStorage, holds the cookie because it is a bearer
  * credential; its `getItem`/`setItem` are synchronous, which is exactly the
  * contract the plugin's storage option asks for.
+ *
+ * The `organization` plugin adds the group endpoints, the stores behind the
+ * switcher and the members list, and `checkRolePermission` — the same access
+ * control the server enforces with, so an affordance and the request behind it
+ * cannot drift. It needs no call-through wrapper; only the Expo plugin's own
+ * emitted signature has that problem.
  */
 export const authClient = createAuthClient({
   baseURL: mobileEnv.EXPO_PUBLIC_API_URL,
-  plugins: [expoAuthPlugin],
+  plugins: [expoAuthPlugin, organizationClient()],
 });

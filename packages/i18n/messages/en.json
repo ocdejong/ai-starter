@@ -118,7 +118,115 @@
       "account": "Account",
       "group": "Group",
       "accountEmpty": "Your account settings will appear here.",
-      "groupEmpty": "Your group settings will appear here."
+      "groupEmpty": "Your group settings will appear here.",
+      "groups": {
+        "switcherLabel": "Active group",
+        "loading": "Loading your groups…",
+        "roles": {
+          "owner": "Owner",
+          "admin": "Admin",
+          "member": "Member",
+          "unknown": "Unknown role"
+        },
+        "current": {
+          "title": "This group",
+          "nameLabel": "Group name",
+          "submit": "Save name",
+          "submitting": "Saving…",
+          "saved": "The group name was updated.",
+          "readOnly": "Only an owner or an admin can rename this group."
+        },
+        "empty": {
+          "title": "You are not in a group",
+          "description": "Create one to get a place to invite people to."
+        },
+        "create": {
+          "title": "Create a group",
+          "nameLabel": "Name of the new group",
+          "submit": "Create group",
+          "submitting": "Creating…"
+        },
+        "members": {
+          "title": "Members",
+          "name": "Name",
+          "email": "Email",
+          "role": "Role",
+          "actions": "Actions",
+          "you": "You",
+          "roleLabel": "Role of {name}",
+          "remove": "Remove",
+          "removing": "Removing…",
+          "confirmRemove": "Remove {name} from this group?",
+          "confirm": "Yes, remove",
+          "cancel": "Keep them"
+        },
+        "invite": {
+          "title": "Invite someone",
+          "emailLabel": "Email address",
+          "roleLabel": "Role",
+          "submit": "Send invitation",
+          "submitting": "Sending…",
+          "sent": "An invitation is on its way to {email}."
+        },
+        "invitations": {
+          "title": "Pending invitations",
+          "none": "Nobody is waiting for an answer.",
+          "expires": "Expires {expires, date, medium}",
+          "resend": "Send again",
+          "resending": "Sending…",
+          "cancel": "Withdraw",
+          "cancelling": "Withdrawing…"
+        },
+        "danger": {
+          "title": "Leaving and deleting",
+          "leave": "Leave group",
+          "leaving": "Leaving…",
+          "confirmLeave": "Leave {name}? You will need a new invitation to come back.",
+          "delete": "Delete group",
+          "deleting": "Deleting…",
+          "confirmDelete": "Delete {name} for everyone? This cannot be undone.",
+          "lastOwner": "You are the only owner of {name}. Make someone else an owner before you leave, or delete the group instead.",
+          "confirm": "Yes, continue",
+          "cancel": "Never mind"
+        },
+        "validation": {
+          "emailInvalid": "Enter a valid email address.",
+          "groupNameRequired": "Enter a name for the group.",
+          "groupNameTooLong": "Use {max} characters or fewer."
+        },
+        "errors": {
+          "alreadyMember": "That person is already in this group.",
+          "lastOwner": "A group always needs an owner. Make someone else an owner first.",
+          "notAllowed": "Your role in this group does not allow that.",
+          "unexpected": "Something went wrong. Please try again."
+        }
+      }
+    },
+    "invitation": {
+      "title": "Group invitation",
+      "signedOut": {
+        "title": "Sign in to accept this invitation",
+        "description": "An invitation belongs to one address, so we need to know who you are. Sign in or create an account, then open the link from your email again.",
+        "signIn": "Sign in",
+        "createAccount": "Create an account"
+      },
+      "pending": {
+        "title": "Join {group}",
+        "description": "{inviter} invited you to join {group} as {role}.",
+        "accept": "Accept invitation",
+        "accepting": "Joining…",
+        "decline": "Decline",
+        "declining": "Declining…"
+      },
+      "invalid": {
+        "title": "This invitation is no longer valid",
+        "description": "Invitations expire, and one that was already used or withdrawn stops working. Ask whoever invited you for a new one."
+      },
+      "declined": {
+        "title": "Invitation declined",
+        "description": "Nothing was shared with the group."
+      },
+      "dashboard": "Go to the dashboard"
     }
   },
   "home": {

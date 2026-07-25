@@ -22,6 +22,8 @@ export {
 export {
   assignableGroupRoles,
   createGroupInputSchema,
+  groupErrorCodes,
+  groupErrorFor,
   groupNamePolicy,
   groupRoleSchema,
   groupRoles,
@@ -32,6 +34,7 @@ export {
   parseGroupValidationCode,
   renameGroupInputSchema,
   type CreateGroupInput,
+  type GroupErrorCode,
   type GroupRole,
   type GroupValidationCode,
   type InviteMemberInput,

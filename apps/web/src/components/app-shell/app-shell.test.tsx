@@ -13,7 +13,17 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("~/server/better-auth/client", () => ({
-  authClient: { signOut: vi.fn(() => Promise.resolve({ error: null })) },
+  authClient: {
+    organization: { setActive: vi.fn() },
+    signOut: vi.fn(() => Promise.resolve({ error: null })),
+    // The shell mounts the group switcher, which reads these stores. The
+    // switcher's own suite covers what it does with them; here they only have to
+    // resolve so the header renders.
+    useActiveOrganization: () => ({ data: { id: "group-1", name: "Group" } }),
+    useListOrganizations: () => ({
+      data: [{ id: "group-1", name: "Group", slug: "group" }],
+    }),
+  },
 }));
 
 function renderShell(locale: "en" | "nl" = "en") {

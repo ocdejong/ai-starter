@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   assignableGroupRoles,
   createGroupInputSchema,
+  groupErrorFor,
   groupNamePolicy,
   groupSlug,
   inviteMemberInputSchema,
@@ -83,6 +84,36 @@ describe("assignable roles", () => {
 
   it("gives a plain member nothing to assign", () => {
     expect(assignableGroupRoles("member")).toEqual([]);
+  });
+});
+
+describe("group errors", () => {
+  it("names the refusals a person can act on", () => {
+    expect(groupErrorFor("USER_IS_ALREADY_A_MEMBER_OF_THIS_ORGANIZATION")).toBe(
+      "alreadyMember",
+    );
+    expect(
+      groupErrorFor("YOU_CANNOT_LEAVE_THE_ORGANIZATION_AS_THE_ONLY_OWNER"),
+    ).toBe("lastOwner");
+    expect(
+      groupErrorFor("YOU_CANNOT_LEAVE_THE_ORGANIZATION_WITHOUT_AN_OWNER"),
+    ).toBe("lastOwner");
+    expect(
+      groupErrorFor("YOU_ARE_NOT_ALLOWED_TO_DELETE_THIS_ORGANIZATION"),
+    ).toBe("notAllowed");
+    expect(groupErrorFor("YOU_ARE_NOT_ALLOWED_TO_UPDATE_THIS_MEMBER")).toBe(
+      "notAllowed",
+    );
+    expect(groupErrorFor("USER_IS_NOT_A_MEMBER_OF_THE_ORGANIZATION")).toBe(
+      "notAllowed",
+    );
+  });
+
+  it("falls back rather than showing a code nobody wrote copy for", () => {
+    expect(groupErrorFor("SOMETHING_NEW_IN_A_LATER_RELEASE")).toBe(
+      "unexpected",
+    );
+    expect(groupErrorFor(undefined)).toBe("unexpected");
   });
 });
 
