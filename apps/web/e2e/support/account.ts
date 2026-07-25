@@ -15,13 +15,18 @@ export type TestAccount = {
  * Every journey that needs a signed-in browser needs this, and it is the one
  * place that knows the confirmation link signs the visitor in — so the specs
  * that follow assert what they are about rather than re-deriving registration.
+ *
+ * A journey with two accounts in it passes a `name`, because a members list
+ * cannot be read when everyone in it is called the same thing.
  */
 export async function registerVerifiedAccount(
   page: Page,
+  options: { readonly name?: string } = {},
 ): Promise<TestAccount> {
+  const name = options.name ?? "Ada Lovelace";
   const account: TestAccount = {
-    email: `ada-${String(Date.now())}-${String(Math.floor(Math.random() * 1e6))}@example.com`,
-    name: "Ada Lovelace",
+    email: `${name.split(" ")[0]?.toLowerCase() ?? "person"}-${String(Date.now())}-${String(Math.floor(Math.random() * 1e6))}@example.com`,
+    name,
     password: "the first correct password",
   };
 

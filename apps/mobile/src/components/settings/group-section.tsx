@@ -117,8 +117,14 @@ export function GroupSection() {
         groups={groupList}
         onSwitched={reload}
       />
+      {/*
+       * Keyed by the group: the field is seeded from the name it opened with,
+       * so switching to another group — or creating one — has to give it a
+       * fresh form rather than leave the previous group's name in it.
+       */}
       <GroupNameForm
         canRename={may({ organization: ["update"] })}
+        key={group.id}
         name={group.name}
         onRenamed={reload}
       />
