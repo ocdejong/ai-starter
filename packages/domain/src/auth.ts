@@ -19,6 +19,7 @@ export const passwordPolicy = {
  */
 export const authValidationCodes = [
   "emailInvalid",
+  "emailUnchanged",
   "nameRequired",
   "nameTooLong",
   "passwordMismatch",
@@ -96,9 +97,59 @@ export const resetPasswordInputSchema = z
     path: ["confirmPassword"],
   });
 
+/**
+ * The account-settings inputs. They belong beside the flows above because they
+ * report the same codes and answer to the same password policy — the difference
+ * is only who is asking: someone who has already proved who they are.
+ */
+export const updateProfileInputSchema = z.object({
+  name: nameSchema,
+});
+
+/**
+ * Built against the address the account uses today, because "the same address"
+ * is the one refusal the auth server cannot express in a code: it answers with a
+ * bare 400 and a prose message, which no UI may translate. Deciding it here
+ * gives the person an answer in the field they are typing in, and gives both
+ * platforms the same rule.
+ */
+export function changeEmailInputSchemaFor(currentEmail: string) {
+  const current = currentEmail.trim().toLowerCase();
+
+  return z.object({
+    newEmail: emailSchema.refine((value) => value !== current, {
+      error: "emailUnchanged",
+    }),
+  });
+}
+
+/**
+ * Changing a password re-proves the current one. That check is a credential
+ * comparison rather than a new secret, so — like signing in — it deliberately
+ * escapes the password policy: an account whose password predates a policy
+ * change must still be able to replace it.
+ */
+export const changePasswordInputSchema = z
+  .object({
+    confirmPassword: z.string(),
+    currentPassword: z.string().min(1, { error: "passwordRequired" }),
+    newPassword: newPasswordSchema,
+    revokeOtherSessions: z.boolean(),
+  })
+  .refine((value) => value.newPassword === value.confirmPassword, {
+    error: "passwordMismatch",
+    // Reported on the confirmation field: that is the one the user retypes.
+    path: ["confirmPassword"],
+  });
+
 export type SignUpInput = z.infer<typeof signUpInputSchema>;
 export type SignInInput = z.infer<typeof signInInputSchema>;
 export type RequestPasswordResetInput = z.infer<
   typeof requestPasswordResetInputSchema
 >;
 export type ResetPasswordInput = z.infer<typeof resetPasswordInputSchema>;
+export type UpdateProfileInput = z.infer<typeof updateProfileInputSchema>;
+export type ChangeEmailInput = z.infer<
+  ReturnType<typeof changeEmailInputSchemaFor>
+>;
+export type ChangePasswordInput = z.infer<typeof changePasswordInputSchema>;

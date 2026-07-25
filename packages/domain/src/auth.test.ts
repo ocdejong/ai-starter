@@ -3,12 +3,15 @@ import { type ZodSafeParseResult } from "zod";
 
 import {
   authValidationCodes,
+  changeEmailInputSchemaFor,
+  changePasswordInputSchema,
   parseAuthValidationCode,
   passwordPolicy,
   requestPasswordResetInputSchema,
   resetPasswordInputSchema,
   signInInputSchema,
   signUpInputSchema,
+  updateProfileInputSchema,
 } from "./auth";
 
 /**
@@ -167,5 +170,106 @@ describe("parseAuthValidationCode", () => {
     expect(parseAuthValidationCode("Required")).toBeNull();
     expect(parseAuthValidationCode(undefined)).toBeNull();
     expect(parseAuthValidationCode(42)).toBeNull();
+  });
+});
+
+describe("updateProfileInputSchema", () => {
+  it("accepts a name and trims it, so the displayed name has no stray spacing", () => {
+    expect(
+      updateProfileInputSchema.parse({ name: "  Ada Lovelace  " }),
+    ).toEqual({ name: "Ada Lovelace" });
+  });
+
+  it("refuses a name of only whitespace", () => {
+    expect(
+      codeFor(updateProfileInputSchema.safeParse({ name: "   " }), "name"),
+    ).toBe("nameRequired");
+  });
+});
+
+describe("changeEmailInputSchemaFor", () => {
+  const schema = changeEmailInputSchemaFor("ada@example.com");
+
+  it("normalises the requested address the same way registration does", () => {
+    expect(schema.parse({ newEmail: "  Grace@Example.COM " })).toEqual({
+      newEmail: "grace@example.com",
+    });
+  });
+
+  it("reports a translatable code for an address that is not an email", () => {
+    expect(codeFor(schema.safeParse({ newEmail: "ada" }), "newEmail")).toBe(
+      "emailInvalid",
+    );
+  });
+
+  it("refuses the address the account already uses, however it is typed", () => {
+    // The auth server refuses this with a bare 400 and a prose message no UI can
+    // translate, so the answer has to come from here.
+    expect(
+      codeFor(schema.safeParse({ newEmail: " Ada@Example.com " }), "newEmail"),
+    ).toBe("emailUnchanged");
+  });
+
+  it("compares against the current address however that was stored", () => {
+    expect(
+      changeEmailInputSchemaFor("  Ada@Example.COM ").safeParse({
+        newEmail: "ada@example.com",
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("changePasswordInputSchema", () => {
+  const valid = {
+    confirmPassword: "a new long password",
+    currentPassword: "the first correct password",
+    newPassword: "a new long password",
+    revokeOtherSessions: true,
+  };
+
+  it("accepts a complete change", () => {
+    expect(changePasswordInputSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it("requires the current password without judging its length", () => {
+    // An account created before a policy change still has a short password, and
+    // the confirmation field is a credential check rather than a new secret.
+    expect(
+      changePasswordInputSchema.safeParse({ ...valid, currentPassword: "old" })
+        .success,
+    ).toBe(true);
+    expect(
+      codeFor(
+        changePasswordInputSchema.safeParse({ ...valid, currentPassword: "" }),
+        "currentPassword",
+      ),
+    ).toBe("passwordRequired");
+  });
+
+  it("applies the password policy to the new password only", () => {
+    const short = "a".repeat(passwordPolicy.minLength - 1);
+
+    expect(
+      codeFor(
+        changePasswordInputSchema.safeParse({
+          ...valid,
+          confirmPassword: short,
+          newPassword: short,
+        }),
+        "newPassword",
+      ),
+    ).toBe("passwordTooShort");
+  });
+
+  it("reports a mismatch on the confirmation field, where the user can fix it", () => {
+    expect(
+      codeFor(
+        changePasswordInputSchema.safeParse({
+          ...valid,
+          confirmPassword: "something else entirely",
+        }),
+        "confirmPassword",
+      ),
+    ).toBe("passwordMismatch");
   });
 });

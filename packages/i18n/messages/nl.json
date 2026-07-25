@@ -24,6 +24,7 @@
     },
     "validation": {
       "emailInvalid": "Vul een geldig e-mailadres in.",
+      "emailUnchanged": "Dat is al je e-mailadres.",
       "nameRequired": "Vul je naam in.",
       "nameTooLong": "Gebruik maximaal 100 tekens.",
       "passwordMismatch": "Beide wachtwoorden moeten gelijk zijn.",
@@ -118,7 +119,80 @@
       "account": "Account",
       "group": "Groep",
       "accountEmpty": "Je accountinstellingen verschijnen hier.",
-      "groupEmpty": "Je groepsinstellingen verschijnen hier."
+      "groupEmpty": "Je groepsinstellingen verschijnen hier.",
+      "errors": {
+        "incorrectPassword": "Dat is niet je huidige wachtwoord.",
+        "network": "De server is niet bereikbaar. Controleer je verbinding en probeer het opnieuw.",
+        "unexpected": "Er is iets misgegaan. Probeer het opnieuw."
+      },
+      "profile": {
+        "title": "Profiel",
+        "description": "De naam die jij en de leden van je groep zien.",
+        "submit": "Naam opslaan",
+        "submitting": "Opslaan…",
+        "saved": "Je naam is bijgewerkt."
+      },
+      "email": {
+        "title": "E-mailadres",
+        "description": "Je adres wijzigen kost twee links: één vanuit je huidige inbox om de wijziging goed te keuren, daarna één vanuit de nieuwe inbox om die af te ronden.",
+        "current": "Huidig adres",
+        "newEmail": "Nieuw e-mailadres",
+        "submit": "Bevestigingslink versturen",
+        "submitting": "Versturen…",
+        "sent": "Kijk in {email} — het adres waarmee je bent ingelogd — en open de link daar. Daarna mailen we {newEmail}; die tweede link verandert je adres.",
+        "linkAccepted": "Link geaccepteerd. Je accountadres is het adres dat hieronder staat — is het nog niet gewijzigd, open dan de laatste link in je nieuwe inbox.",
+        "linkRejected": "Die link is niet meer geldig. Begin de wijziging opnieuw."
+      },
+      "password": {
+        "title": "Wachtwoord",
+        "description": "Kies een nieuw wachtwoord. Je huidige wachtwoord is nodig om het te wijzigen.",
+        "current": "Huidig wachtwoord",
+        "revokeOthers": "Log mijn andere apparaten uit",
+        "revokeOthersHint": "Beëindigt elke andere sessie. Dit apparaat blijft ingelogd.",
+        "submit": "Wachtwoord wijzigen",
+        "submitting": "Wijzigen…",
+        "changed": "Je wachtwoord is gewijzigd."
+      },
+      "sessions": {
+        "title": "Actieve sessies",
+        "description": "Waar je account is ingelogd. Log alles uit wat je niet herkent en wijzig daarna je wachtwoord.",
+        "current": "Dit apparaat",
+        "lastActive": "Laatst actief {when}",
+        "revoke": "Uitloggen",
+        "revoking": "Uitloggen…",
+        "revokeOthers": "Log alle andere apparaten uit",
+        "revokingOthers": "Uitloggen…",
+        "onlyThisDevice": "Dit is het enige apparaat dat op je account is ingelogd.",
+        "unknownDevice": "Onbekend apparaat",
+        "device": "{browser} op {platform}",
+        "browser": {
+          "chrome": "Chrome",
+          "edge": "Edge",
+          "firefox": "Firefox",
+          "safari": "Safari",
+          "unknown": "Onbekende browser"
+        },
+        "platform": {
+          "android": "Android",
+          "ios": "iOS",
+          "linux": "Linux",
+          "macos": "macOS",
+          "windows": "Windows",
+          "unknown": "een onbekend platform"
+        }
+      },
+      "danger": {
+        "title": "Account verwijderen",
+        "description": "Je account wordt definitief verwijderd, samen met elke groep waarvan jij het enige lid bent. Dit kan niet ongedaan worden gemaakt.",
+        "delete": "Account verwijderen",
+        "cancel": "Account behouden",
+        "confirmInstruction": "Typ hieronder {email} ter bevestiging.",
+        "confirmLabel": "Je e-mailadres",
+        "confirm": "Account definitief verwijderen",
+        "confirming": "Versturen…",
+        "sent": "Kijk in {email} en open de link om het verwijderen af te ronden. Er is nog niets verwijderd.",
+        "webOnly": "Open de link op een apparaat waarop je bent ingelogd in de webapplicatie — die sessie is nodig om het af te ronden."
+      }
     }
   },
   "home": {
