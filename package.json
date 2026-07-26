@@ -21,6 +21,7 @@
     "dev:mobile": "turbo run dev --filter=@ai-starter/mobile",
     "dev:web": "turbo run dev --filter=@ai-starter/web",
     "diagnose": "node packages/tooling/src/bin/diagnose.ts",
+    "format": "pnpm format:write",
     "format:check": "prettier --check . --cache",
     "format:write": "prettier --write . --cache",
     "instructions": "node packages/tooling/src/bin/instructions.ts",
