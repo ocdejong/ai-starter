@@ -2,8 +2,8 @@ import { TRPCError } from "@trpc/server";
 import { describe, expect, it, vi } from "vitest";
 
 import type {
-  AnnouncementRecord,
-  AnnouncementRepository,
+  {{pascal}}Record,
+  {{pascal}}Repository,
   GroupMembership,
   GroupRepository,
   TRPCContext,
@@ -18,10 +18,10 @@ const ownMembership: GroupMembership = {
   slug: "group-a",
 };
 
-const stored: AnnouncementRecord = {
-  id: "announcement-1",
+const stored: {{pascal}}Record = {
+  id: "{{camel}}-1",
   isCurrent: true,
-  title: "The first announcement",
+  title: "The first {{lower}}",
 };
 
 /**
@@ -29,14 +29,14 @@ const stored: AnnouncementRecord = {
  * exactly as the database adapter's group-keyed queries do: another group's
  * identifier matches no row.
  */
-function announcementsOfGroupA(): AnnouncementRepository {
+function {{camelPlural}}OfGroupA(): {{pascal}}Repository {
   // Written as a plain typed object first so each callback is contextually
   // typed; `vi.fn` then only adds the recording.
-  const repository: AnnouncementRepository = {
+  const repository: {{pascal}}Repository = {
     listByGroup: async (groupId) => (groupId === "group-a" ? [stored] : []),
     publish: async ({ title }) => ({ ...stored, title }),
-    rename: async ({ announcementId, groupId, title }) =>
-      groupId === "group-a" && announcementId === stored.id
+    rename: async ({ {{camel}}Id, groupId, title }) =>
+      groupId === "group-a" && {{camel}}Id === stored.id
         ? { ...stored, title }
         : null,
   };
@@ -60,10 +60,10 @@ function groupsForMemberOfA(): GroupRepository {
 }
 
 const createContext = (
-  announcements: AnnouncementRepository,
+  {{camelPlural}}: {{pascal}}Repository,
   session: TRPCSession,
 ): TRPCContext => ({
-  announcements,
+  {{camelPlural}},
   groups: groupsForMemberOfA(),
   headers: new Headers(),
   session,
@@ -74,102 +74,102 @@ const signedIn = (activeGroupId: string | null): TRPCSession => ({
   user: { id: "user-1" },
 });
 
-describe("announcementRouter", () => {
-  it("lists the active group's announcements and nothing else", async () => {
-    const announcements = announcementsOfGroupA();
+describe("{{camel}}Router", () => {
+  it("lists the active group's {{lowerPlural}} and nothing else", async () => {
+    const {{camelPlural}} = {{camelPlural}}OfGroupA();
 
     const result = await createCaller(
-      createContext(announcements, signedIn("group-a")),
-    ).announcement.list();
+      createContext({{camelPlural}}, signedIn("group-a")),
+    ).{{camel}}.list();
 
-    expect(announcements.listByGroup).toHaveBeenCalledWith("group-a");
+    expect({{camelPlural}}.listByGroup).toHaveBeenCalledWith("group-a");
     expect(result).toEqual([stored]);
   });
 
   it("publishes into the group the request was made in", async () => {
-    const announcements = announcementsOfGroupA();
+    const {{camelPlural}} = {{camelPlural}}OfGroupA();
 
     const result = await createCaller(
-      createContext(announcements, signedIn("group-a")),
-    ).announcement.publish({ title: "  A second announcement  " });
+      createContext({{camelPlural}}, signedIn("group-a")),
+    ).{{camel}}.publish({ title: "  A second {{lower}}  " });
 
-    expect(announcements.publish).toHaveBeenCalledWith({
+    expect({{camelPlural}}.publish).toHaveBeenCalledWith({
       createdById: "user-1",
       groupId: "group-a",
-      title: "A second announcement",
+      title: "A second {{lower}}",
     });
-    expect(result.title).toBe("A second announcement");
+    expect(result.title).toBe("A second {{lower}}");
   });
 
-  it("renames one of the active group's announcements", async () => {
-    const announcements = announcementsOfGroupA();
+  it("renames one of the active group's {{lowerPlural}}", async () => {
+    const {{camelPlural}} = {{camelPlural}}OfGroupA();
 
     const result = await createCaller(
-      createContext(announcements, signedIn("group-a")),
-    ).announcement.rename({
-      announcementId: "announcement-1",
-      title: "The renamed announcement",
+      createContext({{camelPlural}}, signedIn("group-a")),
+    ).{{camel}}.rename({
+      {{camel}}Id: "{{camel}}-1",
+      title: "The renamed {{lower}}",
     });
 
-    expect(announcements.rename).toHaveBeenCalledWith({
-      announcementId: "announcement-1",
+    expect({{camelPlural}}.rename).toHaveBeenCalledWith({
+      {{camel}}Id: "{{camel}}-1",
       groupId: "group-a",
-      title: "The renamed announcement",
+      title: "The renamed {{lower}}",
     });
-    expect(result.title).toBe("The renamed announcement");
+    expect(result.title).toBe("The renamed {{lower}}");
   });
 
   it("refuses an identifier that belongs to another group", async () => {
-    const announcements = announcementsOfGroupA();
+    const {{camelPlural}} = {{camelPlural}}OfGroupA();
 
     await expect(
       createCaller(
-        createContext(announcements, signedIn("group-a")),
-      ).announcement.rename({
-        announcementId: "announcement-of-group-b",
-        title: "Another group's announcement",
+        createContext({{camelPlural}}, signedIn("group-a")),
+      ).{{camel}}.rename({
+        {{camel}}Id: "{{camel}}-of-group-b",
+        title: "Another group's {{lower}}",
       }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
   it("refuses a caller whose session names a group they are not in", async () => {
-    const announcements = announcementsOfGroupA();
+    const {{camelPlural}} = {{camelPlural}}OfGroupA();
 
     await expect(
       createCaller(
-        createContext(announcements, signedIn("group-b")),
-      ).announcement.list(),
+        createContext({{camelPlural}}, signedIn("group-b")),
+      ).{{camel}}.list(),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    expect(announcements.listByGroup).not.toHaveBeenCalled();
+    expect({{camelPlural}}.listByGroup).not.toHaveBeenCalled();
   });
 
   it("refuses a caller with no active group", async () => {
-    const announcements = announcementsOfGroupA();
+    const {{camelPlural}} = {{camelPlural}}OfGroupA();
 
     await expect(
       createCaller(
-        createContext(announcements, signedIn(null)),
-      ).announcement.list(),
+        createContext({{camelPlural}}, signedIn(null)),
+      ).{{camel}}.list(),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
   });
 
   it("refuses a signed-out caller", async () => {
-    const announcements = announcementsOfGroupA();
+    const {{camelPlural}} = {{camelPlural}}OfGroupA();
 
     await expect(
-      createCaller(createContext(announcements, null)).announcement.list(),
+      createCaller(createContext({{camelPlural}}, null)).{{camel}}.list(),
     ).rejects.toBeInstanceOf(TRPCError);
-    expect(announcements.listByGroup).not.toHaveBeenCalled();
+    expect({{camelPlural}}.listByGroup).not.toHaveBeenCalled();
   });
 
   it("rejects a blank title before the repository is reached", async () => {
-    const announcements = announcementsOfGroupA();
+    const {{camelPlural}} = {{camelPlural}}OfGroupA();
 
     await expect(
       createCaller(
-        createContext(announcements, signedIn("group-a")),
-      ).announcement.publish({ title: "   " }),
+        createContext({{camelPlural}}, signedIn("group-a")),
+      ).{{camel}}.publish({ title: "   " }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    expect(announcements.publish).not.toHaveBeenCalled();
+    expect({{camelPlural}}.publish).not.toHaveBeenCalled();
   });
 });

@@ -1,0 +1,83 @@
+"use client";
+
+import {
+  publish{{pascal}}InputSchema,
+  type Publish{{pascal}}Input,
+} from "@ai-starter/domain";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
+import { useForm } from "react-hook-form";
+
+import { {{pascal}}FieldError } from "~/components/{{kebabPlural}}/{{kebab}}-field-error";
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+
+/**
+ * Renames the group's current {{lower}}.
+ *
+ * The field is seeded from a prop, which is exactly the shape that goes stale:
+ * `useForm` reads `defaultValues` once, so a second {{lower}} arriving in the
+ * same mounted form would still show the first one's title. The caller keys this
+ * component by the {{lower}}'s id, and the test below re-renders it with a
+ * different one — a form seeded from a prop needs both.
+ */
+export function {{pascal}}RenameForm({
+  isSaving,
+  onRename,
+  saved,
+  title,
+}: {
+  readonly isSaving: boolean;
+  readonly onRename: (title: string) => void;
+  readonly saved: boolean;
+  readonly title: string;
+}) {
+  const t = useTranslations("app.{{camelPlural}}.current");
+  const {
+    formState: { errors },
+    handleSubmit,
+    register,
+  } = useForm<Publish{{pascal}}Input>({
+    defaultValues: { title },
+    resolver: zodResolver(publish{{pascal}}InputSchema),
+  });
+
+  return (
+    <form
+      className="space-y-3"
+      noValidate
+      onSubmit={handleSubmit((input) => {
+        onRename(input.title);
+      })}
+    >
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="min-w-56 flex-1 space-y-1.5">
+          <Label htmlFor="{{camel}}-rename">{t("label")}</Label>
+          <Input
+            {...register("title")}
+            aria-describedby={
+              errors.title === undefined
+                ? undefined
+                : "{{camel}}-rename-error"
+            }
+            aria-invalid={errors.title !== undefined}
+            id="{{camel}}-rename"
+          />
+        </div>
+        <Button disabled={isSaving} type="submit">
+          {isSaving ? t("submitting") : t("submit")}
+        </Button>
+      </div>
+      <{{pascal}}FieldError
+        id="{{camel}}-rename-error"
+        message={errors.title?.message}
+      />
+      {saved ? (
+        <p className="text-muted-foreground text-sm" role="status">
+          {t("saved")}
+        </p>
+      ) : null}
+    </form>
+  );
+}

@@ -24,6 +24,7 @@
     "format": "pnpm format:write",
     "format:check": "prettier --check . --cache",
     "format:write": "prettier --write . --cache",
+    "generate": "node packages/tooling/src/bin/generate.ts",
     "instructions": "node packages/tooling/src/bin/instructions.ts",
     "instructions:write": "node packages/tooling/src/bin/instructions.ts --write",
     "lint": "turbo run lint",

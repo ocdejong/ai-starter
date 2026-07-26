@@ -1,0 +1,115 @@
+import "server-only";
+
+import {
+  {{pascal}}Failure,
+  type {{pascal}}Client,
+  type {{pascal}}Reference,
+} from "@ai-starter/api";
+import { z } from "zod";
+
+/**
+ * The {{lower}} adapter.
+ *
+ * Everything volatile about the provider stops here: its URL shape, its status
+ * codes, its response body, and its credential. Above this file only the port's
+ * vocabulary exists, which is what makes replacing the provider a change to one
+ * directory.
+ *
+ * Four things every adapter in this repository owes its caller:
+ *
+ * 1. **A timeout.** A request with no deadline is an outage waiting for a slow
+ *    dependency; `AbortSignal.timeout` gives every call one.
+ * 2. **A parsed response.** The body is `unknown` until Zod says otherwise. A
+ *    provider that changes a field silently must fail here, not three layers up
+ *    where the value is already inside a domain object.
+ * 3. **Translated errors.** Callers act on `reason`, never on a status code, and
+ *    never on a provider's error class.
+ * 4. **Redaction.** The credential never reaches a message, a log line, or an
+ *    error. `redact` is applied to anything that could have carried it.
+ */
+export type {{pascal}}Config = {
+  readonly apiKey: string;
+  readonly baseUrl: string;
+  /** Injected so a test can answer without a network. */
+  readonly fetch?: typeof globalThis.fetch;
+  readonly timeoutMs?: number;
+};
+
+const defaultTimeoutMs = 10_000;
+
+/** The provider's shape, private to this file and validated before it escapes. */
+const referenceResponseSchema = z.object({
+  id: z.string().min(1),
+  state: z.enum(["active", "inactive"]),
+});
+
+/**
+ * Removes anything that looks like the credential from text that is about to be
+ * shown or logged. Adapters fail with the provider's own words often enough that
+ * this cannot be left to the caller.
+ */
+export function redact(text: string, secret: string): string {
+  return secret.length === 0 ? text : text.split(secret).join("[redacted]");
+}
+
+function failureFor(status: number): {{pascal}}Failure {
+  if (status === 401 || status === 403) {
+    return new {{pascal}}Failure("unauthorized", "The credential was refused.");
+  }
+  if (status === 404) {
+    return new {{pascal}}Failure("notFound", "No such reference.");
+  }
+  if (status === 429) {
+    return new {{pascal}}Failure("rateLimited", "Too many requests.");
+  }
+  return new {{pascal}}Failure(
+    "unavailable",
+    `The provider answered ${String(status)}.`,
+  );
+}
+
+export function create{{pascal}}Client(config: {{pascal}}Config): {{pascal}}Client {
+  const call = config.fetch ?? globalThis.fetch;
+  const timeoutMs = config.timeoutMs ?? defaultTimeoutMs;
+
+  return {
+    fetchReference: async (id: string): Promise<{{pascal}}Reference> => {
+      let response: Response;
+      try {
+        response = await call(
+          `${config.baseUrl}/references/${encodeURIComponent(id)}`,
+          {
+            headers: { authorization: `Bearer ${config.apiKey}` },
+            signal: AbortSignal.timeout(timeoutMs),
+          },
+        );
+      } catch (thrown) {
+        const message =
+          thrown instanceof Error ? redact(thrown.message, config.apiKey) : "";
+        throw new {{pascal}}Failure(
+          thrown instanceof Error && thrown.name === "TimeoutError"
+            ? "timedOut"
+            : "unavailable",
+          message.length === 0 ? "The provider could not be reached." : message,
+        );
+      }
+
+      if (!response.ok) {
+        throw failureFor(response.status);
+      }
+
+      const body: unknown = await response.json().catch(() => undefined);
+      const parsed = referenceResponseSchema.safeParse(body);
+      if (!parsed.success) {
+        // The provider's payload is deliberately not included: it is not ours to
+        // log, and it is exactly where a token would be if one were echoed back.
+        throw new {{pascal}}Failure(
+          "malformedResponse",
+          "The provider's response did not match the expected shape.",
+        );
+      }
+
+      return { id: parsed.data.id, status: parsed.data.state };
+    },
+  };
+}

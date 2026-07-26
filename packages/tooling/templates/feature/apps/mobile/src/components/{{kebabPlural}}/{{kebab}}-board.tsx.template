@@ -1,0 +1,81 @@
+import { useTranslations } from "use-intl";
+
+import { api } from "../../trpc/provider";
+import { Notice } from "../auth/notice";
+import {
+  {{pascal}}Panel,
+  type {{pascal}}Failure,
+} from "./{{kebab}}-panel";
+
+/**
+ * A request that never reached the server carries no error payload; anything
+ * else was refused by one. Those are the only two states a reader can act on
+ * differently, so the interface does not invent more.
+ */
+export function {{camel}}Failure(
+  error: { data?: unknown } | null,
+): {{pascal}}Failure | null {
+  if (error === null) {
+    return null;
+  }
+  return error.data === null || error.data === undefined
+    ? "network"
+    : "unexpected";
+}
+
+/**
+ * Wires the {{lowerPlural}} tab to the API.
+ *
+ * Nothing here names a group. `groupProcedure` resolves it from the verified
+ * membership behind the request, so the same screen shows another group's
+ * {{lowerPlural}} after a switch without the client asking for one.
+ */
+export function {{pascal}}Board() {
+  const t = useTranslations("app.{{camelPlural}}");
+  const utils = api.useUtils();
+  const {{camelPlural}} = api.{{camel}}.list.useQuery();
+
+  const publish = api.{{camel}}.publish.useMutation({
+    onSuccess: async () => {
+      await utils.{{camel}}.list.invalidate();
+    },
+  });
+  const rename = api.{{camel}}.rename.useMutation({
+    onSuccess: async () => {
+      await utils.{{camel}}.list.invalidate();
+    },
+  });
+
+  if ({{camelPlural}}.isPending) {
+    return <Notice message={t("loading")} tone="info" />;
+  }
+
+  if ({{camelPlural}}.data === undefined) {
+    return (
+      <Notice
+        message={t(
+          `errors.${{{camel}}Failure({{camelPlural}}.error) ?? "unexpected"}`,
+        )}
+        tone="error"
+      />
+    );
+  }
+
+  return (
+    <{{pascal}}Panel
+      {{camelPlural}}={{{camelPlural}}.data}
+      failure={
+        {{camel}}Failure(publish.error) ?? {{camel}}Failure(rename.error)
+      }
+      isPublishing={publish.isPending}
+      isRenaming={rename.isPending}
+      onPublish={(title) => {
+        publish.mutate({ title });
+      }}
+      onRename={(input) => {
+        rename.mutate(input);
+      }}
+      renameSaved={rename.isSuccess}
+    />
+  );
+}

@@ -1,24 +1,24 @@
 import { render, screen, userEvent } from "@testing-library/react-native";
 
 import { TestProviders } from "../../test/providers";
-import { AnnouncementPanel, type Announcement } from "./announcement-panel";
+import { {{pascal}}Panel, type {{pascal}} } from "./{{kebab}}-panel";
 
-const current: Announcement = {
-  id: "announcement-1",
+const current: {{pascal}} = {
+  id: "{{camel}}-1",
   isCurrent: true,
-  title: "The first announcement",
+  title: "The first {{lower}}",
 };
-const superseded: Announcement = {
-  id: "announcement-0",
+const superseded: {{pascal}} = {
+  id: "{{camel}}-0",
   isCurrent: false,
-  title: "An earlier announcement",
+  title: "An earlier {{lower}}",
 };
 
-type PanelProps = Parameters<typeof AnnouncementPanel>[0];
+type PanelProps = Parameters<typeof {{pascal}}Panel>[0];
 
 function props(overrides: Partial<PanelProps> = {}): PanelProps {
   return {
-    announcements: [current, superseded],
+    {{camelPlural}}: [current, superseded],
     failure: null,
     isPublishing: false,
     isRenaming: false,
@@ -33,22 +33,22 @@ async function renderPanel(overrides: Partial<PanelProps> = {}) {
   const panelProps = props(overrides);
   const view = await render(
     <TestProviders>
-      <AnnouncementPanel {...panelProps} />
+      <{{pascal}}Panel {...panelProps} />
     </TestProviders>,
   );
 
   return { props: panelProps, user: userEvent.setup(), view };
 }
 
-describe("AnnouncementPanel", () => {
-  it("shows the current announcement and the superseded ones apart", async () => {
+describe("{{pascal}}Panel", () => {
+  it("shows the current {{lower}} and the superseded ones apart", async () => {
     await renderPanel();
 
     expect(screen.getByLabelText("Current title")).toHaveDisplayValue(
       current.title,
     );
     expect(screen.getByText(superseded.title)).toBeOnTheScreen();
-    expect(screen.getByText("2 announcements")).toBeOnTheScreen();
+    expect(screen.getByText("2 {{lowerPlural}}")).toBeOnTheScreen();
   });
 
   it("publishes the trimmed title", async () => {
@@ -59,11 +59,11 @@ describe("AnnouncementPanel", () => {
     // wrong reason. `userEvent` awaits each step.
     await user.type(
       screen.getByLabelText("New title"),
-      "  A second announcement  ",
+      "  A second {{lower}}  ",
     );
     await user.press(screen.getByRole("button", { name: "Publish" }));
 
-    expect(given.onPublish).toHaveBeenCalledWith("A second announcement");
+    expect(given.onPublish).toHaveBeenCalledWith("A second {{lower}}");
   });
 
   it("refuses a blank title without calling the API", async () => {
@@ -77,22 +77,22 @@ describe("AnnouncementPanel", () => {
 
   /**
    * The regression a single render cannot see: the rename field seeds from a
-   * prop once, so a panel that is not keyed by the announcement keeps showing
+   * prop once, so a panel that is not keyed by the {{lower}} keeps showing
    * the previous title after a new one becomes current.
    */
-  it("reseeds the rename field when another announcement becomes current", async () => {
+  it("reseeds the rename field when another {{lower}} becomes current", async () => {
     const { view } = await renderPanel();
-    const next: Announcement = {
-      id: "announcement-2",
+    const next: {{pascal}} = {
+      id: "{{camel}}-2",
       isCurrent: true,
-      title: "A second announcement",
+      title: "A second {{lower}}",
     };
 
     await view.rerender(
       <TestProviders>
-        <AnnouncementPanel
+        <{{pascal}}Panel
           {...props({
-            announcements: [next, { ...current, isCurrent: false }, superseded],
+            {{camelPlural}}: [next, { ...current, isCurrent: false }, superseded],
           })}
         />
       </TestProviders>,
@@ -103,24 +103,24 @@ describe("AnnouncementPanel", () => {
     );
   });
 
-  it("renames the announcement it is showing", async () => {
+  it("renames the {{lower}} it is showing", async () => {
     const { props: given, user } = await renderPanel();
 
     await user.clear(screen.getByLabelText("Current title"));
     await user.type(
       screen.getByLabelText("Current title"),
-      "The renamed announcement",
+      "The renamed {{lower}}",
     );
     await user.press(screen.getByRole("button", { name: "Save" }));
 
     expect(given.onRename).toHaveBeenCalledWith({
-      announcementId: current.id,
-      title: "The renamed announcement",
+      {{camel}}Id: current.id,
+      title: "The renamed {{lower}}",
     });
   });
 
   it("says the group has nothing yet", async () => {
-    await renderPanel({ announcements: [] });
+    await renderPanel({ {{camelPlural}}: [] });
 
     expect(
       screen.getByText("This group has not published anything yet."),
@@ -130,7 +130,7 @@ describe("AnnouncementPanel", () => {
   it("renders in Dutch", async () => {
     await render(
       <TestProviders locale="nl">
-        <AnnouncementPanel {...props()} />
+        <{{pascal}}Panel {...props()} />
       </TestProviders>,
     );
 

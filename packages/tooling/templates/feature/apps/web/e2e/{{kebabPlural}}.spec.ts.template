@@ -10,7 +10,7 @@ import { registerVerifiedAccount } from "./support/account";
  * group scoping, the transaction, and the PostgreSQL constraint behind it —
  * against a real browser and a real database.
  */
-test("publishes, renames and supersedes a group's announcements", async ({
+test("publishes, renames and supersedes a group's {{lowerPlural}}", async ({
   page,
 }) => {
   // Registration, a mailbox round trip, and several routes that each compile on
@@ -20,58 +20,58 @@ test("publishes, renames and supersedes a group's announcements", async ({
   await registerVerifiedAccount(page);
 
   await test.step("a new group has nothing to show", async () => {
-    await page.getByRole("link", { name: "Announcements" }).click();
+    await page.getByRole("link", { name: "{{titlePlural}}" }).click();
 
-    await expect(page).toHaveURL("/announcements", { timeout: 30_000 });
+    await expect(page).toHaveURL("/{{kebabPlural}}", { timeout: 30_000 });
     await expect(
       page.getByText("This group has not published anything yet."),
     ).toBeVisible({ timeout: 30_000 });
   });
 
   await test.step("publish the first one", async () => {
-    await page.getByLabel("New title").fill("The first announcement");
+    await page.getByLabel("New title").fill("The first {{lower}}");
     await page.getByRole("button", { name: "Publish" }).click();
 
     await expect(page.getByLabel("Current title")).toHaveValue(
-      "The first announcement",
+      "The first {{lower}}",
       { timeout: 30_000 },
     );
-    await expect(page.getByText("1 announcement")).toBeVisible();
+    await expect(page.getByText("1 {{lower}}")).toBeVisible();
   });
 
   await test.step("rename it", async () => {
-    await page.getByLabel("Current title").fill("The renamed announcement");
+    await page.getByLabel("Current title").fill("The renamed {{lower}}");
     await page.getByRole("button", { name: "Save" }).click();
 
     await expect(page.getByText("Saved.")).toBeVisible();
     await page.reload();
     await expect(page.getByLabel("Current title")).toHaveValue(
-      "The renamed announcement",
+      "The renamed {{lower}}",
       { timeout: 30_000 },
     );
   });
 
   await test.step("publishing again supersedes it", async () => {
-    await page.getByLabel("New title").fill("A second announcement");
+    await page.getByLabel("New title").fill("A second {{lower}}");
     await page.getByRole("button", { name: "Publish" }).click();
 
-    // The field is seeded from the current announcement, so this assertion is
+    // The field is seeded from the current {{lower}}, so this assertion is
     // what catches a form that was not keyed by the record it is about: every
     // unit test passes while it shows the previous title.
     await expect(page.getByLabel("Current title")).toHaveValue(
-      "A second announcement",
+      "A second {{lower}}",
       { timeout: 30_000 },
     );
     await expect(
       page
-        .getByRole("region", { name: "Earlier announcements" })
-        .getByText("The renamed announcement"),
+        .getByRole("region", { name: "Earlier {{lowerPlural}}" })
+        .getByText("The renamed {{lower}}"),
     ).toBeVisible();
-    await expect(page.getByText("2 announcements")).toBeVisible();
+    await expect(page.getByText("2 {{lowerPlural}}")).toBeVisible();
   });
 });
 
-test("keeps one group's announcements out of another's", async ({
+test("keeps one group's {{lowerPlural}} out of another's", async ({
   browser,
 }) => {
   test.setTimeout(180_000);
@@ -82,26 +82,26 @@ test("keeps one group's announcements out of another's", async ({
   try {
     const ownerPage = await owner.newPage();
     await registerVerifiedAccount(ownerPage, { name: "Ada Lovelace" });
-    await ownerPage.goto("/announcements");
-    await ownerPage.getByLabel("New title").fill("This group's announcement");
+    await ownerPage.goto("/{{kebabPlural}}");
+    await ownerPage.getByLabel("New title").fill("This group's {{lower}}");
     await ownerPage.getByRole("button", { name: "Publish" }).click();
     await expect(ownerPage.getByLabel("Current title")).toHaveValue(
-      "This group's announcement",
+      "This group's {{lower}}",
       { timeout: 30_000 },
     );
 
     // A second account signs up into its own personal group. The procedures
     // take no group identifier, so there is nothing for this reader to tamper
-    // with — and the group behind their session has no announcements.
+    // with — and the group behind their session has no {{lowerPlural}}.
     const strangerPage = await stranger.newPage();
     await registerVerifiedAccount(strangerPage, { name: "Grace Hopper" });
-    await strangerPage.goto("/announcements");
+    await strangerPage.goto("/{{kebabPlural}}");
 
     await expect(
       strangerPage.getByText("This group has not published anything yet."),
     ).toBeVisible({ timeout: 30_000 });
     await expect(
-      strangerPage.getByText("This group's announcement"),
+      strangerPage.getByText("This group's {{lower}}"),
     ).toHaveCount(0);
   } finally {
     await owner.close();

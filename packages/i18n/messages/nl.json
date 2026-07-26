@@ -312,14 +312,14 @@
       "count": "{count, plural, =0 {Nog geen aankondigingen} one {# aankondiging} other {# aankondigingen}}",
       "current": {
         "title": "Huidige aankondiging",
-        "empty": "Deze groep heeft nog geen aankondiging gepubliceerd.",
+        "empty": "Deze groep heeft nog niets gepubliceerd.",
         "label": "Huidige titel",
         "submit": "Opslaan",
         "submitting": "Opslaan…",
         "saved": "Opgeslagen."
       },
       "publish": {
-        "title": "Een aankondiging publiceren",
+        "title": "Nieuwe aankondiging",
         "description": "Publiceren vervangt de huidige aankondiging.",
         "label": "Nieuwe titel",
         "submit": "Publiceren",
@@ -334,7 +334,7 @@
         "unexpected": "Er ging iets mis. Probeer het opnieuw."
       },
       "validation": {
-        "announcementTitleRequired": "Vul een titel voor de aankondiging in.",
+        "announcementTitleRequired": "Vul een titel in.",
         "announcementTitleTooLong": "Gebruik {max} tekens of minder."
       }
     }

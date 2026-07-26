@@ -2,29 +2,29 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import { announcementFailure } from "~/components/announcements/announcement-board";
+import { {{camel}}Failure } from "~/components/{{kebabPlural}}/{{kebab}}-board";
 import {
-  AnnouncementPanel,
-  type Announcement,
-} from "~/components/announcements/announcement-panel";
+  {{pascal}}Panel,
+  type {{pascal}},
+} from "~/components/{{kebabPlural}}/{{kebab}}-panel";
 import { IntlTestProvider } from "~/test/intl";
 
-const current: Announcement = {
-  id: "announcement-1",
+const current: {{pascal}} = {
+  id: "{{camel}}-1",
   isCurrent: true,
-  title: "The first announcement",
+  title: "The first {{lower}}",
 };
-const superseded: Announcement = {
-  id: "announcement-0",
+const superseded: {{pascal}} = {
+  id: "{{camel}}-0",
   isCurrent: false,
-  title: "An earlier announcement",
+  title: "An earlier {{lower}}",
 };
 
 function renderPanel(
-  overrides: Partial<Parameters<typeof AnnouncementPanel>[0]> = {},
+  overrides: Partial<Parameters<typeof {{pascal}}Panel>[0]> = {},
 ) {
   const props = {
-    announcements: [current, superseded],
+    {{camelPlural}}: [current, superseded],
     failure: null,
     isPublishing: false,
     isRenaming: false,
@@ -32,19 +32,19 @@ function renderPanel(
     onRename: vi.fn(),
     renameSaved: false,
     ...overrides,
-  } satisfies Parameters<typeof AnnouncementPanel>[0];
+  } satisfies Parameters<typeof {{pascal}}Panel>[0];
 
   const view = render(
     <IntlTestProvider>
-      <AnnouncementPanel {...props} />
+      <{{pascal}}Panel {...props} />
     </IntlTestProvider>,
   );
 
   return { props, view };
 }
 
-describe("AnnouncementPanel", () => {
-  it("shows the current announcement and the superseded ones apart", () => {
+describe("{{pascal}}Panel", () => {
+  it("shows the current {{lower}} and the superseded ones apart", () => {
     renderPanel();
 
     expect(screen.getByRole("textbox", { name: "Current title" })).toHaveValue(
@@ -52,10 +52,10 @@ describe("AnnouncementPanel", () => {
     );
     expect(
       within(
-        screen.getByRole("region", { name: "Earlier announcements" }),
+        screen.getByRole("region", { name: "Earlier {{lowerPlural}}" }),
       ).getByText(superseded.title),
     ).toBeInTheDocument();
-    expect(screen.getByText("2 announcements")).toBeInTheDocument();
+    expect(screen.getByText("2 {{lowerPlural}}")).toBeInTheDocument();
   });
 
   it("publishes the trimmed title", async () => {
@@ -64,11 +64,11 @@ describe("AnnouncementPanel", () => {
 
     await user.type(
       screen.getByRole("textbox", { name: "New title" }),
-      "  A second announcement  ",
+      "  A second {{lower}}  ",
     );
     await user.click(screen.getByRole("button", { name: "Publish" }));
 
-    expect(props.onPublish).toHaveBeenCalledWith("A second announcement");
+    expect(props.onPublish).toHaveBeenCalledWith("A second {{lower}}");
   });
 
   it("refuses a blank title without calling the API", async () => {
@@ -83,21 +83,21 @@ describe("AnnouncementPanel", () => {
 
   /**
    * The regression a single render cannot see: the rename form reads its
-   * default value once, so a panel that is not keyed by the announcement keeps
+   * default value once, so a panel that is not keyed by the {{lower}} keeps
    * showing the previous title after a new one becomes current.
    */
-  it("reseeds the rename field when another announcement becomes current", () => {
+  it("reseeds the rename field when another {{lower}} becomes current", () => {
     const { view } = renderPanel();
-    const next: Announcement = {
-      id: "announcement-2",
+    const next: {{pascal}} = {
+      id: "{{camel}}-2",
       isCurrent: true,
-      title: "A second announcement",
+      title: "A second {{lower}}",
     };
 
     view.rerender(
       <IntlTestProvider>
-        <AnnouncementPanel
-          announcements={[next, { ...current, isCurrent: false }, superseded]}
+        <{{pascal}}Panel
+          {{camelPlural}}={[next, { ...current, isCurrent: false }, superseded]}
           failure={null}
           isPublishing={false}
           isRenaming={false}
@@ -113,28 +113,28 @@ describe("AnnouncementPanel", () => {
     );
   });
 
-  it("renames the announcement it is showing", async () => {
+  it("renames the {{lower}} it is showing", async () => {
     const user = userEvent.setup();
     const { props } = renderPanel();
     const field = screen.getByRole("textbox", { name: "Current title" });
 
     await user.clear(field);
-    await user.type(field, "The renamed announcement");
+    await user.type(field, "The renamed {{lower}}");
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     expect(props.onRename).toHaveBeenCalledWith({
-      announcementId: current.id,
-      title: "The renamed announcement",
+      {{camel}}Id: current.id,
+      title: "The renamed {{lower}}",
     });
   });
 
   it("says the group has nothing yet", () => {
-    renderPanel({ announcements: [] });
+    renderPanel({ {{camelPlural}}: [] });
 
     expect(
       screen.getByText("This group has not published anything yet."),
     ).toBeInTheDocument();
-    expect(screen.getByText("No announcements yet")).toBeInTheDocument();
+    expect(screen.getByText("No {{lowerPlural}} yet")).toBeInTheDocument();
   });
 
   it("reports a refused write", () => {
@@ -148,8 +148,8 @@ describe("AnnouncementPanel", () => {
   it("renders in Dutch", () => {
     render(
       <IntlTestProvider locale="nl">
-        <AnnouncementPanel
-          announcements={[current]}
+        <{{pascal}}Panel
+          {{camelPlural}}={[current]}
           failure={null}
           isPublishing={false}
           isRenaming={false}
@@ -166,11 +166,11 @@ describe("AnnouncementPanel", () => {
   });
 });
 
-describe("announcementFailure", () => {
+describe("{{camel}}Failure", () => {
   it("tells a request that never arrived from one that was refused", () => {
-    expect(announcementFailure(null)).toBeNull();
-    expect(announcementFailure({ data: null })).toBe("network");
-    expect(announcementFailure({ data: { code: "FORBIDDEN" } })).toBe(
+    expect({{camel}}Failure(null)).toBeNull();
+    expect({{camel}}Failure({ data: null })).toBe("network");
+    expect({{camel}}Failure({ data: { code: "FORBIDDEN" } })).toBe(
       "unexpected",
     );
   });

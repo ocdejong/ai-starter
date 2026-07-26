@@ -312,14 +312,14 @@
       "count": "{count, plural, =0 {No announcements yet} one {# announcement} other {# announcements}}",
       "current": {
         "title": "Current announcement",
-        "empty": "This group has not published an announcement yet.",
+        "empty": "This group has not published anything yet.",
         "label": "Current title",
         "submit": "Save",
         "submitting": "Saving…",
         "saved": "Saved."
       },
       "publish": {
-        "title": "Publish an announcement",
+        "title": "New announcement",
         "description": "Publishing supersedes the current announcement.",
         "label": "New title",
         "submit": "Publish",
@@ -334,7 +334,7 @@
         "unexpected": "Something went wrong. Please try again."
       },
       "validation": {
-        "announcementTitleRequired": "Enter a title for the announcement.",
+        "announcementTitleRequired": "Enter a title.",
         "announcementTitleTooLong": "Use {max} characters or fewer."
       }
     }

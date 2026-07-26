@@ -51,6 +51,12 @@ An interface is not automatically good architecture. Add one only at a real side
 
 Cross-context communication goes through an explicit public contract. Never reach into another context's internal files, database tables, or adapter implementation. If a feature forces reverse or circular dependencies, redesign the ownership or introduce an event/port at the boundary rather than adding an import exception.
 
+## The golden path
+
+A feature slice has one shape in this repository, and `pnpm generate feature` emits it: a Zod contract and its invariants in `packages/domain` reporting stable codes an interface translates, a consumer-owned port in `packages/api`, a `groupProcedure` router that takes no group identifier, a Prisma adapter in `packages/db` whose multi-write operation is one transaction, constraints in PostgreSQL that the application cannot write around, and web and native screens over layered tests. The committed `announcement` slice is that generator's output and is kept so by a drift test, so it is the worked example to read; the generator is the thing to run.
+
+Two obligations follow a generated feature and the command prints both. Prisma cannot express a partial index or a CHECK constraint, so the migration is created with `--create-only` and its SQL is finished by hand. And a generator cannot translate a product's own noun, so both catalogs receive the same English copy and the Dutch one is a translation task rather than a missing one.
+
 ## Data and validation
 
 The intended path is:

@@ -9,7 +9,7 @@ import {
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { PrismaClient } from "../generated/prisma";
-import { createPrismaAnnouncementRepository } from "./announcement-repository";
+import { createPrisma{{pascal}}Repository } from "./{{kebab}}-repository";
 
 const execFileAsync = promisify(execFile);
 const packageDirectory = fileURLToPath(new URL("../", import.meta.url));
@@ -17,10 +17,10 @@ const schemaPath = fileURLToPath(
   new URL("../prisma/schema.prisma", import.meta.url),
 );
 
-describe("announcement repository against PostgreSQL", () => {
+describe("{{lower}} repository against PostgreSQL", () => {
   let container: StartedPostgreSqlContainer;
   let client: PrismaClient;
-  let announcements: ReturnType<typeof createPrismaAnnouncementRepository>;
+  let {{camelPlural}}: ReturnType<typeof createPrisma{{pascal}}Repository>;
 
   beforeAll(async () => {
     container = await new PostgreSqlContainer("postgres:17-alpine").start();
@@ -36,11 +36,11 @@ describe("announcement repository against PostgreSQL", () => {
     );
 
     client = new PrismaClient({ datasourceUrl: databaseUrl });
-    announcements = createPrismaAnnouncementRepository(client);
+    {{camelPlural}} = createPrisma{{pascal}}Repository(client);
   }, 120_000);
 
   afterEach(async () => {
-    await client.announcement.deleteMany();
+    await client.{{camel}}.deleteMany();
     await client.member.deleteMany();
     await client.organization.deleteMany();
     await client.user.deleteMany();
@@ -55,33 +55,33 @@ describe("announcement repository against PostgreSQL", () => {
     await seedGroup(client, "group-a", "user-a");
     await seedGroup(client, "group-b", "user-b");
 
-    await announcements.publish({
+    await {{camelPlural}}.publish({
       createdById: "user-a",
       groupId: "group-a",
-      title: "The first announcement",
+      title: "The first {{lower}}",
     });
 
-    await expect(announcements.listByGroup("group-a")).resolves.toMatchObject([
-      { isCurrent: true, title: "The first announcement" },
+    await expect({{camelPlural}}.listByGroup("group-a")).resolves.toMatchObject([
+      { isCurrent: true, title: "The first {{lower}}" },
     ]);
-    await expect(announcements.listByGroup("group-b")).resolves.toEqual([]);
+    await expect({{camelPlural}}.listByGroup("group-b")).resolves.toEqual([]);
   });
 
-  it("supersedes the previous current announcement in one transaction", async () => {
+  it("supersedes the previous current {{lower}} in one transaction", async () => {
     await seedGroup(client, "group-a", "user-a");
 
-    const first = await announcements.publish({
+    const first = await {{camelPlural}}.publish({
       createdById: "user-a",
       groupId: "group-a",
-      title: "An earlier announcement",
+      title: "An earlier {{lower}}",
     });
-    const second = await announcements.publish({
+    const second = await {{camelPlural}}.publish({
       createdById: "user-a",
       groupId: "group-a",
-      title: "A second announcement",
+      title: "A second {{lower}}",
     });
 
-    const stored = await announcements.listByGroup("group-a");
+    const stored = await {{camelPlural}}.listByGroup("group-a");
 
     expect(stored.map((entry) => [entry.id, entry.isCurrent])).toEqual([
       [second.id, true],
@@ -89,48 +89,48 @@ describe("announcement repository against PostgreSQL", () => {
     ]);
   });
 
-  it("lets each group keep its own current announcement", async () => {
+  it("lets each group keep its own current {{lower}}", async () => {
     await seedGroup(client, "group-a", "user-a");
     await seedGroup(client, "group-b", "user-b");
 
-    await announcements.publish({
+    await {{camelPlural}}.publish({
       createdById: "user-a",
       groupId: "group-a",
-      title: "This group's announcement",
+      title: "This group's {{lower}}",
     });
-    await announcements.publish({
+    await {{camelPlural}}.publish({
       createdById: "user-b",
       groupId: "group-b",
-      title: "Another group's announcement",
+      title: "Another group's {{lower}}",
     });
 
-    await expect(announcements.listByGroup("group-a")).resolves.toMatchObject([
-      { isCurrent: true, title: "This group's announcement" },
+    await expect({{camelPlural}}.listByGroup("group-a")).resolves.toMatchObject([
+      { isCurrent: true, title: "This group's {{lower}}" },
     ]);
-    await expect(announcements.listByGroup("group-b")).resolves.toMatchObject([
-      { isCurrent: true, title: "Another group's announcement" },
+    await expect({{camelPlural}}.listByGroup("group-b")).resolves.toMatchObject([
+      { isCurrent: true, title: "Another group's {{lower}}" },
     ]);
   });
 
-  it("refuses a second current announcement written around the transaction", async () => {
+  it("refuses a second current {{lower}} written around the transaction", async () => {
     await seedGroup(client, "group-a", "user-a");
-    await announcements.publish({
+    await {{camelPlural}}.publish({
       createdById: "user-a",
       groupId: "group-a",
-      title: "The first announcement",
+      title: "The first {{lower}}",
     });
 
     // The partial unique index is what stands between a concurrent second
-    // publisher and a group with two current announcements. The transaction
+    // publisher and a group with two current {{lowerPlural}}. The transaction
     // orders the writes; only the constraint can refuse a writer that never
     // read the first one.
     await expect(
-      client.announcement.create({
+      client.{{camel}}.create({
         data: {
           createdById: "user-a",
           groupId: "group-a",
           isCurrent: true,
-          title: "A second announcement",
+          title: "A second {{lower}}",
         },
       }),
     ).rejects.toMatchObject({ code: "P2002" });
@@ -140,7 +140,7 @@ describe("announcement repository against PostgreSQL", () => {
     await seedGroup(client, "group-a", "user-a");
 
     await expect(
-      announcements.publish({
+      {{camelPlural}}.publish({
         createdById: "user-a",
         groupId: "group-a",
         title: "x".repeat(121),
@@ -151,42 +151,42 @@ describe("announcement repository against PostgreSQL", () => {
   it("renames only within the group that asked", async () => {
     await seedGroup(client, "group-a", "user-a");
     await seedGroup(client, "group-b", "user-b");
-    const mine = await announcements.publish({
+    const mine = await {{camelPlural}}.publish({
       createdById: "user-a",
       groupId: "group-a",
-      title: "This group's announcement",
+      title: "This group's {{lower}}",
     });
 
     // The identifier is real and the caller is a genuine member — of the wrong
     // group. Pairing it with the verified group is what turns a cross-group
     // write into no write at all.
     await expect(
-      announcements.rename({
-        announcementId: mine.id,
+      {{camelPlural}}.rename({
+        {{camel}}Id: mine.id,
         groupId: "group-b",
-        title: "Another group's announcement",
+        title: "Another group's {{lower}}",
       }),
     ).resolves.toBeNull();
     await expect(
-      announcements.rename({
-        announcementId: mine.id,
+      {{camelPlural}}.rename({
+        {{camel}}Id: mine.id,
         groupId: "group-a",
-        title: "The renamed announcement",
+        title: "The renamed {{lower}}",
       }),
-    ).resolves.toMatchObject({ title: "The renamed announcement" });
+    ).resolves.toMatchObject({ title: "The renamed {{lower}}" });
   });
 
-  it("loses its announcements when the group is deleted", async () => {
+  it("loses its {{lowerPlural}} when the group is deleted", async () => {
     await seedGroup(client, "group-a", "user-a");
-    await announcements.publish({
+    await {{camelPlural}}.publish({
       createdById: "user-a",
       groupId: "group-a",
-      title: "This group's announcement",
+      title: "This group's {{lower}}",
     });
 
     await client.organization.delete({ where: { id: "group-a" } });
 
-    await expect(client.announcement.count()).resolves.toBe(0);
+    await expect(client.{{camel}}.count()).resolves.toBe(0);
   });
 });
 

@@ -28,11 +28,15 @@ ESLint encodes many of these boundaries per file; `pnpm arch` (dependency-cruise
 - `packages/config`: shared compiler, lint, and test configuration.
 - `packages/i18n`: shared EN/NL ICU message catalogs, the `Locale` schema, and locale negotiation. Platform-neutral; consumed by both apps.
 - `packages/tokens`: plain cross-platform design values.
-- `packages/tooling`: repository commands (`bootstrap`, `diagnose`, `instructions`, `policy`, `verify`, `verify:changed`, `starter:init`). Node built-ins only: `diagnose` must inspect a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency. Editing it also requires `packages/tooling/AGENTS.md`.
+- `packages/tooling`: repository commands (`bootstrap`, `diagnose`, `generate`, `instructions`, `policy`, `verify`, `verify:changed`, `starter:init`). Node built-ins only: `diagnose` must inspect a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency. Editing it also requires `packages/tooling/AGENTS.md`.
 
 ## Getting a checkout running
 
 `pnpm bootstrap` takes a clean clone to a runnable, migrated local environment and is safe to run repeatedly. `pnpm diagnose` reports what is missing and names the command that fixes it. `pnpm starter:init` is the one-time downstream initializer; see `README.md`.
+
+## Adding a feature
+
+`pnpm generate feature <name>` writes a vertical slice in the product's own words and registers it in every place a feature has to be registered; `pnpm generate context <name>` writes the domain half alone, and `pnpm generate adapter <name>` writes a consumer-owned port with a vendor-free adapter behind it. Run `pnpm generate --help` for what each emits. Generated output is expected to pass `pnpm verify:changed` untouched, and the command names the two things it cannot do: creating the migration, and translating the Dutch catalog entries. The committed `announcement` slice is that generator's output — `packages/tooling/src/generators/golden-path.test.ts` fails if it stops being — so read it, or regenerate it, rather than copying an older feature by hand.
 
 ## Required workflow
 
