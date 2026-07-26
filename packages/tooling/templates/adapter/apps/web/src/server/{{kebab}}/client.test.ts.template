@@ -1,0 +1,117 @@
+import { {{pascal}}Failure } from "@ai-starter/api";
+import { describe, expect, it, vi } from "vitest";
+
+import { create{{pascal}}Client, redact } from "./client";
+
+const apiKey = "secret-{{kebab}}-key";
+
+function clientAnswering(
+  respond: (input: string, init?: RequestInit) => Promise<Response>,
+) {
+  const call = vi.fn(respond);
+  return {
+    call,
+    client: create{{pascal}}Client({
+      apiKey,
+      baseUrl: "https://provider.example",
+      fetch: call as unknown as typeof globalThis.fetch,
+      timeoutMs: 50,
+    }),
+  };
+}
+
+const ok = (body: unknown) =>
+  new Response(JSON.stringify(body), {
+    headers: { "content-type": "application/json" },
+    status: 200,
+  });
+
+describe("create{{pascal}}Client", () => {
+  it("returns the port's shape, not the provider's", async () => {
+    const { call, client } = clientAnswering(async () =>
+      ok({ id: "reference-1", state: "active" }),
+    );
+
+    await expect(client.fetchReference("reference-1")).resolves.toEqual({
+      id: "reference-1",
+      status: "active",
+    });
+    expect(call).toHaveBeenCalledWith(
+      "https://provider.example/references/reference-1",
+      expect.objectContaining({
+        headers: { authorization: `Bearer ${apiKey}` },
+      }),
+    );
+  });
+
+  it("carries a deadline on every call", async () => {
+    const { call, client } = clientAnswering(async () =>
+      ok({ id: "reference-1", state: "inactive" }),
+    );
+
+    await client.fetchReference("reference-1");
+
+    const init = call.mock.calls[0]?.[1];
+    expect(init?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("translates a refusal into a reason a caller can act on", async () => {
+    const { client } = clientAnswering(
+      async () => new Response("", { status: 401 }),
+    );
+
+    await expect(client.fetchReference("reference-1")).rejects.toMatchObject({
+      reason: "unauthorized",
+    });
+  });
+
+  it("refuses a response that does not match the contract", async () => {
+    const { client } = clientAnswering(async () =>
+      ok({ id: "reference-1", state: "somethingElse" }),
+    );
+
+    const failure = await client
+      .fetchReference("reference-1")
+      .catch((thrown: unknown) => thrown);
+
+    expect(failure).toBeInstanceOf({{pascal}}Failure);
+    expect(failure).toMatchObject({ reason: "malformedResponse" });
+  });
+
+  it("reports a timeout as a timeout", async () => {
+    const { client } = clientAnswering(async (_input, init) => {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      init?.signal?.throwIfAborted();
+      return ok({ id: "reference-1", state: "active" });
+    });
+
+    await expect(client.fetchReference("reference-1")).rejects.toMatchObject({
+      reason: "timedOut",
+    });
+  });
+
+  it("never lets the credential reach an error message", async () => {
+    const { client } = clientAnswering(() => {
+      throw new Error(`connect ECONNREFUSED using ${apiKey}`);
+    });
+
+    const failure = await client
+      .fetchReference("reference-1")
+      .catch((thrown: unknown) => thrown);
+
+    expect(String(failure)).not.toContain(apiKey);
+    expect(String(failure)).toContain("[redacted]");
+  });
+});
+
+describe("redact", () => {
+  it("removes every occurrence of the secret", () => {
+    expect(redact(`a ${apiKey} b ${apiKey}`, apiKey)).toBe(
+      "a [redacted] b [redacted]",
+    );
+  });
+
+  it("leaves text alone when there is no secret to remove", () => {
+    expect(redact("nothing to hide", "")).toBe("nothing to hide");
+  });
+});

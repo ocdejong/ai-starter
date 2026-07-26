@@ -102,7 +102,8 @@
     "nav": {
       "label": "Sections",
       "dashboard": "Dashboard",
-      "settings": "Settings"
+      "settings": "Settings",
+      "announcements": "Announcements"
     },
     "userMenu": {
       "profile": "Profile",
@@ -303,6 +304,39 @@
         "description": "Nothing was shared with the group."
       },
       "dashboard": "Go to the dashboard"
+    },
+    "announcements": {
+      "title": "Announcements",
+      "description": "Announcements belong to the group you are working in. Switch groups and you are looking at another set.",
+      "loading": "Loading announcements…",
+      "count": "{count, plural, =0 {No announcements yet} one {# announcement} other {# announcements}}",
+      "current": {
+        "title": "Current announcement",
+        "empty": "This group has not published anything yet.",
+        "label": "Current title",
+        "submit": "Save",
+        "submitting": "Saving…",
+        "saved": "Saved."
+      },
+      "publish": {
+        "title": "New announcement",
+        "description": "Publishing supersedes the current announcement.",
+        "label": "New title",
+        "submit": "Publish",
+        "submitting": "Publishing…"
+      },
+      "earlier": {
+        "title": "Earlier announcements",
+        "empty": "Nothing has been superseded yet."
+      },
+      "errors": {
+        "network": "The server could not be reached. Check your connection and try again.",
+        "unexpected": "Something went wrong. Please try again."
+      },
+      "validation": {
+        "announcementTitleRequired": "Enter a title.",
+        "announcementTitleTooLong": "Use {max} characters or fewer."
+      }
     }
   },
   "home": {
@@ -331,21 +365,11 @@
     "signIn": "Sign in",
     "notConfigured": "Chat is not configured. Set ANTHROPIC_API_KEY to enable it."
   },
-  "post": {
-    "latest": "Your most recent post: {name}",
-    "empty": "You have no posts yet.",
-    "titlePlaceholder": "Title",
-    "submit": "Submit",
-    "submitting": "Submitting…"
-  },
   "mobile": {
-    "homeTitle": "AI Starter mobile",
-    "apiUnavailable": "The API is unavailable. Start the web app and check EXPO_PUBLIC_API_URL.",
-    "apiConnecting": "Connecting to the typed API…",
     "signedInAs": "Signed in as {name}",
     "openLinkOnThisDevice": "Open the link on this device to continue in the app."
   },
   "plural": {
-    "posts": "{count, plural, =0 {You have no posts yet} one {You have # post} other {You have # posts}}"
+    "items": "{count, plural, =0 {You have no items yet} one {You have # item} other {You have # items}}"
   }
 }

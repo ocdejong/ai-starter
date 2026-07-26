@@ -2,10 +2,11 @@ import "server-only";
 
 export { createTRPCContext } from "./context";
 export type {
+  AnnouncementRecord,
+  AnnouncementRepository,
   GroupMember,
   GroupMembership,
   GroupRepository,
-  PostRepository,
   TRPCContext,
 } from "./context";
 export type { EmailMessage, EmailSender, EmailSendResult } from "./email";

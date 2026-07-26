@@ -1,0 +1,44 @@
+/**
+ * What this application needs from {{title}}, said in its own words.
+ *
+ * The port is owned by the consumer, not by the vendor: it names the outcome the
+ * use case wants and nothing about how a provider spells it. Swapping providers
+ * replaces the adapter behind this file and touches nothing above it, and a test
+ * can satisfy it with a plain object.
+ *
+ * Keep the methods use-case-shaped. A port that mirrors an SDK's endpoints is an
+ * SDK with extra steps, and it leaks every one of that vendor's decisions into
+ * the layer it was meant to protect.
+ */
+export type {{pascal}}Reference = Readonly<{
+  /** The provider's own identifier, opaque to everything above this port. */
+  id: string;
+  status: "active" | "inactive";
+}>;
+
+/** Why a {{lower}} call could not be completed, in terms a caller can act on. */
+export type {{pascal}}FailureReason =
+  | "unauthorized"
+  | "notFound"
+  | "rateLimited"
+  | "timedOut"
+  | "unavailable"
+  | "malformedResponse";
+
+export class {{pascal}}Failure extends Error {
+  readonly reason: {{pascal}}FailureReason;
+
+  constructor(reason: {{pascal}}FailureReason, message: string) {
+    super(message);
+    this.name = "{{pascal}}Failure";
+    this.reason = reason;
+  }
+}
+
+export type {{pascal}}Client = Readonly<{
+  /**
+   * Reads one reference. Rejects with a `{{pascal}}Failure` — never with a raw
+   * provider error, and never with a message that could carry a credential.
+   */
+  fetchReference: (id: string) => Promise<{{pascal}}Reference>;
+}>;

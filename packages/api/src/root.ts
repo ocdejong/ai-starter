@@ -1,10 +1,10 @@
+import { announcementRouter } from "./routers/announcement";
 import { groupRouter } from "./routers/group";
-import { postRouter } from "./routers/post";
 import { createCallerFactory, createTRPCRouter } from "./trpc";
 
 export const appRouter = createTRPCRouter({
+  announcement: announcementRouter,
   group: groupRouter,
-  post: postRouter,
 });
 
 export type AppRouter = typeof appRouter;

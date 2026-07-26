@@ -13,15 +13,15 @@ import { messages } from "./index";
 describe("plural formatting", () => {
   it("selects the English plural category by count", () => {
     const t = createTranslator({ locale: "en", messages: messages.en });
-    expect(t("plural.posts", { count: 0 })).toBe("You have no posts yet");
-    expect(t("plural.posts", { count: 1 })).toBe("You have 1 post");
-    expect(t("plural.posts", { count: 5 })).toBe("You have 5 posts");
+    expect(t("plural.items", { count: 0 })).toBe("You have no items yet");
+    expect(t("plural.items", { count: 1 })).toBe("You have 1 item");
+    expect(t("plural.items", { count: 5 })).toBe("You have 5 items");
   });
 
   it("selects the Dutch plural category by count", () => {
     const t = createTranslator({ locale: "nl", messages: messages.nl });
-    expect(t("plural.posts", { count: 0 })).toBe("Je hebt nog geen posts");
-    expect(t("plural.posts", { count: 1 })).toBe("Je hebt 1 post");
-    expect(t("plural.posts", { count: 5 })).toBe("Je hebt 5 posts");
+    expect(t("plural.items", { count: 0 })).toBe("Je hebt nog geen items");
+    expect(t("plural.items", { count: 1 })).toBe("Je hebt 1 item");
+    expect(t("plural.items", { count: 5 })).toBe("Je hebt 5 items");
   });
 });

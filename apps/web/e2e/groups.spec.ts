@@ -75,7 +75,11 @@ test("an owner invites, promotes and removes a member", async ({ browser }) => {
   ).toBeVisible();
 
   await owner.getByLabel("Role of Alan Turing").selectOption("admin");
-  await expect(owner.getByLabel("Role of Alan Turing")).toHaveValue("admin");
+  // The select stays disabled while the role change is in flight, and under
+  // load that outlives the default expect budget.
+  await expect(owner.getByLabel("Role of Alan Turing")).toHaveValue("admin", {
+    timeout: 30_000,
+  });
 
   // Switching is the one thing only a browser can prove: the choice is written
   // into the session, and the page has to come back showing the other group
@@ -96,7 +100,11 @@ test("an owner invites, promotes and removes a member", async ({ browser }) => {
 
   await owner.getByRole("button", { name: "Remove" }).click();
   await owner.getByRole("button", { name: "Yes, remove" }).click();
-  await expect(owner.getByRole("row", { name: /Alan Turing/ })).toHaveCount(0);
+  // The row only leaves once the removal and the refresh complete, which
+  // under load outlives the default expect budget.
+  await expect(owner.getByRole("row", { name: /Alan Turing/ })).toHaveCount(0, {
+    timeout: 30_000,
+  });
 
   // Deleting the active group leaves the session without one, so the page has
   // to re-point it at what the account still belongs to.

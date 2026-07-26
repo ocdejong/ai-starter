@@ -62,7 +62,12 @@ test("lists the account's sessions and ends the one that is chosen", async ({
       .getByRole("button", { name: "Sign out" })
       .click();
 
-    await expect(sessions.getByRole("listitem")).toHaveCount(1);
+    // The row only leaves once the revocation and the refresh complete, which
+    // under load outlives the default expect budget — the same settling window
+    // the neighbouring assertion and the group journey already allow.
+    await expect(sessions.getByRole("listitem")).toHaveCount(1, {
+      timeout: 30_000,
+    });
   });
 
   await test.step("the caller is still signed in", async () => {

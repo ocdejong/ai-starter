@@ -10,6 +10,7 @@
  */
 export const signInPath = "/sign-in";
 export const dashboardPath = "/dashboard";
+export const announcementsPath = "/announcements";
 export const settingsPath = "/settings";
 export const accountSettingsPath = "/settings/account";
 export const groupSettingsPath = "/settings/group";

@@ -13,7 +13,7 @@ describe("selectChecks", () => {
   });
 
   it("always checks formatting, structure, the graph and the affected package graph", () => {
-    expect(names(["packages/domain/src/post.ts"])).toEqual([
+    expect(names(["packages/domain/src/announcement.ts"])).toEqual([
       "format:check",
       "policy",
       "arch",
@@ -45,7 +45,7 @@ describe("selectChecks", () => {
   });
 
   it("does not recheck the instruction policy for an ordinary source change", () => {
-    expect(names(["packages/domain/src/post.ts"])).not.toContain(
+    expect(names(["packages/domain/src/announcement.ts"])).not.toContain(
       "instructions",
     );
   });

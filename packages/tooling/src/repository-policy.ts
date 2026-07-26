@@ -1,16 +1,11 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
+import { type PolicyViolation } from "./policy-violation.ts";
 import { listFiles } from "./repository-files.ts";
 import { verificationSteps } from "./verification.ts";
 
-export type PolicyViolation = {
-  /** Repository-relative file the reader has to open to fix this. */
-  readonly file: string;
-  readonly problem: string;
-  /** The exact next edit that resolves it. */
-  readonly fix: string;
-};
+export type { PolicyViolation } from "./policy-violation.ts";
 
 /**
  * The structural facts the module graph cannot see: which workspace packages a
@@ -537,6 +532,6 @@ export function formatViolations(
 
 export function summarise(violations: readonly PolicyViolation[]): string {
   return violations.length === 0
-    ? "policy: repository structure, exports, compiler flags, SDK locations and scripts are consistent."
+    ? "policy: repository structure, exports, compiler flags, SDK locations, scripts, workflows and supply-chain settings are consistent."
     : `policy: ${violations.length} problem(s) found. Fix them and run \`pnpm policy\` again.`;
 }

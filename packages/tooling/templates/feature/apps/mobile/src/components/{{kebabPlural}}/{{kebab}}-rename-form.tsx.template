@@ -1,0 +1,60 @@
+import { publish{{pascal}}InputSchema } from "@ai-starter/domain";
+import { useState } from "react";
+import { useTranslations } from "use-intl";
+
+import { SubmitButton } from "../auth/submit-button";
+import { TextField } from "../auth/text-field";
+import { use{{pascal}}FieldError } from "./use-{{kebab}}-field-error";
+
+/**
+ * Renames the group's current {{lower}}.
+ *
+ * `useState` seeds from a prop, which is the shape that goes stale: a second
+ * {{lower}} arriving in the same mounted form would still show the first
+ * one's title. The caller keys this component by the {{lower}}'s id, and the
+ * test re-renders it with a different one — a field seeded from a prop needs
+ * both.
+ */
+export function {{pascal}}RenameForm({
+  isSaving,
+  onRename,
+  saved,
+  title,
+}: {
+  isSaving: boolean;
+  onRename: (title: string) => void;
+  saved: boolean;
+  title: string;
+}) {
+  const t = useTranslations("app.{{camelPlural}}.current");
+  const [value, setValue] = useState(title);
+  const [message, setMessage] = useState<string | null>(null);
+  const fieldError = use{{pascal}}FieldError();
+
+  function submit(): void {
+    const parsed = publish{{pascal}}InputSchema.safeParse({ title: value });
+    if (!parsed.success) {
+      setMessage(parsed.error.issues[0]?.message ?? null);
+      return;
+    }
+    setMessage(null);
+    onRename(parsed.data.title);
+  }
+
+  return (
+    <>
+      <TextField
+        error={fieldError(message)}
+        label={t("label")}
+        onChangeText={setValue}
+        value={value}
+      />
+      <SubmitButton
+        label={saved ? t("saved") : t("submit")}
+        onPress={submit}
+        pending={isSaving}
+        pendingLabel={t("submitting")}
+      />
+    </>
+  );
+}

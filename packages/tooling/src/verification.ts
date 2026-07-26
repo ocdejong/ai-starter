@@ -4,6 +4,8 @@ export type VerificationStep = {
   readonly name: string;
   readonly command: string;
   readonly args: readonly string[];
+  /** The exact command that repairs this step's failure, when one exists. */
+  readonly fix?: string;
 };
 
 function script(name: string): VerificationStep {
@@ -20,7 +22,9 @@ function script(name: string): VerificationStep {
  * `pnpm verify`, the CI workflow and `docs/testing.md` all read this one list.
  */
 export const verificationSteps: readonly VerificationStep[] = [
-  script("format:check"),
+  // Prettier's failure output says "Run Prettier with --write to fix"
+  // without naming the script that does it.
+  { ...script("format:check"), fix: "pnpm format" },
   script("instructions"),
   script("policy"),
   script("arch"),
@@ -49,6 +53,7 @@ export function requireStep(name: string): VerificationStep {
 
 export type VerificationOutcome = {
   readonly failedStep: string | undefined;
+  readonly fix: string | undefined;
   readonly code: number;
 };
 
@@ -61,9 +66,9 @@ export function runVerification(
     console.log(`\nverify [${index + 1}/${steps.length}] ${step.name}`);
     const code = runInherit(step.command, step.args, { cwd: root });
     if (code !== 0) {
-      return { code, failedStep: step.name };
+      return { code, failedStep: step.name, fix: step.fix };
     }
   }
 
-  return { code: 0, failedStep: undefined };
+  return { code: 0, failedStep: undefined, fix: undefined };
 }

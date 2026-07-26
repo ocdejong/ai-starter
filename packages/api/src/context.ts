@@ -12,19 +12,6 @@ export type TRPCSession = {
   activeGroupId: string | null;
 } | null;
 
-export type PostRecord = Readonly<{
-  createdAt: Date;
-  createdById: string;
-  id: string;
-  name: string;
-  updatedAt: Date;
-}>;
-
-export type PostRepository = Readonly<{
-  create: (input: { createdById: string; name: string }) => Promise<PostRecord>;
-  findLatestByUserId: (userId: string) => Promise<PostRecord | null>;
-}>;
-
 /** A user's confirmed place in one group: the group, and what they may do in it. */
 export type GroupMembership = Readonly<{
   groupId: string;
@@ -56,10 +43,41 @@ export type GroupRepository = Readonly<{
   listMembers: (groupId: string) => Promise<GroupMember[]>;
 }>;
 
+/** One announcement, as the group it belongs to may read it. */
+export type AnnouncementRecord = Readonly<{
+  id: string;
+  title: string;
+  /** Whether this is the announcement the group is currently showing. */
+  isCurrent: boolean;
+}>;
+
+/**
+ * The announcement reads and writes this layer needs, shaped by the use cases
+ * rather than by the table behind them.
+ *
+ * Every operation is keyed by a group. There is no "read an announcement" call
+ * that skips one, so a procedure cannot accidentally reach outside the group the
+ * request was made in — `rename` answers `null` for an identifier that belongs to
+ * a different group, which is the same shape `findMembership` uses to refuse.
+ */
+export type AnnouncementRepository = Readonly<{
+  listByGroup: (groupId: string) => Promise<AnnouncementRecord[]>;
+  publish: (input: {
+    createdById: string;
+    groupId: string;
+    title: string;
+  }) => Promise<AnnouncementRecord>;
+  rename: (input: {
+    announcementId: string;
+    groupId: string;
+    title: string;
+  }) => Promise<AnnouncementRecord | null>;
+}>;
+
 export type TRPCContext = {
+  announcements: AnnouncementRepository;
   groups: GroupRepository;
   headers: Headers;
-  posts: PostRepository;
   session: TRPCSession;
 };
 

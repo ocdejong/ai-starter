@@ -7,7 +7,7 @@ import { UserMenu, type ShellUser } from "~/components/app-shell/user-menu";
 import { GroupSwitcher } from "~/components/groups/group-switcher";
 import { LocaleSwitcher } from "~/components/locale-switcher";
 import { ThemeToggle } from "~/components/theme-toggle";
-import { dashboardPath, settingsPath } from "~/lib/routes";
+import { announcementsPath, dashboardPath, settingsPath } from "~/lib/routes";
 
 /**
  * The chrome every signed-in page sits in.
@@ -42,6 +42,8 @@ export function AppShell({
           ariaLabel={tNav("label")}
           items={[
             { href: dashboardPath, label: tNav("dashboard") },
+            // A generated feature registers its section on the line below.
+            { href: announcementsPath, label: tNav("announcements") },
             { href: settingsPath, label: tNav("settings") },
           ]}
         />

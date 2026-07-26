@@ -21,14 +21,17 @@
     "dev:mobile": "turbo run dev --filter=@ai-starter/mobile",
     "dev:web": "turbo run dev --filter=@ai-starter/web",
     "diagnose": "node packages/tooling/src/bin/diagnose.ts",
+    "format": "pnpm format:write",
     "format:check": "prettier --check . --cache",
     "format:write": "prettier --write . --cache",
+    "generate": "node packages/tooling/src/bin/generate.ts",
     "instructions": "node packages/tooling/src/bin/instructions.ts",
     "instructions:write": "node packages/tooling/src/bin/instructions.ts --write",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",
     "policy": "node packages/tooling/src/bin/policy.ts",
     "postinstall": "pnpm db:generate",
+    "repo:host": "node packages/tooling/src/bin/repo-host.ts",
     "starter:init": "node packages/tooling/src/bin/starter-init.ts",
     "test": "turbo run test",
     "test:e2e": "pnpm --filter @ai-starter/web test:e2e",
@@ -50,17 +53,5 @@
   "packageManager": "pnpm@10.32.1",
   "engines": {
     "node": "^24 || >=26"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@sentry/cli"
-    ],
-    "packageExtensions": {
-      "@react-native/jest-preset@*": {
-        "dependencies": {
-          "@babel/runtime": "^7.29.7"
-        }
-      }
-    }
   }
 }
