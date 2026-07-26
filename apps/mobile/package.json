@@ -16,15 +16,6 @@
     "typecheck": "tsc --noEmit",
     "web": "expo start --web"
   },
-  "jest": {
-    "preset": "jest-expo",
-    "setupFilesAfterEnv": [
-      "<rootDir>/jest.setup.ts"
-    ],
-    "transformIgnorePatterns": [
-      "node_modules/(?!(.pnpm|(jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|ai|@ai-sdk/.*|@workflow/.*|use-intl|intl-messageformat|@formatjs/.*))"
-    ]
-  },
   "dependencies": {
     "@ai-sdk/react": "^4.0.40",
     "@ai-starter/api": "workspace:*",
