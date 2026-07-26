@@ -1,0 +1,81 @@
+import { useTranslations } from "use-intl";
+
+import { api } from "../../trpc/provider";
+import { Notice } from "../auth/notice";
+import {
+  AnnouncementPanel,
+  type AnnouncementFailure,
+} from "./announcement-panel";
+
+/**
+ * A request that never reached the server carries no error payload; anything
+ * else was refused by one. Those are the only two states a reader can act on
+ * differently, so the interface does not invent more.
+ */
+export function announcementFailure(
+  error: { data?: unknown } | null,
+): AnnouncementFailure | null {
+  if (error === null) {
+    return null;
+  }
+  return error.data === null || error.data === undefined
+    ? "network"
+    : "unexpected";
+}
+
+/**
+ * Wires the announcements tab to the API.
+ *
+ * Nothing here names a group. `groupProcedure` resolves it from the verified
+ * membership behind the request, so the same screen shows another group's
+ * announcements after a switch without the client asking for one.
+ */
+export function AnnouncementBoard() {
+  const t = useTranslations("app.announcements");
+  const utils = api.useUtils();
+  const announcements = api.announcement.list.useQuery();
+
+  const publish = api.announcement.publish.useMutation({
+    onSuccess: async () => {
+      await utils.announcement.list.invalidate();
+    },
+  });
+  const rename = api.announcement.rename.useMutation({
+    onSuccess: async () => {
+      await utils.announcement.list.invalidate();
+    },
+  });
+
+  if (announcements.isPending) {
+    return <Notice message={t("loading")} tone="info" />;
+  }
+
+  if (announcements.data === undefined) {
+    return (
+      <Notice
+        message={t(
+          `errors.${announcementFailure(announcements.error) ?? "unexpected"}`,
+        )}
+        tone="error"
+      />
+    );
+  }
+
+  return (
+    <AnnouncementPanel
+      announcements={announcements.data}
+      failure={
+        announcementFailure(publish.error) ?? announcementFailure(rename.error)
+      }
+      isPublishing={publish.isPending}
+      isRenaming={rename.isPending}
+      onPublish={(title) => {
+        publish.mutate({ title });
+      }}
+      onRename={(input) => {
+        rename.mutate(input);
+      }}
+      renameSaved={rename.isSuccess}
+    />
+  );
+}

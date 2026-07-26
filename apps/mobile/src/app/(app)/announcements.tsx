@@ -3,11 +3,16 @@ import { StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslations } from "use-intl";
 
-import { Chat } from "../../components/chat/chat";
+import { AnnouncementBoard } from "../../components/announcements/announcement-board";
 import { useTheme } from "../../theme/theme-provider";
 
-export default function DashboardScreen() {
-  const t = useTranslations("app.dashboard");
+/**
+ * The example feature slice on native. Route files stay trivial — expo-router
+ * registers every file in this directory as a screen, so anything with a test
+ * lives under `src/components`.
+ */
+export default function AnnouncementsScreen() {
+  const t = useTranslations("app.announcements");
   const { theme } = useTheme();
 
   return (
@@ -18,10 +23,7 @@ export default function DashboardScreen() {
       <Text style={[styles.title, { color: theme.foreground }]}>
         {t("title")}
       </Text>
-      <Text style={[styles.description, { color: theme["muted-foreground"] }]}>
-        {t("description")}
-      </Text>
-      <Chat />
+      <AnnouncementBoard />
     </SafeAreaView>
   );
 }
@@ -29,15 +31,11 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    gap: spacing.sm,
-    padding: spacing.lg,
   },
   title: {
     fontSize: 28,
     fontWeight: "700",
-  },
-  description: {
-    fontSize: 15,
-    lineHeight: 22,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
   },
 });

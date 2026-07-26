@@ -8,7 +8,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Pressable, Text } from "react-native";
 import { useTranslations } from "use-intl";
 
-import { HomeCard } from "../components/home-card";
+import { ThemeToggle } from "../components/theme-toggle";
 import { TestProviders } from "../test/providers";
 import { LocaleProvider, useLocale } from "./locale-provider";
 
@@ -25,7 +25,7 @@ jest.mock("expo-localization", () => ({
  */
 export function TypedKeyProbe() {
   const t = useTranslations("mobile");
-  t("homeTitle");
+  t("openLinkOnThisDevice");
   // @ts-expect-error "nope" is not a key in the mobile namespace
   t("nope");
   return null;
@@ -52,13 +52,11 @@ describe("native i18n", () => {
   it("renders a real component against the Dutch catalog", async () => {
     await render(
       <TestProviders locale="nl">
-        <HomeCard message="hallo" />
+        <ThemeToggle />
       </TestProviders>,
     );
 
-    await waitFor(() =>
-      expect(screen.getByText("AI Starter mobiel")).toBeOnTheScreen(),
-    );
+    await waitFor(() => expect(screen.getByText("Systeem")).toBeOnTheScreen());
   });
 
   it("persists the chosen locale across a remount", async () => {

@@ -102,7 +102,8 @@
     "nav": {
       "label": "Onderdelen",
       "dashboard": "Dashboard",
-      "settings": "Instellingen"
+      "settings": "Instellingen",
+      "announcements": "Aankondigingen"
     },
     "userMenu": {
       "profile": "Profiel",
@@ -303,6 +304,39 @@
         "description": "Er is niets met de groep gedeeld."
       },
       "dashboard": "Naar het dashboard"
+    },
+    "announcements": {
+      "title": "Aankondigingen",
+      "description": "Aankondigingen horen bij de groep waarin je werkt. Wissel je van groep, dan zie je een andere set.",
+      "loading": "Aankondigingen laden…",
+      "count": "{count, plural, =0 {Nog geen aankondigingen} one {# aankondiging} other {# aankondigingen}}",
+      "current": {
+        "title": "Huidige aankondiging",
+        "empty": "Deze groep heeft nog geen aankondiging gepubliceerd.",
+        "label": "Huidige titel",
+        "submit": "Opslaan",
+        "submitting": "Opslaan…",
+        "saved": "Opgeslagen."
+      },
+      "publish": {
+        "title": "Een aankondiging publiceren",
+        "description": "Publiceren vervangt de huidige aankondiging.",
+        "label": "Nieuwe titel",
+        "submit": "Publiceren",
+        "submitting": "Publiceren…"
+      },
+      "earlier": {
+        "title": "Eerdere aankondigingen",
+        "empty": "Er is nog niets vervangen."
+      },
+      "errors": {
+        "network": "De server is niet bereikbaar. Controleer je verbinding en probeer het opnieuw.",
+        "unexpected": "Er ging iets mis. Probeer het opnieuw."
+      },
+      "validation": {
+        "announcementTitleRequired": "Vul een titel voor de aankondiging in.",
+        "announcementTitleTooLong": "Gebruik {max} tekens of minder."
+      }
     }
   },
   "home": {
@@ -331,21 +365,11 @@
     "signIn": "Inloggen",
     "notConfigured": "Chat is niet geconfigureerd. Stel ANTHROPIC_API_KEY in om het aan te zetten."
   },
-  "post": {
-    "latest": "Je meest recente post: {name}",
-    "empty": "Je hebt nog geen posts.",
-    "titlePlaceholder": "Titel",
-    "submit": "Verzenden",
-    "submitting": "Verzenden…"
-  },
   "mobile": {
-    "homeTitle": "AI Starter mobiel",
-    "apiUnavailable": "De API is niet beschikbaar. Start de webapp en controleer EXPO_PUBLIC_API_URL.",
-    "apiConnecting": "Verbinden met de getypeerde API…",
     "signedInAs": "Ingelogd als {name}",
     "openLinkOnThisDevice": "Open de link op dit apparaat om verder te gaan in de app."
   },
   "plural": {
-    "posts": "{count, plural, =0 {Je hebt nog geen posts} one {Je hebt # post} other {Je hebt # posts}}"
+    "items": "{count, plural, =0 {Je hebt nog geen items} one {Je hebt # item} other {Je hebt # items}}"
   }
 }

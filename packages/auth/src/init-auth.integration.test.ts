@@ -28,7 +28,7 @@ afterEach(async () => {
   await client.invitation.deleteMany();
   await client.member.deleteMany();
   await client.organization.deleteMany();
-  await client.post.deleteMany();
+  await client.announcement.deleteMany();
   await client.session.deleteMany();
   await client.account.deleteMany();
   await client.verification.deleteMany();

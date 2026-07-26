@@ -42,7 +42,8 @@ describe("PostgreSQL integrity", () => {
   }, 120_000);
 
   afterEach(async () => {
-    await client.post.deleteMany();
+    await client.announcement.deleteMany();
+    await client.organization.deleteMany();
     await client.user.deleteMany();
   });
 
@@ -60,38 +61,60 @@ describe("PostgreSQL integrity", () => {
   });
 
   it("enforces foreign keys", async () => {
+    await createUser(client, "user-1", "fk@example.com");
+    await createGroup(client, "group-1");
+
     await expect(
-      client.post.create({
-        data: { name: "Orphan", createdById: "missing-user" },
+      client.announcement.create({
+        data: {
+          createdById: "user-1",
+          groupId: "missing-group",
+          title: "Orphan",
+        },
       }),
     ).rejects.toMatchObject({ code: "P2003" });
   });
 
   it("enforces SQL check constraints independently of Zod", async () => {
     await createUser(client, "user-1", "check@example.com");
+    await createGroup(client, "group-1");
 
+    // The domain schema trims and refuses this, but the schema only guards the
+    // forms. A direct write has to meet the same rule, and only the database
+    // can hold that line.
     await expect(
-      client.post.create({
-        data: { name: "   ", createdById: "user-1" },
+      client.announcement.create({
+        data: { createdById: "user-1", groupId: "group-1", title: "   " },
       }),
     ).rejects.toThrow();
   });
 
   it("rolls back all writes when a transaction fails", async () => {
     await createUser(client, "user-1", "transaction@example.com");
+    await createGroup(client, "group-1");
 
     await expect(
       client.$transaction(async (transaction) => {
-        await transaction.post.create({
-          data: { name: "Must roll back", createdById: "user-1" },
+        await transaction.announcement.create({
+          data: {
+            createdById: "user-1",
+            groupId: "group-1",
+            title: "Must roll back",
+          },
         });
         throw new Error("Abort transaction");
       }),
     ).rejects.toThrow("Abort transaction");
 
-    await expect(client.post.count()).resolves.toBe(0);
+    await expect(client.announcement.count()).resolves.toBe(0);
   });
 });
+
+function createGroup(client: PrismaClient, id: string) {
+  return client.organization.create({
+    data: { createdAt: new Date(), id, name: id, slug: id },
+  });
+}
 
 function createUser(client: PrismaClient, id: string, email: string) {
   return client.user.create({

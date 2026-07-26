@@ -1,0 +1,110 @@
+import { expect, test } from "@playwright/test";
+
+import { registerVerifiedAccount } from "./support/account";
+
+/**
+ * The example feature slice, driven end to end.
+ *
+ * This is the journey a generated feature is worth: it is the only check that
+ * runs the whole stack the generator emits — the form's schema, the procedure's
+ * group scoping, the transaction, and the PostgreSQL constraint behind it —
+ * against a real browser and a real database.
+ */
+test("publishes, renames and supersedes a group's announcements", async ({
+  page,
+}) => {
+  // Registration, a mailbox round trip, and several routes that each compile on
+  // first request against the development server.
+  test.setTimeout(180_000);
+
+  await registerVerifiedAccount(page);
+
+  await test.step("a new group has nothing to show", async () => {
+    await page.getByRole("link", { name: "Announcements" }).click();
+
+    await expect(page).toHaveURL("/announcements", { timeout: 30_000 });
+    await expect(
+      page.getByText("This group has not published an announcement yet."),
+    ).toBeVisible({ timeout: 30_000 });
+  });
+
+  await test.step("publish the first announcement", async () => {
+    await page.getByLabel("New title").fill("Office closed on Friday");
+    await page.getByRole("button", { name: "Publish" }).click();
+
+    await expect(page.getByLabel("Current title")).toHaveValue(
+      "Office closed on Friday",
+      { timeout: 30_000 },
+    );
+    await expect(page.getByText("1 announcement")).toBeVisible();
+  });
+
+  await test.step("rename it", async () => {
+    await page.getByLabel("Current title").fill("Office closed all week");
+    await page.getByRole("button", { name: "Save" }).click();
+
+    await expect(page.getByText("Saved.")).toBeVisible();
+    await page.reload();
+    await expect(page.getByLabel("Current title")).toHaveValue(
+      "Office closed all week",
+      { timeout: 30_000 },
+    );
+  });
+
+  await test.step("publishing again supersedes it", async () => {
+    await page.getByLabel("New title").fill("Standup moves to 10:00");
+    await page.getByRole("button", { name: "Publish" }).click();
+
+    // The field is seeded from the current announcement, so this assertion is
+    // what catches a form that was not keyed by the record it is about: every
+    // unit test passes while it shows the previous title.
+    await expect(page.getByLabel("Current title")).toHaveValue(
+      "Standup moves to 10:00",
+      { timeout: 30_000 },
+    );
+    await expect(
+      page
+        .getByRole("region", { name: "Earlier announcements" })
+        .getByText("Office closed all week"),
+    ).toBeVisible();
+    await expect(page.getByText("2 announcements")).toBeVisible();
+  });
+});
+
+test("keeps one group's announcements out of another's", async ({
+  browser,
+}) => {
+  test.setTimeout(180_000);
+
+  const owner = await browser.newContext();
+  const stranger = await browser.newContext();
+
+  try {
+    const ownerPage = await owner.newPage();
+    await registerVerifiedAccount(ownerPage, { name: "Ada Lovelace" });
+    await ownerPage.goto("/announcements");
+    await ownerPage.getByLabel("New title").fill("Only for my group");
+    await ownerPage.getByRole("button", { name: "Publish" }).click();
+    await expect(ownerPage.getByLabel("Current title")).toHaveValue(
+      "Only for my group",
+      { timeout: 30_000 },
+    );
+
+    // A second account signs up into its own personal group. The procedures
+    // take no group identifier, so there is nothing for this reader to tamper
+    // with — and the group behind their session has no announcements.
+    const strangerPage = await stranger.newPage();
+    await registerVerifiedAccount(strangerPage, { name: "Grace Hopper" });
+    await strangerPage.goto("/announcements");
+
+    await expect(
+      strangerPage.getByText(
+        "This group has not published an announcement yet.",
+      ),
+    ).toBeVisible({ timeout: 30_000 });
+    await expect(strangerPage.getByText("Only for my group")).toHaveCount(0);
+  } finally {
+    await owner.close();
+    await stranger.close();
+  }
+});

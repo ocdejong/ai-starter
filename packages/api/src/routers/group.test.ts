@@ -47,12 +47,13 @@ const createContext = (
   groups: GroupRepository,
   session: TRPCSession,
 ): TRPCContext => ({
+  announcements: {
+    listByGroup: vi.fn(async () => []),
+    publish: vi.fn(),
+    rename: vi.fn(async () => null),
+  },
   groups,
   headers: new Headers(),
-  posts: {
-    create: vi.fn(),
-    findLatestByUserId: vi.fn(async () => null),
-  },
   session,
 });
 
