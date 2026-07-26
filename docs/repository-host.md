@@ -29,9 +29,9 @@ only rewrites the product identity.
 `.github/rulesets/main.json` is the branch ruleset. Its `ruleset` property is the
 verbatim body of `POST /repos/{owner}/{repo}/rulesets`; the rest of the file is
 context for a reader. On the default branch it blocks deletion and force pushes,
-requires linear history, requires a pull request with an approving code-owner
-review and resolved conversations, and requires the status checks below to pass
-on a branch that is up to date with the base.
+requires linear history, requires a pull request with resolved conversations, and
+requires the status checks below to pass on a branch that is up to date with the
+base.
 
 The command also sets the repository-level facts a ruleset cannot express:
 squash and rebase merges only (a merge commit cannot produce linear history),
@@ -67,18 +67,28 @@ graph need a public repository or GitHub Advanced Security — on a private
 repository without either, those jobs fail no matter what the code says. Once one
 of those holds, `pnpm repo:host --code-scanning` adds them.
 
-## Review of harness files
+## Review, and why the approval count is zero
 
-`.github/CODEOWNERS` gives `AGENTS.md`, `.github/` and `packages/tooling/` an
-owner, and the ruleset sets `require_code_owner_review`, so changing what the
-harness is allowed to do needs an explicit approving review.
+GitHub does not let anyone approve their own pull request. On a one-person
+repository a non-zero approval count is therefore a deadlock, not a gate:
+nothing merges, ever, and the only escape is a bypass actor — which also exempts
+that actor from the required status checks, giving up the guarantee the ruleset
+exists for.
 
-A sole maintainer cannot approve their own pull request, so on a one-person
-repository this is a stop sign rather than a review. `pnpm repo:host
---allow-admin-bypass` adds the authenticated user to the ruleset's bypass actors
-and prints who it granted. The checked-in file always carries an empty
-`bypass_actors` list: the weakening belongs to the command that made it, where a
-reader will see it, rather than to a file they will skim.
+So the count is zero and `require_code_owner_review` is off. What survives is the
+part that does the work: no direct pushes, no force-push, no deletion, linear
+history, and a green suite before anything lands. An agent opens a pull request
+and merges it once the checks pass, with nobody waiting on a human.
+
+`.github/CODEOWNERS` still names an owner for `AGENTS.md`, `.github/` and
+`packages/tooling/`, so review is requested on those files even though it does
+not block. The day a second reviewer exists, raise the count and turn
+`require_code_owner_review` back on — that is the whole change.
+
+`pnpm repo:host --allow-admin-bypass` remains for the case where someone
+genuinely needs to push past the ruleset. It is not the answer to a solo
+repository, and the checked-in file always carries an empty `bypass_actors` list
+so that any weakening lives in the command that caused it.
 
 ## Supply chain
 

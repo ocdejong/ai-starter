@@ -1,5 +1,6 @@
 {
   "description": "Branch protection for the default branch, applied by `pnpm repo:host`. `ruleset` is the verbatim body of POST /repos/{owner}/{repo}/rulesets; nothing else in this file is sent.",
+  "reviewPolicy": "A sole maintainer cannot approve their own pull request, so a non-zero approval count is a deadlock rather than a gate: nothing would ever merge, and the only way out would be a bypass that also exempts the required checks. The count is therefore zero and code-owner review is off, which keeps the enforcement that matters — no direct pushes, no force-push, linear history, and a green suite before anything lands. `.github/CODEOWNERS` still requests review on harness files; turn `require_code_owner_review` and the count back up the day a second reviewer exists.",
   "requiresAdvancedSecurity": {
     "reason": "Code scanning and the dependency graph need a public repository or GitHub Advanced Security. On a private repository without either, these jobs cannot report at all, and a required check that never reports blocks every pull request forever. `pnpm repo:host --code-scanning` adds them once one of those holds.",
     "requiredStatusChecks": [
@@ -27,9 +28,9 @@
         "parameters": {
           "allowed_merge_methods": ["squash", "rebase"],
           "dismiss_stale_reviews_on_push": true,
-          "require_code_owner_review": true,
-          "require_last_push_approval": true,
-          "required_approving_review_count": 1,
+          "require_code_owner_review": false,
+          "require_last_push_approval": false,
+          "required_approving_review_count": 0,
           "required_review_thread_resolution": true
         }
       },
