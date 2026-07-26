@@ -48,7 +48,7 @@ function asArray(value: unknown): unknown[] {
 
 export class RulesetError extends Error {}
 
-/** Reads every checked-in ruleset, newest definition wins nothing — order is by file name. */
+/** Reads every checked-in ruleset, in file-name order. Each is applied by its own name. */
 export function readRulesetDefinitions(root: string): RulesetDefinition[] {
   const directory = path.join(root, rulesetDirectory);
   if (!existsSync(directory)) {
