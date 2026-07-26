@@ -1,0 +1,131 @@
+name: Supply chain
+
+# Every job here reports on pull requests targeting `main`, because the branch
+# ruleset in `.github/rulesets/main.json` requires them. A workflow that a
+# required check depends on must never carry a `paths:` filter: a pull request
+# touching nothing in the filter would never report, and could never merge.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: supply-chain-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Nothing is granted by default; each job states the scopes it needs.
+permissions: {}
+
+env:
+  # Pinned tool releases. `pnpm policy` fails when a version here has no
+  # matching checksum, because an unverified download is an unpinned dependency
+  # wearing a version number. Dependabot does not maintain these — bump the
+  # version and the checksum together, from the release's own checksums file.
+  ACTIONLINT_VERSION: 1.7.12
+  ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+  GITLEAKS_VERSION: 8.30.1
+  GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+  ZIZMOR_VERSION: 1.28.0
+
+jobs:
+  workflows:
+    name: Workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          # Nothing here pushes, so the checkout leaves no token in .git/config
+          # for a later step — or an uploaded artifact — to carry away.
+          persist-credentials: false
+
+      - name: Install actionlint
+        run: |
+          set -euo pipefail
+          archive="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl --fail --silent --show-error --location --retry 3 --output "${archive}" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${archive}"
+          echo "${ACTIONLINT_SHA256}  ${archive}" | sha256sum --check --strict
+          tar --extract --file "${archive}" actionlint
+          rm "${archive}"
+
+      - name: Lint workflows
+        run: ./actionlint -color
+
+      # Static analysis for the workflows themselves: unpinned actions, excessive
+      # permissions, template injection, artifact poisoning. SARIF upload is off
+      # because code scanning ingest needs GitHub Advanced Security on a private
+      # repository; the job fails on findings instead, which needs no plan.
+      - name: Audit workflows
+        uses: zizmorcore/zizmor-action@6fc4b006235f201fdab3722e17240ab420d580e5 # v0.6.1
+        with:
+          version: ${{ env.ZIZMOR_VERSION }}
+          advanced-security: false
+          annotations: true
+          persona: regular
+
+  secrets:
+    name: Secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          # Nothing here pushes, so the checkout leaves no token in .git/config
+          # for a later step — or an uploaded artifact — to carry away.
+          persist-credentials: false
+
+      # The official Gitleaks action requires a licence key for organization
+      # repositories, which is the wrong default for a template. The release
+      # binary is free, and a pinned checksum is a stronger guarantee than a
+      # floating action tag would be.
+      - name: Install Gitleaks
+        run: |
+          set -euo pipefail
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl --fail --silent --show-error --location --retry 3 --output "${archive}" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
+          echo "${GITLEAKS_SHA256}  ${archive}" | sha256sum --check --strict
+          tar --extract --file "${archive}" gitleaks
+          rm "${archive}"
+
+      - name: Scan for committed secrets
+        run: ./gitleaks dir . --no-banner --redact --exit-code 1
+
+  dependencies:
+    name: Dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: ${{ github.event_name == 'pull_request' }}
+
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          # Nothing here pushes, so the checkout leaves no token in .git/config
+          # for a later step — or an uploaded artifact — to carry away.
+          persist-credentials: false
+
+      # Reads the dependency graph, so it needs a public repository or GitHub
+      # Advanced Security. `docs/repository-host.md` records why this check is
+      # required only once one of those holds.
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: moderate
+          comment-summary-in-pr: never

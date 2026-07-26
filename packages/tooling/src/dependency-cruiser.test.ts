@@ -128,7 +128,7 @@ const cases = [
     from: "packages/api/src/deep.ts",
     files: {
       "packages/api/src/deep.ts":
-        'import { post } from "@ai-starter/domain/src/post";\nexport const p = post;\n',
+        'import { announcement } from "@ai-starter/domain/src/announcement";\nexport const a = announcement;\n',
     },
   },
   {

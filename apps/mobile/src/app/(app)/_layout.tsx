@@ -29,6 +29,11 @@ export default function AppTabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: t("dashboard") }} />
+      {/* A generated feature registers its tab on the line below. */}
+      <Tabs.Screen
+        name="announcements"
+        options={{ title: t("announcements") }}
+      />
       <Tabs.Screen name="settings" options={{ title: t("settings") }} />
     </Tabs>
   );

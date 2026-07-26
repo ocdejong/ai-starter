@@ -11,8 +11,8 @@ import { organization } from "better-auth/plugins";
 import {
   createPersonalGroup,
   deleteSoleMemberGroups,
-  firstGroupIdFor,
   groupOwnerRole,
+  seedGroupIdFor,
 } from "./personal-group";
 
 /**
@@ -99,8 +99,22 @@ export function initAuth(options: InitAuthOptions) {
           // is a convenience, not an authorization decision: the value travels
           // in the session and may go stale, so every group-scoped procedure
           // re-derives membership instead of trusting it.
-          before: async (session) => {
-            const groupId = await firstGroupIdFor(database, session.userId);
+          before: async (session, context) => {
+            // A password change that revokes the other sessions deletes every
+            // row — the caller's included — before this hook runs, so the
+            // group the caller was working in survives only in the request
+            // context. Carrying it over (membership-checked) is what keeps a
+            // password change from silently switching the user's group.
+            const caller = context?.context.session?.session;
+            const carried: unknown =
+              caller?.userId === session.userId
+                ? caller.activeOrganizationId
+                : null;
+            const groupId = await seedGroupIdFor(
+              database,
+              session.userId,
+              typeof carried === "string" ? carried : null,
+            );
             return groupId === null
               ? undefined
               : { data: { ...session, activeOrganizationId: groupId } };

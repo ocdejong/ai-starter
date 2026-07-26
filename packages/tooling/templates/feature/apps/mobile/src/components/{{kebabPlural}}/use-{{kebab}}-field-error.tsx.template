@@ -1,0 +1,30 @@
+import {
+  {{camel}}TitlePolicy,
+  parse{{pascal}}ValidationCode,
+} from "@ai-starter/domain";
+import { useTranslations } from "use-intl";
+
+/**
+ * Turns a stable validation code into a sentence, the native counterpart of the
+ * web's field-error component. The domain reports codes because it cannot reach
+ * a catalog; anything unrecognised becomes the generic failure rather than an
+ * untranslated validation string.
+ */
+export function use{{pascal}}FieldError(): (
+  message: string | null,
+) => string | undefined {
+  const t = useTranslations("app.{{camelPlural}}");
+
+  return (message) => {
+    if (message === null) {
+      return undefined;
+    }
+    const code = parse{{pascal}}ValidationCode(message);
+    if (code === "{{camel}}TitleTooLong") {
+      return t("validation.{{camel}}TitleTooLong", {
+        max: {{camel}}TitlePolicy.maxLength,
+      });
+    }
+    return code === null ? t("errors.unexpected") : t(`validation.${code}`);
+  };
+}

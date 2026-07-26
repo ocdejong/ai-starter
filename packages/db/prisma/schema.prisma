@@ -15,29 +15,40 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Post {
+/// A group-owned record: the shape a generated feature slice follows.
+///
+/// The group is the owner, so every query the adapter runs is keyed by it. At
+/// most one announcement per group may be current, which PostgreSQL enforces
+/// with a partial unique index the migration adds by hand — Prisma cannot
+/// express a `WHERE` clause on an index, and an invariant only the application
+/// checks is one a second writer can break.
+model Announcement {
   id        String   @id @default(cuid())
-  name      String
+  title     String   @db.VarChar(120)
+  isCurrent Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  createdBy   User   @relation(fields: [createdById], references: [id])
+  group   Organization @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId String
+
+  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
   createdById String
 
-  @@index([name])
+  @@index([groupId, createdAt])
 }
 
 model User {
-  id            String    @id
+  id            String         @id
   name          String //@db.Text
   email         String
-  emailVerified Boolean   @default(false)
+  emailVerified Boolean        @default(false)
   image         String? //@db.Text
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @default(now()) @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @default(now()) @updatedAt
   sessions      Session[]
   accounts      Account[]
-  posts         Post[]
+  announcements Announcement[]
   members       Member[]
   invitations   Invitation[]
 
@@ -98,14 +109,15 @@ model Verification {
 // table names stay the plugin's own — the adapter resolves them by name — so the
 // product word lives in the UI and the API, not in the schema.
 model Organization {
-  id          String       @id
-  name        String
-  slug        String
-  logo        String? //@db.Text
-  createdAt   DateTime
-  metadata    String? //@db.Text
-  members     Member[]
-  invitations Invitation[]
+  id            String         @id
+  name          String
+  slug          String
+  logo          String? //@db.Text
+  createdAt     DateTime
+  metadata      String? //@db.Text
+  members       Member[]
+  invitations   Invitation[]
+  announcements Announcement[]
 
   @@unique([slug])
   @@map("organization")
