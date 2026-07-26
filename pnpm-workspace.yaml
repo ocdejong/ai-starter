@@ -2,7 +2,31 @@ packages:
   - apps/*
   - packages/*
 
+# Every pnpm setting lives here and nowhere else. pnpm 10 reads this file *and*
+# `package.json#pnpm`, and for a key present in both this file silently wins —
+# so a second copy of `onlyBuiltDependencies` is dead configuration that reads
+# as enforced. `pnpm policy` fails when one appears.
+
+# The single lifecycle-script allowlist. A dependency not named here never runs
+# its install scripts, which is the blast radius a compromised package needs.
 onlyBuiltDependencies:
   - "@prisma/client"
   - "@prisma/engines"
   - prisma
+
+# Refused on purpose, recorded so the refusal is a decision rather than an
+# oversight: `@sentry/cli` downloads a platform binary from its postinstall, and
+# nothing in this repository uploads source maps at build time.
+ignoredBuiltDependencies:
+  - "@sentry/cli"
+
+# Minutes a version must have existed on the registry before pnpm will resolve
+# it. Malicious releases are typically yanked within hours, so a day of distance
+# turns most registry compromises into someone else's incident. `--frozen-lockfile`
+# installs an already-resolved tree and is unaffected.
+minimumReleaseAge: 1440
+
+packageExtensions:
+  "@react-native/jest-preset@*":
+    dependencies:
+      "@babel/runtime": ^7.29.7

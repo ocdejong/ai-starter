@@ -82,6 +82,33 @@ export async function firstGroupIdFor(
 }
 
 /**
+ * The group a new session is seeded with. `carriedGroupId` is the active group
+ * of the session the caller presented — a replacement session (a password
+ * change that revokes the others) should keep the user where they were working
+ * rather than dropping them back into their first group. It is a hint, not an
+ * authorization: the value travelled in a session row and may be stale or
+ * forged, so it is honoured only after the membership is confirmed to exist.
+ * Without one, the first group applies.
+ */
+export async function seedGroupIdFor(
+  database: Database,
+  userId: string,
+  carriedGroupId: string | null,
+): Promise<string | null> {
+  if (carriedGroupId !== null) {
+    const membership = await database.member.findFirst({
+      select: { organizationId: true },
+      where: { organizationId: carriedGroupId, userId },
+    });
+    if (membership !== null) {
+      return membership.organizationId;
+    }
+  }
+
+  return firstGroupIdFor(database, userId);
+}
+
+/**
  * Removes the groups that only this user belongs to, before the account is
  * deleted. The membership rows cascade with the user, which would otherwise
  * leave their personal group standing with nobody able to reach it. Groups with

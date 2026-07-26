@@ -25,6 +25,7 @@ describe("command entry points", () => {
       "generate.ts",
       "instructions.ts",
       "policy.ts",
+      "repo-host.ts",
       "starter-init.ts",
       "verify-changed.ts",
       "verify.ts",

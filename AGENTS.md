@@ -28,7 +28,7 @@ ESLint encodes many of these boundaries per file; `pnpm arch` (dependency-cruise
 - `packages/config`: shared compiler, lint, and test configuration.
 - `packages/i18n`: shared EN/NL ICU message catalogs, the `Locale` schema, and locale negotiation. Platform-neutral; consumed by both apps.
 - `packages/tokens`: plain cross-platform design values.
-- `packages/tooling`: repository commands (`bootstrap`, `diagnose`, `generate`, `instructions`, `policy`, `verify`, `verify:changed`, `starter:init`). Node built-ins only: `diagnose` must inspect a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency. Editing it also requires `packages/tooling/AGENTS.md`.
+- `packages/tooling`: repository commands (`bootstrap`, `diagnose`, `generate`, `instructions`, `policy`, `repo:host`, `verify`, `verify:changed`, `starter:init`). Node built-ins only: `diagnose` must inspect a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency. Editing it also requires `packages/tooling/AGENTS.md`.
 
 ## Getting a checkout running
 
@@ -81,6 +81,7 @@ pnpm test:integration
 - Keep third-party SDKs behind a small adapter and validate their responses with Zod before passing data into domain logic.
 - Sentry is disabled without a DSN and must keep `sendDefaultPii: false` unless a documented privacy decision changes it.
 - Never log credentials, authorization headers, full provider payloads, or sensitive user content.
+- The repository host is configuration, not folklore: `.github/rulesets/main.json` and `.github/CODEOWNERS` are checked in, `pnpm repo:host` applies them, and `pnpm policy` fails when a workflow, an action pin, or a pnpm setting drifts from what `docs/repository-host.md` describes.
 
 ## Completion criteria
 

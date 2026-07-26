@@ -8,6 +8,16 @@ updates:
       time: "06:00"
       timezone: Europe/Amsterdam
     open-pull-requests-limit: 10
+    # The proposal side of `minimumReleaseAge` in `pnpm-workspace.yaml`: pnpm
+    # refuses to resolve a version this young, so without a cooldown Dependabot
+    # would open pull requests that cannot install. Every window here is longer
+    # than pnpm's floor, and a major gets a month because it is the update most
+    # likely to be reverted.
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+      semver-minor-days: 7
+      semver-patch-days: 3
     groups:
       compatible-updates:
         update-types:
@@ -21,6 +31,11 @@ updates:
       day: monday
       time: "06:15"
       timezone: Europe/Amsterdam
+    # Actions are pinned by commit SHA, so a Dependabot bump moves the code this
+    # repository executes. A week of distance is the cheapest defence against a
+    # compromised release that gets yanked.
+    cooldown:
+      default-days: 7
     groups:
       actions:
         patterns:

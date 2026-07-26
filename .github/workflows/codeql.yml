@@ -9,11 +9,8 @@ on:
     - cron: "23 5 * * 1"
   workflow_dispatch:
 
-permissions:
-  # Required for codeql-action to read workflow-run metadata in a private repository.
-  actions: read
-  contents: read
-  security-events: write
+# Nothing is granted by default; each job states the scopes it needs.
+permissions: {}
 
 jobs:
   analyze:
@@ -21,17 +18,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    permissions:
+      # Required for codeql-action to read workflow-run metadata in a private repository.
+      actions: read
+      contents: read
+      security-events: write
+
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          # Nothing here pushes, so the checkout leaves no token in .git/config
+          # for a later step — or an uploaded artifact — to carry away.
+          persist-credentials: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
+        uses: github/codeql-action/init@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
         with:
           languages: javascript-typescript
           queries: security-extended
 
       - name: Analyze
-        uses: github/codeql-action/analyze@v4
+        uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
         with:
           category: /language:javascript-typescript
