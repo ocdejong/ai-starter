@@ -1,0 +1,24 @@
+# Squawk reads the SQL a schema change produces and reports the statements that
+# would lock a busy table, break a running client, or leave a half-applied
+# migration behind. `pnpm db:lint` runs it, `pnpm verify` runs that, and
+# `pnpm verify:changed` selects it whenever anything under `packages/db/prisma/`
+# moves. Which files it reads is decided in
+# `packages/tooling/src/migration-lint.ts`, not here.
+
+# Prisma applies each migration file inside a transaction. Without this, every
+# statement is reported as unable to be rerun after a partial failure — advice
+# the migration tool has already taken.
+assume_in_transaction = true
+
+excluded_rules = [
+  # `CREATE INDEX CONCURRENTLY` is a syntax error inside a transaction block, and
+  # Prisma always opens one. The rule is unsatisfiable here rather than
+  # inconvenient: taking its advice would make the migration fail to apply.
+  "require-concurrent-index-creation",
+
+  # Prisma maps `DateTime` to `timestamp(3)`, and the Better Auth CLI regenerates
+  # its own models from that mapping. Moving the schema to `timestamptz` is a
+  # data-modeling decision for the Prisma schema, not something a migration
+  # linter can settle one statement at a time.
+  "prefer-timestamp-tz",
+]

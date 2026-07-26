@@ -51,8 +51,31 @@ const instructionPaths = [
   "docs/",
 ];
 
-/** Paths whose behaviour is only observable through the browser journey. */
-const webBehaviourPaths = ["apps/web/", "packages/api/", "packages/domain/"];
+/**
+ * Paths whose behaviour is only observable through the browser journey. Wider
+ * than "the web app": the journeys sign accounts up through the real auth
+ * server, read the dev mailbox and click the link an email template rendered,
+ * and assert copy by the text a catalog supplies — so each of those packages can
+ * break a journey while every unit suite stays green. `packages/tokens/` is
+ * deliberately absent: it reaches the browser as colours no journey asserts, and
+ * the generated stylesheet is kept honest by a unit test.
+ */
+const webBehaviourPaths = [
+  "apps/web/",
+  "packages/api/",
+  "packages/auth/",
+  "packages/db/",
+  "packages/domain/",
+  "packages/email/",
+  "packages/i18n/",
+];
+
+/**
+ * Paths whose behaviour is only observable on a device. The flow addresses the
+ * app by its own screens and asserts catalog copy by its rendered text, so a
+ * catalog edit can invalidate it as surely as a screen edit can.
+ */
+const nativeBehaviourPaths = ["apps/mobile/", "packages/i18n/"];
 
 function touches(
   changed: readonly string[],
@@ -96,7 +119,11 @@ export function selectChecks(
     requireStep("policy"),
     requireStep("arch"),
     ...(schemaChanged
-      ? [requireStep("db:validate"), requireStep("db:generate")]
+      ? [
+          requireStep("db:validate"),
+          requireStep("db:lint"),
+          requireStep("db:generate"),
+        ]
       : []),
     {
       args: [
@@ -130,7 +157,7 @@ export function selectChecks(
   if (schemaChanged) {
     steps.push(requireStep("test:integration"));
     reasons.push(
-      "The Prisma schema or a migration changed; validating it, regenerating the client, and running the real-PostgreSQL tests.",
+      "The Prisma schema or a migration changed; validating it, linting the migration SQL, regenerating the client, and running the real-PostgreSQL tests.",
     );
   } else if (touches(changedPaths, integrationBehaviourPaths)) {
     // Guarded by the schema branch so `test:integration` is never selected twice.
@@ -144,6 +171,13 @@ export function selectChecks(
     steps.push(requireStep("test:e2e"));
     reasons.push(
       "Web-observable behaviour changed; running the browser journey.",
+    );
+  }
+
+  if (touches(changedPaths, nativeBehaviourPaths)) {
+    steps.push(requireStep("test:e2e:mobile"));
+    reasons.push(
+      "Native-observable behaviour changed; running the native journey, which skips with a reason where no device exists.",
     );
   }
 

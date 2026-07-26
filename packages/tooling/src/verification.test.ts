@@ -28,6 +28,22 @@ describe("verificationSteps", () => {
     expect(position("db:validate")).toBeLessThan(position("db:generate"));
   });
 
+  // Squawk reads the migration SQL, so it costs nothing but a file read and
+  // belongs with the other cheap deterministic gates — long before a container
+  // is started to apply the migration it just judged.
+  it("lints migrations before anything applies them", () => {
+    expect(position("db:lint")).toBeGreaterThan(-1);
+    expect(position("db:lint")).toBeLessThan(position("test:integration"));
+    expect(position("db:lint")).toBeLessThan(position("db:migrate"));
+  });
+
+  // Nothing ran the native flow for two stages and it rotted. It is in the list
+  // so `pnpm verify` reaches it on a machine that can run it, and it skips
+  // loudly — never silently — everywhere else.
+  it("ends with the native journey", () => {
+    expect(position("test:e2e:mobile")).toBe(verificationSteps.length - 1);
+  });
+
   // Prettier's own failure output says "Run Prettier with --write to fix"
   // without naming a script, so the step must supply the runnable command.
   it("gives the formatting gate a fix command", () => {

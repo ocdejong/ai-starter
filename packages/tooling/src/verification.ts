@@ -19,6 +19,9 @@ function script(name: string): VerificationStep {
  * TypeScript, so `db:generate` runs before `lint` and `typecheck` — a checkout
  * whose client predates a pulled schema change would otherwise fail typecheck
  * with property errors that never name `pnpm db:generate` as the fix.
+ * `test:e2e:mobile` is last because it is the only step that cannot run
+ * everywhere; it skips with a reason rather than failing when no simulator is
+ * present, and `pnpm policy` checks the flow file whether or not it runs.
  * `pnpm verify`, the CI workflow and `docs/testing.md` all read this one list.
  */
 export const verificationSteps: readonly VerificationStep[] = [
@@ -29,6 +32,7 @@ export const verificationSteps: readonly VerificationStep[] = [
   script("policy"),
   script("arch"),
   script("db:validate"),
+  script("db:lint"),
   script("db:generate"),
   script("lint"),
   script("typecheck"),
@@ -37,6 +41,7 @@ export const verificationSteps: readonly VerificationStep[] = [
   script("build"),
   script("db:migrate"),
   script("test:e2e"),
+  script("test:e2e:mobile"),
 ];
 
 export const stepsByName = new Map(

@@ -126,3 +126,94 @@ describe("selectChecks", () => {
     ).toBeGreaterThan(1);
   });
 });
+
+/**
+ * One representative diff per class of change, asserting the whole selection —
+ * what runs *and* what does not. An under-selection is a check the diff could
+ * have broken and nobody ran; an over-selection is the reason someone stops
+ * running `verify:changed` at all. Both are failures, so both are pinned.
+ */
+describe("selectChecks by class of change", () => {
+  const always = ["format:check", "policy", "arch"];
+  const affected = "affected lint, typecheck and unit tests";
+
+  it("a migration: schema gates, real PostgreSQL, and the browser journey", () => {
+    expect(
+      names([
+        "packages/db/prisma/migrations/29990101000000_add_column/migration.sql",
+      ]),
+    ).toEqual([
+      ...always,
+      "db:validate",
+      "db:lint",
+      "db:generate",
+      affected,
+      "test:integration",
+      "test:e2e",
+    ]);
+  });
+
+  it("a web page: the browser journey, no database container, no device", () => {
+    expect(names(["apps/web/src/app/(app)/dashboard/page.tsx"])).toEqual([
+      ...always,
+      affected,
+      "test:e2e",
+    ]);
+  });
+
+  it("a native screen: the native journey, and no browser", () => {
+    expect(names(["apps/mobile/src/components/auth/sign-in-form.tsx"])).toEqual(
+      [...always, affected, "test:e2e:mobile"],
+    );
+  });
+
+  it("a native flow: the journey that reads it", () => {
+    expect(names(["apps/mobile/.maestro/smoke.yaml"])).toContain(
+      "test:e2e:mobile",
+    );
+  });
+
+  it("a domain schema: every consumer, and the journey that renders it", () => {
+    expect(names(["packages/domain/src/announcement.ts"])).toEqual([
+      ...always,
+      affected,
+      "test:e2e",
+    ]);
+  });
+
+  // The journeys read the dev mailbox and click the link a template renders, so
+  // a template edit is a browser-observable change even though no page moved.
+  it("an email template: the browser journey that reads the mailbox", () => {
+    expect(names(["packages/email/src/templates/verification.tsx"])).toEqual([
+      ...always,
+      affected,
+      "test:e2e",
+    ]);
+  });
+
+  // Both journeys assert catalog copy by its rendered text.
+  it("an i18n catalog: both journeys", () => {
+    expect(names(["packages/i18n/messages/en.json"])).toEqual([
+      ...always,
+      affected,
+      "test:e2e",
+      "test:e2e:mobile",
+    ]);
+  });
+
+  it("an auth flow: real PostgreSQL and the browser journey", () => {
+    const selected = names(["packages/auth/src/init-auth.ts"]);
+
+    expect(selected).toContain("test:integration");
+    expect(selected).toContain("test:e2e");
+  });
+
+  // Tokens reach the browser as colours the journeys never assert; the drift
+  // test that keeps the generated stylesheet honest is a unit test.
+  it("design tokens: the affected graph only", () => {
+    expect(names(["packages/tokens/src/index.ts"])).toEqual([
+      ...always,
+      affected,
+    ]);
+  });
+});
