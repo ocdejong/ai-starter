@@ -29,8 +29,13 @@ export function isLinkedWorktree(root: string): boolean {
 /**
  * Hashes the absolute root path (FNV-1a) into [1, worktreePortSpread]. The
  * same worktree derives the same offset on every run, so a re-bootstrap finds
- * its own container again; two worktrees agree only on a hash collision,
- * which the free-port probe then resolves.
+ * its own container again; two worktrees agree only on a hash collision. A
+ * collision moves the database port to the next free one, because that port is
+ * probed. The web origin is not probed and a collision therefore survives it:
+ * the origin has to stay stable across runs — it is persisted in `.env` and
+ * baked into emailed auth links — while a probe answers differently depending
+ * on whether a dev server happens to be up. That leaves a 1-in-`spread` chance
+ * that two worktrees share an origin, which nothing here detects.
  */
 export function worktreePortOffset(root: string): number {
   let hash = 0x811c9dc5;

@@ -1,9 +1,13 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { defineConfig, devices } from "@playwright/test";
 
-import { resolveWebOrigin } from "./src/test/web-origin";
+import {
+  envFileWebOrigin,
+  resolveWebOrigin,
+  sharedWebOriginError,
+} from "./src/test/web-origin";
 
 /**
  * The origin the browser drives, and the port the server it starts listens on.
@@ -16,18 +20,48 @@ import { resolveWebOrigin } from "./src/test/web-origin";
  * sibling checkouts verify at once instead of one silently driving (and
  * asserting against) the other's dev server. `E2E_BASE_URL` still overrides
  * the origin explicitly; set it together with `BETTER_AUTH_URL`.
+ *
+ * A worktree that bootstrapped before that derivation existed still names the
+ * shared origin, so deriving alone cannot keep it off a sibling's server —
+ * hence the refusal below, which turns that state into one message naming its
+ * fix instead of a suite of failures that look like the product's.
  */
-const baseURL = resolveWebOrigin(process.env.E2E_BASE_URL, readEnvFile());
+const override = process.env.E2E_BASE_URL;
+const baseURL = resolveWebOrigin(override, readEnvFile(".env"));
 const port = new URL(baseURL).port || "3000";
 
-function readEnvFile(): string | undefined {
+if (override === undefined || override === "") {
+  const conflict = sharedWebOriginError(
+    baseURL,
+    exampleOrigin(),
+    isLinkedWorktree(),
+  );
+  if (conflict !== undefined) {
+    throw new Error(conflict);
+  }
+}
+
+function readEnvFile(name: string): string | undefined {
   try {
-    return readFileSync(
-      fileURLToPath(new URL(".env", import.meta.url)),
-      "utf8",
-    );
+    return readFileSync(fileURLToPath(new URL(name, import.meta.url)), "utf8");
   } catch {
     return undefined;
+  }
+}
+
+function exampleOrigin(): string | undefined {
+  const content = readEnvFile(".env.example");
+  return content === undefined ? undefined : envFileWebOrigin(content);
+}
+
+/** A linked worktree marks its root with a `.git` file; a clone has a directory. */
+function isLinkedWorktree(): boolean {
+  try {
+    return statSync(
+      fileURLToPath(new URL("../../.git", import.meta.url)),
+    ).isFile();
+  } catch {
+    return false;
   }
 }
 
