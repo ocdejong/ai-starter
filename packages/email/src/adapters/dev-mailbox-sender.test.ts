@@ -1,4 +1,4 @@
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -56,5 +56,50 @@ describe("dev mailbox sender", () => {
 
   it("returns an empty list for a mailbox with no messages", () => {
     expect(readMailbox(temporaryMailbox())).toEqual([]);
+  });
+
+  it("never shows a reader watching the mailbox a half-written message", async () => {
+    const dir = temporaryMailbox();
+    const sender = createDevEmailSender(dir, () => undefined);
+    const messageCount = 20;
+
+    // A Playwright journey polls `readMailbox` while the server is still
+    // sending, and it parses every file before filtering by address — so one
+    // message landing byte by byte breaks a read looking for another one.
+    const failures: string[] = [];
+    let reads = 0;
+    let sending = true;
+    const reader = (async () => {
+      while (sending) {
+        try {
+          readMailbox(dir);
+        } catch (error) {
+          failures.push(String(error));
+        }
+        reads += 1;
+        await new Promise((resolve) => setImmediate(resolve));
+      }
+    })();
+
+    for (let index = 0; index < messageCount; index += 1) {
+      await sender.send({
+        html: `<p>${String(index)}</p>`,
+        subject: `Message ${String(index)}`,
+        text: `Message ${String(index)}`,
+        to: "watcher@example.com",
+      });
+    }
+    sending = false;
+    await reader;
+
+    // Without this the assertions below hold vacuously: a reader that never got
+    // a turn between the sends has not observed anything.
+    expect(reads).toBeGreaterThan(0);
+    expect(failures).toEqual([]);
+    expect(readMailbox(dir)).toHaveLength(messageCount);
+    // Nothing partial is left behind under a name a reader would pick up.
+    expect(readdirSync(dir).filter((name) => !name.endsWith(".json"))).toEqual(
+      [],
+    );
   });
 });

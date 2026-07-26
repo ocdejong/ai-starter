@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rename, writeFile } from "node:fs/promises";
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -51,11 +51,16 @@ export function createDevEmailSender(
       const filename = `${String(sequence).padStart(12, "0")}-${Date.now()}.json`;
       sequence += 1;
 
-      await writeFile(
-        path.join(dir, filename),
-        JSON.stringify(record, null, 2),
-        "utf8",
-      );
+      // `readMailbox` polls this directory while messages are still arriving, so
+      // a message has to appear under its final name whole or not at all: naming
+      // the file first would expose it empty between the open and the write.
+      // Renaming within one directory is atomic, and the `.tmp` suffix keeps the
+      // half-written file out of the reader's `.json` filter until it lands.
+      const destination = path.join(dir, filename);
+      const pending = `${destination}.tmp`;
+
+      await writeFile(pending, JSON.stringify(record, null, 2), "utf8");
+      await rename(pending, destination);
       log(
         `[email:dev] to=${message.to} subject=${message.subject}\n${message.text}`,
       );
@@ -69,6 +74,9 @@ export function createDevEmailSender(
  * Reads every message a dev mailbox holds, in send order. Files on disk are
  * untrusted input, so each is parsed before it is returned. A directory that
  * does not exist yet is an empty mailbox, not an error.
+ *
+ * The `.json` filter also skips the name `send` writes under while a message is
+ * still landing, so widening it would let a read see half a message.
  */
 export function readMailbox(dir: string): StoredEmail[] {
   let entries: string[];
