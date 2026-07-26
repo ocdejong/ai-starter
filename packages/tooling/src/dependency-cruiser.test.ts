@@ -76,8 +76,20 @@ function cruise(
     { cwd },
   );
 
-  const parsed: unknown = JSON.parse(result.stdout);
-  return parsed as CruiseResult;
+  // depcruise exits non-zero when it finds violations, so the exit code alone
+  // says nothing — but unparseable output does. Under a loaded machine this test
+  // has produced a bare `SyntaxError: Unexpected end of JSON input`, which names
+  // neither the tool nor the reason; whatever depcruise said belongs in the
+  // failure instead.
+  try {
+    return JSON.parse(result.stdout) as CruiseResult;
+  } catch {
+    throw new Error(
+      `depcruise produced no parseable JSON (exit ${String(result.code)}).\n` +
+        `stderr: ${result.stderr.trim() || "(empty)"}\n` +
+        `stdout: ${result.stdout.slice(0, 400).trim() || "(empty)"}`,
+    );
+  }
 }
 
 /**

@@ -105,7 +105,16 @@ module.exports = {
   ],
   options: {
     doNotFollow: { path: "node_modules" },
-    exclude: { path: "(^|/)(node_modules|generated|\\.next|dist|\\.expo)/" },
+    // Generated and reported-on output, none of it part of the module graph.
+    // A directory a tool is still writing is worse than noise: depcruise opens a
+    // file that has since been replaced and dies with an ENOENT that names the
+    // report, not the graph — which is how a coverage run in one package could
+    // fail the architecture check in another.
+    exclude: {
+      path:
+        "(^|/)(node_modules|generated|coverage|reports|test-results|playwright-report" +
+        "|\\.next|\\.expo|\\.stryker-tmp|\\.turbo|dist)/",
+    },
     tsConfig: { fileName: "tsconfig.depcruise.json" },
     enhancedResolveOptions: {
       exportsFields: ["exports"],

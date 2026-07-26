@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comment": "Mutation testing answers the question coverage cannot: whether the tests would notice if the code were wrong. It runs on a schedule rather than per-edit because a full run rewrites and re-tests every statement, which is minutes of work for feedback that changes slowly.",
+  "packageManager": "pnpm",
+  "testRunner": "vitest",
+  "vitest": {
+    "configFile": "vitest.config.ts"
+  },
+  "mutate": [
+    "src/**/*.ts",
+    "!src/**/*.test.ts",
+    "!src/index.ts",
+    "!src/test-support/**"
+  ],
+  "reporters": ["clear-text", "progress", "html"],
+  "coverageAnalysis": "perTest",
+  "thresholds": {
+    "high": 90,
+    "low": 73,
+    "break": 73
+  },
+  "tempDirName": ".stryker-tmp",
+  "htmlReporter": {
+    "fileName": "../../reports/mutation/api.html"
+  },
+  "plugins": ["@stryker-mutator/vitest-runner"],
+  "_threshold_comment": "Lower than the domain floor because most surviving mutants are in trpc.ts: the development-only delay in the timing middleware and the tRPC error formatter, which only runs while serialising an HTTP response and so cannot be reached through a caller. The procedures themselves score 94."
+}

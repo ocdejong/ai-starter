@@ -66,3 +66,7 @@ yarn-error.log*
 
 # coding-agent local state, including nested worktrees under .claude/worktrees/
 .claude/
+
+# Mutation testing: Stryker's working copy and its HTML report.
+.stryker-tmp/
+reports/
