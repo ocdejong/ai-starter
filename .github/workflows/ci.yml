@@ -15,7 +15,10 @@ permissions:
 
 env:
   BETTER_AUTH_SECRET: ci-only-secret-at-least-thirty-two-characters-long
-  BETTER_AUTH_URL: http://127.0.0.1:3000
+  # Better Auth trusts only its own origin; Playwright's browser visits the app
+  # at http://localhost:3000, so this host must match or every auth POST is
+  # rejected with "Invalid origin".
+  BETTER_AUTH_URL: http://localhost:3000
   CI: true
   DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/starter_ci
   EXPO_PUBLIC_API_URL: http://127.0.0.1:3000
