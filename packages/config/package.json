@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./eslint/base": "./eslint/base.js",
+    "./eslint/product": "./eslint/product.js",
     "./eslint/rules": "./eslint/rules.js",
     "./typescript/base.json": "./typescript/base.json",
     "./typescript/nextjs.json": "./typescript/nextjs.json",
@@ -13,6 +14,7 @@
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

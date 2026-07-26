@@ -73,7 +73,7 @@ export function MembersList({
           >
             <Text style={[styles.name, { color: theme.foreground }]}>
               {member.user.name}
-              {isViewer ? ` (${t("you")})` : ""}
+              {isViewer ? ` ${t("viewerSuffix")}` : ""}
             </Text>
             <Text style={[styles.detail, { color: theme["muted-foreground"] }]}>
               {member.user.email}

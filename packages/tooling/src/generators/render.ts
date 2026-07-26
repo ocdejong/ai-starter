@@ -19,10 +19,13 @@ export const templateSuffix = ".template";
  * and only surface as a syntax error in someone else's checkout.
  */
 export function renderTemplate(source: string, names: FeatureNames): string {
+  // Every name form is a string, so the record type is what `FeatureNames`
+  // already is — no assertion needed to look one up by a token read from a
+  // template.
+  const forms: Readonly<Record<string, string>> = names;
+
   return source.replace(/\{\{(\w+)\}\}/g, (_match, token: string) => {
-    const value = (names as unknown as Record<string, string | undefined>)[
-      token
-    ];
+    const value = forms[token];
     if (value === undefined) {
       throw new Error(
         `Template placeholder "{{${token}}}" is not a name form. Known forms: ${Object.keys(names).sort().join(", ")}.`,

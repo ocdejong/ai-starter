@@ -54,8 +54,8 @@ export function ChangeEmailForm({ email }: { email: string }) {
       title={t("title")}
     >
       <p className="text-sm">
-        <span className="text-muted-foreground">{t("current")}: </span>
-        <span className="font-medium">{email}</span>
+        <span className="text-muted-foreground">{t("current")}</span>
+        <span className="ml-1 font-medium">{email}</span>
       </p>
       <form
         className="space-y-4"

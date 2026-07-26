@@ -91,7 +91,9 @@ export function MembersTable({
                 <th className="py-2 font-normal" scope="row">
                   {member.user.name}
                   {isViewer ? (
-                    <span className="text-muted-foreground"> ({t("you")})</span>
+                    <span className="text-muted-foreground ml-1">
+                      {t("viewerSuffix")}
+                    </span>
                   ) : null}
                 </th>
                 <td className="text-muted-foreground py-2">

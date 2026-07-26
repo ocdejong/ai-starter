@@ -32,7 +32,7 @@ async function renderForm(locale: "en" | "nl" = "en") {
 describe("ChangeEmailForm", () => {
   beforeEach(() => {
     changeEmail.mockReset();
-    changeEmail.mockResolvedValue({ data: {}, error: null } as never);
+    changeEmail.mockResolvedValue({ data: {}, error: null });
   });
 
   it("shows the address the account currently uses", async () => {

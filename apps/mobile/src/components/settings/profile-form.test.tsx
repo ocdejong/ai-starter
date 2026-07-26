@@ -33,7 +33,7 @@ async function renderForm(locale: "en" | "nl" = "en") {
 describe("ProfileForm", () => {
   beforeEach(() => {
     updateUser.mockReset();
-    updateUser.mockResolvedValue({ data: {}, error: null } as never);
+    updateUser.mockResolvedValue({ data: {}, error: null });
   });
 
   it("starts from the name the account already has", async () => {
@@ -63,7 +63,7 @@ describe("ProfileForm", () => {
   });
 
   it("reports a refused save instead of claiming it worked", async () => {
-    updateUser.mockResolvedValue({ error: { code: "UNKNOWN" } } as never);
+    updateUser.mockResolvedValue({ error: { code: "UNKNOWN" } });
     const { save } = await renderForm();
 
     await save("Grace Hopper");

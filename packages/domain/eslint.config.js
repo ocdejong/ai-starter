@@ -1,4 +1,5 @@
 import baseConfig from "@ai-starter/config/eslint/base";
+import { suppressionSyntax } from "@ai-starter/config/eslint/rules";
 
 export default [
   ...baseConfig,
@@ -49,6 +50,9 @@ export default [
       ],
       "no-restricted-syntax": [
         "error",
+        // Restated, not merged: ESLint replaces a rule's options, so without
+        // this the domain would silently lose the shared suppression rules.
+        ...suppressionSyntax,
         {
           selector:
             "MemberExpression[object.name='process'][property.name='env']",

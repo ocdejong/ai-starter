@@ -26,9 +26,16 @@ const createPrismaClient = () =>
         : ["error"],
   });
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: ReturnType<typeof createPrismaClient> | undefined;
+/**
+ * The development-reload cache. Widening the global to an intersection says the
+ * true thing — this global *may also* carry a client — where the usual
+ * `globalThis as unknown as {…}` claims it is some other object entirely.
+ */
+type GlobalWithPrisma = typeof globalThis & {
+  prisma?: ReturnType<typeof createPrismaClient>;
 };
+
+const globalForPrisma = globalThis as GlobalWithPrisma;
 
 export const db = globalForPrisma.prisma ?? createPrismaClient();
 

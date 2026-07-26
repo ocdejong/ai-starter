@@ -32,7 +32,7 @@ async function renderForm(viewerRole: GroupRole = "owner") {
 describe("InviteForm", () => {
   beforeEach(() => {
     inviteMember.mockReset();
-    inviteMember.mockResolvedValue({ data: {}, error: null } as never);
+    inviteMember.mockResolvedValue({ data: {}, error: null });
   });
 
   it("invites the normalised address in the chosen role", async () => {
@@ -74,7 +74,7 @@ describe("InviteForm", () => {
     inviteMember.mockResolvedValue({
       data: null,
       error: { code: "USER_IS_ALREADY_A_MEMBER_OF_THIS_ORGANIZATION" },
-    } as never);
+    });
     const { invite, onInvited } = await renderForm();
 
     await invite("reader@example.com");

@@ -9,6 +9,13 @@ const baseConfig = tseslint.config({
     ...tseslint.configs.recommendedTypeChecked,
     ...tseslint.configs.stylisticTypeChecked,
   ],
+  // A disable comment that no longer suppresses anything is a claim about the
+  // code that stopped being true, and `pnpm policy` only checks that a disable
+  // carries a justification — not that it still has a rule to silence. ESLint
+  // reports these as warnings by default, and a warning fails nothing.
+  linterOptions: {
+    reportUnusedDisableDirectives: "error",
+  },
   rules: typescriptRules,
 });
 
