@@ -90,7 +90,12 @@ test("an owner invites, promotes and removes a member", async ({ browser }) => {
   await expect(owner.getByLabel("Group name")).toHaveValue("Ada Lovelace", {
     timeout: 30_000,
   });
-  await expect(owner.getByRole("row", { name: /Alan Turing/ })).toHaveCount(0);
+  // The members table refetches from a different store than the name field, so
+  // the wait above says nothing about this one — and the default 5 seconds is
+  // the whole margin for a mutation that finishes with a client refetch.
+  await expect(owner.getByRole("row", { name: /Alan Turing/ })).toHaveCount(0, {
+    timeout: 30_000,
+  });
 
   await owner.getByLabel("Active group").selectOption({ label: "Book Club" });
   await expect(owner.getByLabel("Group name")).toHaveValue("Book Club", {
@@ -113,9 +118,10 @@ test("an owner invites, promotes and removes a member", async ({ browser }) => {
   await expect(owner.getByLabel("Group name")).toHaveValue("Ada Lovelace", {
     timeout: 30_000,
   });
+  // Same shape: the switcher's list refetches separately from the active group.
   await expect(
     owner.locator("#group-switcher option", { hasText: "Book Club" }),
-  ).toHaveCount(0);
+  ).toHaveCount(0, { timeout: 30_000 });
 
   await ownerContext.close();
   await memberContext.close();
