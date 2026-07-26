@@ -9,7 +9,8 @@
 | `pnpm test:unit`        | Domain, web component, and native component suites              | Dependencies installed                           |
 | `pnpm test:integration` | Prisma migrations and integrity against PostgreSQL              | Docker/Podman running                            |
 | `pnpm test:e2e`         | Playwright Chromium web journey                                 | Local database running and migrated              |
-| `pnpm test:e2e:mobile`  | Maestro native smoke flow                                       | Maestro plus an installed simulator/device build |
+| `pnpm test:e2e:mobile`  | Maestro native smoke flow; skips with a reason without a device | Maestro plus an installed simulator/device build |
+| `pnpm db:lint`          | Squawk over migration SQL a running database would have to take | Dependencies installed                           |
 | `pnpm check`            | Lint, typecheck, and unit/component tests                       | Dependencies installed                           |
 | `pnpm instructions`     | Agent instruction surfaces and document references              | A git checkout                                   |
 | `pnpm arch`             | Dependency direction, cycles, and deep imports across the graph | Dependencies installed                           |
@@ -17,7 +18,18 @@
 
 `packages/tooling/src/verification.ts` holds the one ordered definition of the authoritative suite. `pnpm verify`, `pnpm verify:changed` and the CI workflow all read it, so the required checks cannot drift apart. Adding a check means adding it there.
 
-`pnpm verify:changed` always runs `pnpm arch` and `pnpm policy` alongside formatting, because any change can shift the dependency graph or the repository structure. On top of that it selects work from Turborepo's affected graph, plus the rules the graph cannot infer from imports: a change under `packages/db/prisma/` adds schema validation, client regeneration ahead of the affected typecheck, and the real-PostgreSQL tests, a change under `apps/web/`, `packages/api/` or `packages/domain/` adds the browser journey, a change to an instruction surface or a documentation file rechecks the instruction policy, and a change to the harness itself (`turbo.json`, the root manifest, the lockfile, `packages/config`, `packages/tooling`, or a workflow) falls back to the full suite. `verify:changed` is a fast local filter, never the handoff gate.
+`pnpm verify:changed` always runs `pnpm arch` and `pnpm policy` alongside formatting, because any change can shift the dependency graph or the repository structure. On top of that it selects work from Turborepo's affected graph — `--filter=...[base]` reaches every dependent, so a change to `packages/domain` typechecks and unit-tests the API, both apps and the email package — plus the rules the graph cannot infer from imports:
+
+- a change under `packages/db/prisma/` adds schema validation, migration linting, client regeneration ahead of the affected typecheck, and the real-PostgreSQL tests;
+- a change under `packages/auth/` or `packages/db/` adds the real-PostgreSQL tests on its own;
+- a change under `apps/web/`, `packages/api/`, `packages/auth/`, `packages/db/`, `packages/domain/`, `packages/email/` or `packages/i18n/` adds the browser journey — the journeys sign up through the real auth server, click a link an email template rendered, and assert copy a catalog supplies, so each of those can break one while every unit suite stays green;
+- a change under `apps/mobile/` or `packages/i18n/` adds the native journey;
+- a change to an instruction surface or a documentation file rechecks the instruction policy;
+- a change to the harness itself (`turbo.json`, the root manifest, the lockfile, `packages/config`, `packages/tooling`, or a workflow) falls back to the full suite.
+
+`packages/tokens/` is deliberately absent from the journey rules: it reaches the browser as colours no journey asserts, and the generated stylesheet is kept honest by a unit test. `verify:changed` is a fast local filter, never the handoff gate.
+
+`packages/tooling/src/change-selection.test.ts` pins one representative diff per class — migration, web page, native screen, native flow, domain schema, email template, i18n catalog, auth flow, design tokens — asserting the whole selection rather than only what it contains, because an over-selection is the reason someone stops running the command at all.
 
 Run `pnpm bootstrap` before the integration and browser levels; run `pnpm diagnose` when one of them fails for an environmental reason.
 
@@ -31,13 +43,17 @@ Journeys share `apps/web/e2e/support/`: `apps/web/e2e/support/mailbox.ts` reads 
 
 ## Native evidence
 
-`pnpm verify` does not run Maestro, because a native journey needs an app build and a simulator that a GitHub-hosted runner does not have. The suite still carries three levels of native evidence:
+`pnpm verify` ends with `test:e2e:mobile`, and on a GitHub-hosted runner that step skips: a native journey needs an app build and a simulator neither the runner nor a Mac carrying only the command-line tools has. It says so rather than passing quietly, and `NATIVE_JOURNEY=required` turns the skip into a failure for a lane that does have a device.
+
+A step that skips is a file nobody reads, which is how `apps/mobile/.maestro/smoke.yaml` came to assert a screen that had been unreachable for two stages. So `pnpm policy` checks the flow wherever it runs: the `appId` must be the identifier this app installs as, every message the flow asserts or taps must be one `packages/i18n/messages/en.json` actually carries, and a flow that asserts nothing at all is rejected. That catches copy drift, which is the common case; it cannot catch a screen becoming unreachable, which only a device can.
+
+Beyond that, the suite carries three levels of native evidence:
 
 - `test:unit` runs the Jest/RNTL component suites. A screen file under `apps/mobile/src/app/` cannot hold its own test — expo-router would register the test as a route — so the testable component lives in `src/components/` and the route file only wires it up. ESM-only dependencies need their package added to the `transformIgnorePatterns` allowlist in `apps/mobile/package.json`; pnpm's nested `node_modules` segment re-triggers the pattern, and a `.mjs` entry point cannot be transformed at all, in which case mock the module boundary instead.
 - `typecheck` covers the Expo app against the same shared API and domain contracts as web.
 - `build` runs `expo export --platform all`, so a bundle that no longer resolves or compiles fails the authoritative suite.
 
-What is missing is the on-device journey. Run it locally against a simulator with `pnpm test:e2e:mobile`, and add an EAS Workflow once the product is connected to an Expo project with credentials. Do not substitute a browser run of React Native Web for it: that exercises a renderer the product does not ship, so it would report confidence the native build has not earned.
+What is still missing is the on-device run itself. Install Maestro and boot a simulator to get it locally, and add an EAS Workflow once the product is connected to an Expo project with credentials — then set `NATIVE_JOURNEY=required` there so that lane cannot go quiet. Do not substitute a browser run of React Native Web for it: that exercises a renderer the product does not ship, so it would report confidence the native build has not earned.
 
 ## Choosing a level
 

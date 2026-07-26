@@ -28,7 +28,7 @@ ESLint encodes many of these boundaries per file; `pnpm arch` (dependency-cruise
 - `packages/config`: shared compiler, lint, and test configuration.
 - `packages/i18n`: shared EN/NL ICU message catalogs, the `Locale` schema, and locale negotiation. Platform-neutral; consumed by both apps.
 - `packages/tokens`: plain cross-platform design values.
-- `packages/tooling`: repository commands (`bootstrap`, `diagnose`, `generate`, `instructions`, `policy`, `repo:host`, `verify`, `verify:changed`, `starter:init`). Node built-ins only: `diagnose` must inspect a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency. Editing it also requires `packages/tooling/AGENTS.md`.
+- `packages/tooling`: repository commands (`bootstrap`, `db:lint`, `diagnose`, `generate`, `instructions`, `policy`, `repo:host`, `test:e2e:mobile`, `verify`, `verify:changed`, `starter:init`). Node built-ins only: `diagnose` must inspect a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency. Editing it also requires `packages/tooling/AGENTS.md`.
 
 ## Getting a checkout running
 
@@ -61,9 +61,12 @@ For a schema change:
 ```bash
 pnpm db:migrate:dev --name descriptive_change --create-only
 # Inspect and, when needed, edit migration.sql.
+pnpm db:lint
 pnpm db:migrate:dev
 pnpm test:integration
 ```
+
+`pnpm db:lint` runs Squawk over every migration written since the gate landed and names the exact line to add. Expect to prefix a new migration with `set lock_timeout` and `set statement_timeout`: Prisma applies the file inside a transaction, so both are transaction-local, and without them a schema change waits behind whatever is already holding the table. `.squawk.toml` records the two rules this repository excludes and why.
 
 `pnpm db:push:prototype` is a disposable prototyping escape hatch. Never use it for a shared or deployed database; it refuses to run unless `DATABASE_URL` resolves to a local host, so change a shared database through a migration instead.
 

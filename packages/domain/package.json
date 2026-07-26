@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@ai-starter/config": "workspace:*",
+    "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^9.23.0",
     "typescript": "^5.8.2",
     "vitest": "^4.1.10"
