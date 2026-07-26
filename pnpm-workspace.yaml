@@ -30,3 +30,13 @@ packageExtensions:
   "@react-native/jest-preset@*":
     dependencies:
       "@babel/runtime": ^7.29.7
+
+# Transitive versions this repository refuses to resolve, each with the reason it
+# is here. An override is a decision about someone else's dependency tree, so it
+# is recorded rather than left for a reader to reverse-engineer, and it goes when
+# the upstream range moves.
+overrides:
+  # `typed-rest-client@2.3.1` (Stryker's dashboard reporter) pins qs 6.15.1,
+  # which carries a remotely triggerable DoS in `qs.stringify`. Every other
+  # consumer in this tree already resolves 6.15.3; this makes that unanimous.
+  qs: ^6.15.3
