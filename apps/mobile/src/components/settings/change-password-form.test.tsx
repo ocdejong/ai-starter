@@ -43,7 +43,7 @@ async function renderForm(locale: "en" | "nl" = "en") {
 describe("ChangePasswordForm", () => {
   beforeEach(() => {
     changePassword.mockReset();
-    changePassword.mockResolvedValue({ data: {}, error: null } as never);
+    changePassword.mockResolvedValue({ data: {}, error: null });
   });
 
   it("leaves the other devices alone unless the change explicitly asks", async () => {
@@ -84,7 +84,7 @@ describe("ChangePasswordForm", () => {
   it("says which password was wrong when the auth server refuses the current one", async () => {
     changePassword.mockResolvedValue({
       error: { code: "INVALID_PASSWORD" },
-    } as never);
+    });
     const { change } = await renderForm();
 
     await change();

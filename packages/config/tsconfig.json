@@ -1,7 +1,9 @@
 {
   "extends": "./typescript/base.json",
   "compilerOptions": {
-    "lib": ["ES2022"]
+    "lib": ["ES2022"],
+    "allowImportingTsExtensions": true,
+    "allowJs": true
   },
-  "include": ["vitest/**/*.ts"]
+  "include": ["eslint/**/*.ts", "vitest/**/*.ts", "vitest.config.ts"]
 }

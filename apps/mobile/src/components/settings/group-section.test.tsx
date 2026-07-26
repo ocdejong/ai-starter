@@ -54,25 +54,46 @@ const useActiveMember = jest.mocked(authClient.useActiveMember);
 const useActiveOrganization = jest.mocked(authClient.useActiveOrganization);
 const useListOrganizations = jest.mocked(authClient.useListOrganizations);
 
+// Fixtures carry every field Better Auth's own row types declare, not only the
+// ones this screen reads, so the hooks can be stood in for without an assertion
+// — and a field the plugin adds becomes a compiler error rather than a silent
+// hole the component quietly reads as undefined.
+const createdAt = new Date("2026-01-01T00:00:00.000Z");
+
 const owner = {
+  createdAt,
   id: "member-1",
-  role: "owner",
+  organizationId: "group-1",
+  role: "owner" as const,
   user: { email: "ada@example.com", id: "user-1", name: "Ada Lovelace" },
   userId: "user-1",
 };
 const plainMember = {
+  createdAt,
   id: "member-2",
-  role: "member",
+  organizationId: "group-1",
+  role: "member" as const,
   user: { email: "alan@example.com", id: "user-2", name: "Alan Turing" },
   userId: "user-2",
 };
 
-function query(data: unknown, isPending = false) {
-  return { data, error: null, isPending, refetch: jest.fn() };
+function query<T>(data: T, isPending = false) {
+  return {
+    data,
+    error: null,
+    isPending,
+    isRefetching: false,
+    refetch: jest.fn(),
+  };
 }
 
-function group(members: unknown[] = [owner, plainMember]) {
+type GroupMember = Omit<typeof owner, "role"> & {
+  role: "admin" | "member" | "owner";
+};
+
+function group(members: GroupMember[] = [owner, plainMember]) {
   return {
+    createdAt,
     id: "group-1",
     invitations: [],
     members,
@@ -91,18 +112,18 @@ async function renderSection(locale: "en" | "nl" = "en") {
 
 describe("GroupSection", () => {
   beforeEach(() => {
-    useActiveMember.mockReturnValue(query(owner) as never);
-    useActiveOrganization.mockReturnValue(query(group()) as never);
+    useActiveMember.mockReturnValue(query(owner));
+    useActiveOrganization.mockReturnValue(query(group()));
     useListOrganizations.mockReturnValue(
       query([
-        { id: "group-1", name: "Book Club" },
-        { id: "group-2", name: "Ada Lovelace" },
-      ]) as never,
+        { createdAt, id: "group-1", name: "Book Club", slug: "book-club-abc" },
+        { createdAt, id: "group-2", name: "Ada Lovelace", slug: "personal-1" },
+      ]),
     );
   });
 
   it("waits rather than claiming the account has no group", async () => {
-    useActiveOrganization.mockReturnValue(query(null, true) as never);
+    useActiveOrganization.mockReturnValue(query(null, true));
     await renderSection();
 
     expect(screen.getByText("Loading your groups…")).toBeOnTheScreen();
@@ -110,8 +131,8 @@ describe("GroupSection", () => {
   });
 
   it("offers a first group when the session has no active one", async () => {
-    useActiveOrganization.mockReturnValue(query(null) as never);
-    useListOrganizations.mockReturnValue(query([]) as never);
+    useActiveOrganization.mockReturnValue(query(null));
+    useListOrganizations.mockReturnValue(query([]));
     await renderSection();
 
     expect(screen.getByText("You are not in a group")).toBeOnTheScreen();
@@ -134,7 +155,7 @@ describe("GroupSection", () => {
   });
 
   it("withholds every owner affordance from a plain member", async () => {
-    useActiveMember.mockReturnValue(query(plainMember) as never);
+    useActiveMember.mockReturnValue(query(plainMember));
     await renderSection();
 
     expect(screen.queryByLabelText("Group name")).toBeNull();
@@ -150,7 +171,7 @@ describe("GroupSection", () => {
   });
 
   it("tells the only owner how to leave instead of offering a refusal", async () => {
-    useActiveOrganization.mockReturnValue(query(group([owner])) as never);
+    useActiveOrganization.mockReturnValue(query(group([owner])));
     await renderSection();
 
     expect(

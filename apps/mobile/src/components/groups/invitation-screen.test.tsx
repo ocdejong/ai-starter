@@ -34,9 +34,9 @@ async function renderScreen() {
 describe("InvitationScreen", () => {
   beforeEach(() => {
     acceptInvitation.mockReset();
-    acceptInvitation.mockResolvedValue({ data: {}, error: null } as never);
+    acceptInvitation.mockResolvedValue({ data: {}, error: null });
     rejectInvitation.mockReset();
-    rejectInvitation.mockResolvedValue({ data: {}, error: null } as never);
+    rejectInvitation.mockResolvedValue({ data: {}, error: null });
     getInvitation.mockReset();
     getInvitation.mockResolvedValue({
       data: {
@@ -45,7 +45,7 @@ describe("InvitationScreen", () => {
         role: "member",
       },
       error: null,
-    } as never);
+    });
   });
 
   it("says who invited whom, to what, and in what role", async () => {
@@ -88,7 +88,7 @@ describe("InvitationScreen", () => {
     getInvitation.mockResolvedValue({
       data: null,
       error: { code: "BAD_REQUEST" },
-    } as never);
+    });
     await renderScreen();
 
     // Expired, withdrawn, already answered and addressed to someone else all
@@ -105,7 +105,7 @@ describe("InvitationScreen", () => {
     acceptInvitation.mockResolvedValue({
       data: null,
       error: { code: "INVITATION_NOT_FOUND" },
-    } as never);
+    });
     const { onDone, user } = await renderScreen();
     await screen.findByText("Join Book Club");
 

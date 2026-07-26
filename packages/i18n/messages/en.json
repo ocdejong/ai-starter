@@ -227,7 +227,7 @@
           "email": "Email",
           "role": "Role",
           "actions": "Actions",
-          "you": "You",
+          "viewerSuffix": "(You)",
           "roleLabel": "Role of {name}",
           "removeLabel": "Remove {name}",
           "remove": "Remove",

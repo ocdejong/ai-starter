@@ -1,3 +1,4 @@
+import { productUiRules } from "@ai-starter/config/eslint/product";
 import { typescriptRules } from "@ai-starter/config/eslint/rules";
 import { defineConfig } from "eslint/config";
 import expoConfig from "eslint-config-expo/flat.js";
@@ -25,7 +26,15 @@ export default defineConfig([
         tsconfigRootDir: import.meta.dirname,
       },
     },
+    // This app composes Expo's config rather than the shared base, so the
+    // linter options the base sets have to be restated here.
+    linterOptions: { reportUnusedDisableDirectives: "error" },
     rules: typescriptRules,
+  },
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/**/*.test.{ts,tsx}", "src/test/**"],
+    rules: productUiRules,
   },
   {
     files: ["src/**/*.{ts,tsx}"],

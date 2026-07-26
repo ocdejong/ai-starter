@@ -56,8 +56,8 @@ describe("SessionsList", () => {
     listSessions.mockReset();
     revokeSession.mockReset();
     revokeOtherSessions.mockReset();
-    revokeSession.mockResolvedValue({ data: { status: true } } as never);
-    revokeOtherSessions.mockResolvedValue({ data: { status: true } } as never);
+    revokeSession.mockResolvedValue({ data: { status: true } });
+    revokeOtherSessions.mockResolvedValue({ data: { status: true } });
     listSessions.mockResolvedValue({
       data: [
         session({ token: currentToken }),
@@ -67,7 +67,7 @@ describe("SessionsList", () => {
         }),
       ],
       error: null,
-    } as never);
+    });
   });
 
   it("names the device behind each session and marks the one being used", async () => {
@@ -82,7 +82,7 @@ describe("SessionsList", () => {
     listSessions.mockResolvedValue({
       data: [session({ token: currentToken })],
       error: null,
-    } as never);
+    });
     await renderList();
 
     expect(
@@ -118,7 +118,7 @@ describe("SessionsList", () => {
     listSessions.mockResolvedValue({
       data: null,
       error: { code: "UNKNOWN" },
-    } as never);
+    });
     await renderList();
 
     expect(

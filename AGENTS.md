@@ -14,6 +14,8 @@ This file is the only place repository rules are written. The files each agent l
 - Persisted invariants belong in PostgreSQL constraints as well as application validation. Use transactions for multi-write operations that must succeed or fail together.
 - Never commit secrets or generated Prisma output. Public environment variables are not secret.
 - Keep web and native UI separate. Share schemas, business logic, API types, and tokens—not DOM or React Native components.
+- Every colour in product UI comes from `packages/tokens`, and every string a person reads comes from both message catalogs in `packages/i18n`. Punctuation around a translated string is copy too: a locale may not punctuate the way English does.
+- Do not disable or focus a test, swallow an error in an empty `catch`, or assert between unrelated types by laundering through `unknown`. Each reports a confidence the code has not earned.
 - Prefer the smallest change that satisfies the requirement. Add dependencies and abstractions only when the product needs them.
 
 ESLint encodes many of these boundaries per file; `pnpm arch` (dependency-cruiser) enforces the direction and acyclicity across the whole module graph, and `pnpm policy` enforces the structural rules the graph cannot see. Do not weaken a rule to make a change pass; fix the dependency direction. The ordered golden principles and anti-rationalization rules in `docs/engineering-principles.md` are binding even where automation cannot yet enforce them.

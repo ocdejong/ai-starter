@@ -28,8 +28,10 @@ vi.mock("~/server/better-auth/client", async () => {
   return {
     authClient: {
       organization: {
-        checkRolePermission: (data: { role: string; permissions: object }) =>
-          clientSideHasPermission({ ...data, options: {} } as never),
+        checkRolePermission: (data: {
+          role: string;
+          permissions: Record<string, string[]>;
+        }) => clientSideHasPermission({ ...data, options: {} }),
         create: vi.fn(),
         delete: vi.fn(),
         inviteMember: vi.fn(),

@@ -227,7 +227,7 @@
           "email": "E-mailadres",
           "role": "Rol",
           "actions": "Acties",
-          "you": "Jij",
+          "viewerSuffix": "(Jij)",
           "roleLabel": "Rol van {name}",
           "removeLabel": "{name} verwijderen",
           "remove": "Verwijderen",

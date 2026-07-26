@@ -1,5 +1,6 @@
 import { FlatCompat } from "@eslint/eslintrc";
 import baseConfig from "@ai-starter/config/eslint/base";
+import { productUiRules } from "@ai-starter/config/eslint/product";
 
 const compat = new FlatCompat({
   baseDirectory: import.meta.dirname,
@@ -12,14 +13,16 @@ const config = [
   ...compat.extends("next/core-web-vitals"),
   ...baseConfig,
   {
-    linterOptions: {
-      reportUnusedDisableDirectives: true,
-    },
     languageOptions: {
       parserOptions: {
         projectService: true,
       },
     },
+  },
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/**/*.test.{ts,tsx}", "src/test/**"],
+    rules: productUiRules,
   },
   {
     files: ["src/app/**/*.{ts,tsx}", "src/trpc/**/*.{ts,tsx}"],

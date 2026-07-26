@@ -53,9 +53,9 @@ async function renderList(viewerRole: GroupRole) {
 describe("MembersList", () => {
   beforeEach(() => {
     removeMember.mockReset();
-    removeMember.mockResolvedValue({ data: {}, error: null } as never);
+    removeMember.mockResolvedValue({ data: {}, error: null });
     updateMemberRole.mockReset();
-    updateMemberRole.mockResolvedValue({ data: {}, error: null } as never);
+    updateMemberRole.mockResolvedValue({ data: {}, error: null });
   });
 
   it("lists every member and marks the reader's own row", async () => {

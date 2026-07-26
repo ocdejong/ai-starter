@@ -32,7 +32,7 @@ describe("DeleteAccount", () => {
     deleteUser.mockResolvedValue({
       data: { message: "Verification email sent", success: true },
       error: null,
-    } as never);
+    });
   });
 
   it("asks nothing of the auth server until the deletion is confirmed", async () => {
@@ -109,7 +109,7 @@ describe("DeleteAccount", () => {
   });
 
   it("reports a refused request instead of claiming an email was sent", async () => {
-    deleteUser.mockResolvedValue({ error: { code: "UNKNOWN" } } as never);
+    deleteUser.mockResolvedValue({ error: { code: "UNKNOWN" } });
     const { open, user } = await renderSection();
     await open();
 

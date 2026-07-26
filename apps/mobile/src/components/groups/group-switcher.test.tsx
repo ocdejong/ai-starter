@@ -35,7 +35,7 @@ async function renderSwitcher(activeGroupId: string | null = "group-1") {
 describe("GroupSwitcher", () => {
   beforeEach(() => {
     setActive.mockReset();
-    setActive.mockResolvedValue({ data: {}, error: null } as never);
+    setActive.mockResolvedValue({ data: {}, error: null });
   });
 
   it("offers every group and marks the active one", async () => {
@@ -64,7 +64,7 @@ describe("GroupSwitcher", () => {
     setActive.mockResolvedValue({
       data: null,
       error: { code: "USER_IS_NOT_A_MEMBER_OF_THE_ORGANIZATION" },
-    } as never);
+    });
     const { onSwitched, user } = await renderSwitcher();
 
     await user.press(screen.getByRole("button", { name: "Book Club" }));
