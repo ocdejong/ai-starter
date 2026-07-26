@@ -18,8 +18,12 @@ if (process.argv.includes("--help")) {
         .join(", ")}`,
     );
   } else {
+    const remedy =
+      outcome.fix === undefined
+        ? "Fix the cause above"
+        : `Run \`${outcome.fix}\``;
     console.error(
-      `\nverify: \`${outcome.failedStep}\` failed with exit code ${outcome.code}. Fix the cause above and run \`pnpm verify\` again.`,
+      `\nverify: \`${outcome.failedStep}\` failed with exit code ${outcome.code}. ${remedy} and run \`pnpm verify\` again.`,
     );
   }
 

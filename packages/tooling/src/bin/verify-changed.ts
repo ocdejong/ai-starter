@@ -60,8 +60,10 @@ function main(): number {
   const outcome = runVerification(repositoryRoot, selection.steps);
 
   if (outcome.failedStep !== undefined) {
+    const remedy =
+      outcome.fix === undefined ? "" : ` Run \`${outcome.fix}\` to fix.`;
     console.error(
-      `\nverify:changed: \`${outcome.failedStep}\` failed with exit code ${outcome.code}.`,
+      `\nverify:changed: \`${outcome.failedStep}\` failed with exit code ${outcome.code}.${remedy}`,
     );
   }
 
