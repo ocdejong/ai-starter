@@ -3,6 +3,10 @@ import { AnchorMissingError } from "./source-edits.ts";
 /**
  * Inserts a model above the first one already in the schema, so a product's own
  * models stay at the top and the authentication tables below them.
+ *
+ * The insertion point is above that model's `///` documentation, not above its
+ * `model` line: a Prisma doc comment belongs to the block underneath it, so
+ * landing between the two would silently reassign it.
  */
 export function addPrismaModel(
   file: string,
@@ -23,7 +27,18 @@ export function addPrismaModel(
     );
   }
 
-  return `${content.slice(0, index)}${block}\n\n${content.slice(index)}`;
+  const before = content.slice(0, index).split("\n");
+  // The last entry is the empty string before the `model` line itself.
+  let documentation = before.length - 1;
+  while (
+    documentation > 0 &&
+    (before[documentation - 1] ?? "").startsWith("///")
+  ) {
+    documentation -= 1;
+  }
+
+  const insertion = before.slice(0, documentation).join("\n").length + 1;
+  return `${content.slice(0, insertion)}${block}\n\n${content.slice(insertion)}`;
 }
 
 /**

@@ -98,8 +98,13 @@ describe("generate feature", () => {
     expect(read(root, "apps/web/src/server/api/context.ts")).toContain(
       "createPrismaReleaseNoteRepository(db)",
     );
-    expect(read(root, "packages/db/prisma/schema.prisma")).toContain(
-      "model ReleaseNote {",
+    // A Prisma `///` comment documents the block below it, so a model inserted
+    // between an existing comment and its model would quietly steal it.
+    expect(read(root, "packages/db/prisma/schema.prisma")).toMatch(
+      /checks is one a second writer can break\.\nmodel ReleaseNote \{/,
+    );
+    expect(read(root, "packages/db/prisma/schema.prisma")).toMatch(
+      /checks is one a second writer can break\.\nmodel Announcement \{/,
     );
     expect(read(root, "apps/web/src/lib/routes.ts")).toContain(
       'export const releaseNotesPath = "/release-notes";',
