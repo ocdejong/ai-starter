@@ -1,17 +1,35 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
 import { defineConfig, devices } from "@playwright/test";
+
+import { resolveWebOrigin } from "./src/test/web-origin";
 
 /**
  * The origin the browser drives, and the port the server it starts listens on.
  *
  * It must be the same origin `BETTER_AUTH_URL` names: the auth server builds
  * emailed action links from that variable, and a session cookie set on one
- * origin is invisible to another — so a mismatch breaks the journey that follows
- * a confirmation link. Override both together (they default to the same place)
- * when :3000 is taken, which is what lets two checkouts verify at once instead
- * of one silently driving the other's application.
+ * origin is invisible to another — so a mismatch breaks the journey that
+ * follows a confirmation link. The default therefore comes from `.env`'s own
+ * `BETTER_AUTH_URL` — bootstrap derives a distinct one per git worktree — so
+ * sibling checkouts verify at once instead of one silently driving (and
+ * asserting against) the other's dev server. `E2E_BASE_URL` still overrides
+ * the origin explicitly; set it together with `BETTER_AUTH_URL`.
  */
-const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:3000";
+const baseURL = resolveWebOrigin(process.env.E2E_BASE_URL, readEnvFile());
 const port = new URL(baseURL).port || "3000";
+
+function readEnvFile(): string | undefined {
+  try {
+    return readFileSync(
+      fileURLToPath(new URL(".env", import.meta.url)),
+      "utf8",
+    );
+  } catch {
+    return undefined;
+  }
+}
 
 export default defineConfig({
   testDir: "./e2e",

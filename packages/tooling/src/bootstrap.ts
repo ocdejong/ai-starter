@@ -18,6 +18,11 @@ import { parseDatabaseUrl, withPort } from "./database-url.ts";
 import { parseEnvFile, setEnvValue } from "./env-file.ts";
 import { mobileEnvPath, webEnvPath } from "./repository.ts";
 import { findFreePort, isPortAccepting, waitForPort } from "./tcp.ts";
+import {
+  deriveWebOrigin,
+  isLinkedWorktree,
+  worktreePortOffset,
+} from "./worktree-ports.ts";
 
 /** Matches the PostgreSQL image the CI workflow runs against. */
 const postgresImage = "docker.io/postgres:17-alpine";
@@ -91,9 +96,13 @@ function requireSuccess(code: number, command: string): void {
 /**
  * Creates `apps/web/.env` from the example on first run. The database port is
  * moved to the next free one when the example's port is already taken, so
- * several products generated from this starter can run side by side.
+ * several products generated from this starter can run side by side. A linked
+ * git worktree instead derives its database port and web origin from its own
+ * path: a free-port probe cannot see a stopped sibling container or a
+ * bootstrap racing in another worktree, so probing alone let sibling
+ * worktrees share one database and drive each other's dev server.
  */
-async function ensureWebEnvironment(root: string): Promise<string> {
+export async function ensureWebEnvironment(root: string): Promise<string> {
   const absolute = path.join(root, webEnvPath);
   const example = path.join(root, `${webEnvPath}.example`);
 
@@ -108,17 +117,31 @@ async function ensureWebEnvironment(root: string): Promise<string> {
     let content = readFileSync(example, "utf8");
     const configured = readDatabaseUrl(content, `${webEnvPath}.example`);
     const connection = parseDatabaseUrl(configured);
-    const port = await findFreePort(connection.host, connection.port);
+    const offset = isLinkedWorktree(root) ? worktreePortOffset(root) : 0;
+    const port = await findFreePort(connection.host, connection.port + offset);
 
-    if (port !== connection.port) {
+    if (offset > 0) {
+      log(`linked worktree; the local database gets its own port ${port}`);
+    } else if (port !== connection.port) {
       log(
         `port ${connection.port} is in use; the local database will use ${port}`,
       );
+    }
+    if (port !== connection.port) {
       content = setEnvValue(
         content,
         "DATABASE_URL",
         withPort(configured, port),
       );
+    }
+
+    const origin =
+      offset > 0
+        ? deriveWebOrigin(parseEnvFile(content).get("BETTER_AUTH_URL"), offset)
+        : undefined;
+    if (origin !== undefined) {
+      content = setEnvValue(content, "BETTER_AUTH_URL", origin);
+      log(`the web app in this worktree defaults to ${origin}`);
     }
 
     writeFileSync(absolute, content);
