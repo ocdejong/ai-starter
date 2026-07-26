@@ -35,7 +35,9 @@ describe("generate adapter", () => {
       "apps/web/src/server/payment-gateway/client.ts",
       "packages/api/src/payment-gateway.ts",
     ]);
-    expect(result.edited).toEqual(["packages/api/src/index.ts"]);
+    expect([...result.edited, ...result.unchanged]).toEqual([
+      "packages/api/src/index.ts",
+    ]);
     expect(read("packages/api/src/index.ts")).toContain(
       'from "./payment-gateway";',
     );

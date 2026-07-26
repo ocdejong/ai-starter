@@ -59,6 +59,18 @@ Run `pnpm diagnose` when something does not work: it reports Node, pnpm, the con
 
 OAuth and Sentry are optional. Copy the relevant values from the environment examples when the product needs them. Never commit the resulting `.env` files.
 
+## Add a feature
+
+```bash
+pnpm generate feature invoice        # the whole vertical slice
+pnpm generate context billing-period # the domain half alone
+pnpm generate adapter payment-gateway # a port and a vendor-free adapter
+```
+
+A generated feature arrives in the product's own words and already registered everywhere it has to be: the domain export, the API port and router, the composition root, the Prisma model, both message catalogs, and the navigation on web and native. It is expected to pass `pnpm verify:changed` untouched, and the command names the two things it cannot do — writing the migration's hand-written SQL, and translating the Dutch copy it wrote in English.
+
+The `announcement` slice in this repository is that generator's output and a test keeps it so, which makes it the worked example to read. A product that does not want it deletes those files and reverses those registrations; `pnpm generate feature announcement` puts it back.
+
 ## Verify
 
 ```bash

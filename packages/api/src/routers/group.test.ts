@@ -8,6 +8,7 @@ import type {
   TRPCSession,
 } from "../context";
 import { createCaller } from "../root";
+import { testContext } from "../test-support/context";
 
 const ownMembership: GroupMembership = {
   groupId: "group-a",
@@ -46,16 +47,7 @@ function groupsForMemberOfA(): GroupRepository {
 const createContext = (
   groups: GroupRepository,
   session: TRPCSession,
-): TRPCContext => ({
-  announcements: {
-    listByGroup: vi.fn(async () => []),
-    publish: vi.fn(),
-    rename: vi.fn(async () => null),
-  },
-  groups,
-  headers: new Headers(),
-  session,
-});
+): TRPCContext => testContext({ groups, session });
 
 const signedIn = (activeGroupId: string | null): TRPCSession => ({
   activeGroupId,

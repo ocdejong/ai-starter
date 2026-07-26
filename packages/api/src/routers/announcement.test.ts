@@ -10,6 +10,7 @@ import type {
   TRPCSession,
 } from "../context";
 import { createCaller } from "../root";
+import { testContext } from "../test-support/context";
 
 const ownMembership: GroupMembership = {
   groupId: "group-a",
@@ -59,15 +60,13 @@ function groupsForMemberOfA(): GroupRepository {
   };
 }
 
+// Every other port stays inert, so this test cannot pass by reading something
+// it never set up, and a port added later cannot break it.
 const createContext = (
   announcements: AnnouncementRepository,
   session: TRPCSession,
-): TRPCContext => ({
-  announcements,
-  groups: groupsForMemberOfA(),
-  headers: new Headers(),
-  session,
-});
+): TRPCContext =>
+  testContext({ announcements, groups: groupsForMemberOfA(), session });
 
 const signedIn = (activeGroupId: string | null): TRPCSession => ({
   activeGroupId,

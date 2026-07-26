@@ -59,6 +59,7 @@ export const featureRegistryEdits: readonly RegistryEdit[] = [
         "packages/api/src/context.ts",
         content,
         "export type TRPCContext = {",
+        `export type ${names.pascal}Repository`,
         `${portDeclaration(names)}\n`,
       );
       return addObjectEntry(
@@ -86,6 +87,7 @@ export const featureRegistryEdits: readonly RegistryEdit[] = [
         "packages/api/src/root.ts",
         content,
         "import { createCallerFactory",
+        `from "./routers/${names.kebab}"`,
         `import { ${names.camel}Router } from "./routers/${names.kebab}";`,
       );
       return addObjectEntry(
@@ -96,6 +98,22 @@ export const featureRegistryEdits: readonly RegistryEdit[] = [
       );
     },
     file: "packages/api/src/root.ts",
+  },
+  {
+    apply: (content, names) =>
+      addObjectEntry(
+        "packages/api/src/test-support/context.ts",
+        content,
+        "const inertPorts = {",
+        [
+          `${names.camelPlural}: {`,
+          `  listByGroup: absent("${names.camelPlural}", "listByGroup"),`,
+          `  publish: absent("${names.camelPlural}", "publish"),`,
+          `  rename: absent("${names.camelPlural}", "rename"),`,
+          "},",
+        ].join("\n"),
+      ),
+    file: "packages/api/src/test-support/context.ts",
   },
   {
     apply: (content, names) =>
@@ -149,6 +167,7 @@ export const featureRegistryEdits: readonly RegistryEdit[] = [
         file,
         withAdapter,
         "export const createTRPCContext",
+        `createPrisma${names.pascal}Repository(`,
         [
           "// The port is declared by the API layer and satisfied here, at the one",
           "// place that may know both halves. Nothing above this file names Prisma.",
@@ -172,6 +191,7 @@ export const featureRegistryEdits: readonly RegistryEdit[] = [
         "apps/web/src/lib/routes.ts",
         content,
         "export const dashboardPath",
+        `${names.camelPlural}Path`,
         `export const ${names.camelPlural}Path = "/${names.kebabPlural}";`,
       ),
     file: "apps/web/src/lib/routes.ts",
@@ -189,6 +209,7 @@ export const featureRegistryEdits: readonly RegistryEdit[] = [
         file,
         imported,
         navigationAnchor,
+        `href: ${names.camelPlural}Path`,
         `            { href: ${names.camelPlural}Path, label: tNav("${names.camelPlural}") },`,
       );
     },
@@ -200,6 +221,7 @@ export const featureRegistryEdits: readonly RegistryEdit[] = [
         "apps/mobile/src/app/(app)/_layout.tsx",
         content,
         tabAnchor,
+        `name="${names.kebabPlural}"`,
         `      <Tabs.Screen name="${names.kebabPlural}" options={{ title: t("${names.camelPlural}") }} />`,
       ),
     file: "apps/mobile/src/app/(app)/_layout.tsx",

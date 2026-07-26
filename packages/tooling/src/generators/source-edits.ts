@@ -164,14 +164,22 @@ export function addObjectEntry(
   );
 }
 
-/** Inserts `text` on the line after the one containing `anchor`. */
+/**
+ * Inserts `text` on the line after the one containing `anchor`.
+ *
+ * `marker` is what "already inserted" means. It cannot be the inserted text
+ * itself: the generator runs Prettier afterwards, so by the second run the text
+ * has been rewrapped and a textual comparison would insert it again. Pass
+ * something Prettier cannot reflow — a single identifier or attribute.
+ */
 export function insertAfterLine(
   file: string,
   content: string,
   anchor: string,
+  marker: string,
   text: string,
 ): string {
-  if (content.includes(text.trim())) {
+  if (content.includes(marker)) {
     return content;
   }
 
@@ -189,14 +197,18 @@ export function insertAfterLine(
   return lines.join("\n");
 }
 
-/** Inserts `text` immediately before the line containing `anchor`. */
+/**
+ * Inserts `text` immediately before the line containing `anchor`. `marker` is
+ * the Prettier-proof "already inserted" test; see `insertAfterLine`.
+ */
 export function insertBeforeLine(
   file: string,
   content: string,
   anchor: string,
+  marker: string,
   text: string,
 ): string {
-  if (content.includes(text.trim())) {
+  if (content.includes(marker)) {
     return content;
   }
 

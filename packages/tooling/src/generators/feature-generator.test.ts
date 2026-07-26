@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 
+import { runCapture } from "../command.ts";
 import { repositoryRoot } from "../repository.ts";
 import {
   featureRegistryEdits,
@@ -52,6 +53,7 @@ describe("generate feature", () => {
   let root: string;
   let created: readonly string[];
   let edited: readonly string[];
+  let unchanged: readonly string[];
   let followUps: readonly string[];
 
   beforeAll(() => {
@@ -59,6 +61,7 @@ describe("generate feature", () => {
     const result = generateFeature(root, names);
     created = result.created;
     edited = result.edited;
+    unchanged = result.unchanged;
     followUps = result.followUps;
   });
 
@@ -85,7 +88,10 @@ describe("generate feature", () => {
   });
 
   it("registers the slice everywhere it has to be registered", () => {
-    expect([...edited].sort()).toEqual(
+    // Every registry is visited and ends up correct. Asserting `edited` alone
+    // would couple this to whether the checkout it copies from happens to carry
+    // an in-progress generation already.
+    expect([...edited, ...unchanged].sort()).toEqual(
       featureRegistryEdits.map(({ file }) => file).sort(),
     );
 
@@ -153,6 +159,28 @@ describe("generate feature", () => {
   });
 
   it("changes nothing when it runs a second time", () => {
+    // The command formats what it wrote, so by the second run every inserted
+    // line may have been rewrapped. Reproducing that here is what catches a
+    // guard that compares the text it inserted rather than something Prettier
+    // cannot reflow — the bug that put two identical tabs in the layout.
+    // Run from the repository, on absolute paths: `pnpm exec` finds nothing in
+    // a bare temporary directory, and a silently skipped format would make this
+    // test pass without reproducing anything.
+    const formatted = runCapture(
+      "pnpm",
+      [
+        "exec",
+        "prettier",
+        "--write",
+        "--log-level",
+        "silent",
+        ...featureRegistryEdits
+          .filter(({ file }) => !file.endsWith(".prisma"))
+          .map(({ file }) => path.join(root, file)),
+      ],
+      { cwd: repositoryRoot },
+    );
+    expect(formatted.code).toBe(0);
     const before = featureRegistryEdits.map(({ file }) => read(root, file));
 
     const second = generateFeature(root, names);
@@ -177,7 +205,9 @@ describe("generate context", () => {
       "packages/domain/src/billing-period.test.ts",
       "packages/domain/src/billing-period.ts",
     ]);
-    expect(result.edited).toEqual(["packages/domain/src/index.ts"]);
+    expect([...result.edited, ...result.unchanged]).toEqual([
+      "packages/domain/src/index.ts",
+    ]);
     expect(read(root, "packages/domain/src/index.ts")).toContain(
       'from "./billing-period";',
     );

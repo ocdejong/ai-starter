@@ -1,3 +1,4 @@
+import { messages } from "@ai-starter/i18n";
 import { render, screen, userEvent } from "@testing-library/react-native";
 
 import { TestProviders } from "../../test/providers";
@@ -127,6 +128,10 @@ describe("AnnouncementPanel", () => {
     ).toBeOnTheScreen();
   });
 
+  // Asserted through the catalog rather than a literal, because a generated
+  // feature's Dutch entries start out as the English ones: this proves the
+  // component resolves through the Dutch messages, and keeps proving it after
+  // someone translates them.
   it("renders in Dutch", async () => {
     await render(
       <TestProviders locale="nl">
@@ -134,6 +139,8 @@ describe("AnnouncementPanel", () => {
       </TestProviders>,
     );
 
-    expect(screen.getByText("Huidige aankondiging")).toBeOnTheScreen();
+    expect(
+      screen.getByText(messages.nl.app.announcements.current.title),
+    ).toBeOnTheScreen();
   });
 });

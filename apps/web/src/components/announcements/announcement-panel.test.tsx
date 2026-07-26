@@ -1,3 +1,4 @@
+import { messages } from "@ai-starter/i18n";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
@@ -145,6 +146,10 @@ describe("AnnouncementPanel", () => {
     );
   });
 
+  // Asserted through the catalog rather than a literal, because a generated
+  // feature's Dutch entries start out as the English ones: this proves the
+  // component resolves through the Dutch messages, and keeps proving it after
+  // someone translates them.
   it("renders in Dutch", () => {
     render(
       <IntlTestProvider locale="nl">
@@ -161,7 +166,9 @@ describe("AnnouncementPanel", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Huidige aankondiging" }),
+      screen.getByRole("heading", {
+        name: messages.nl.app.announcements.current.title,
+      }),
     ).toBeInTheDocument();
   });
 });
