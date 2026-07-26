@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { envFileWebOrigin, resolveWebOrigin } from "./web-origin";
+import {
+  envFileWebOrigin,
+  resolveWebOrigin,
+  sharedWebOriginError,
+} from "./web-origin";
 
 describe("envFileWebOrigin", () => {
   it("reads the quoted BETTER_AUTH_URL bootstrap writes", () => {
@@ -45,5 +49,30 @@ describe("resolveWebOrigin", () => {
     expect(resolveWebOrigin(undefined, undefined)).toBe(
       "http://localhost:3000",
     );
+  });
+});
+
+describe("sharedWebOriginError", () => {
+  const shared = "http://localhost:3000";
+
+  it("refuses a worktree still on the origin every checkout shares", () => {
+    const error = sharedWebOriginError(shared, shared, true);
+
+    expect(error).toContain(shared);
+    expect(error).toContain("pnpm bootstrap");
+  });
+
+  it("accepts a worktree that derived its own origin", () => {
+    expect(
+      sharedWebOriginError("http://localhost:3041", shared, true),
+    ).toBeUndefined();
+  });
+
+  it("accepts the shared origin in a primary checkout, which owns it", () => {
+    expect(sharedWebOriginError(shared, shared, false)).toBeUndefined();
+  });
+
+  it("accepts any origin when the example names none to compare against", () => {
+    expect(sharedWebOriginError(shared, undefined, true)).toBeUndefined();
   });
 });

@@ -94,72 +94,138 @@ function requireSuccess(code: number, command: string): void {
 }
 
 /**
- * Creates `apps/web/.env` from the example on first run. The database port is
- * moved to the next free one when the example's port is already taken, so
- * several products generated from this starter can run side by side. A linked
- * git worktree instead derives its database port and web origin from its own
- * path: a free-port probe cannot see a stopped sibling container or a
- * bootstrap racing in another worktree, so probing alone let sibling
- * worktrees share one database and drive each other's dev server.
+ * Brings `apps/web/.env` to the state this checkout needs, creating it from the
+ * example on first run. The web origin is then settled on every run rather than
+ * only at creation, so a worktree whose file predates that rule converges
+ * instead of naming the shared origin forever. See `webEnvironmentFromExample`
+ * for what a fresh file starts from, and `worktreeWebOrigin` for the rule.
  */
 export async function ensureWebEnvironment(root: string): Promise<string> {
   const absolute = path.join(root, webEnvPath);
   const example = path.join(root, `${webEnvPath}.example`);
 
-  if (!existsSync(absolute)) {
-    if (!existsSync(example)) {
-      throw new BootstrapError(
-        `${webEnvPath}.example is missing.`,
-        "Restore the example file from version control.",
-      );
-    }
-
-    let content = readFileSync(example, "utf8");
-    const configured = readDatabaseUrl(content, `${webEnvPath}.example`);
-    const connection = parseDatabaseUrl(configured);
-    const offset = isLinkedWorktree(root) ? worktreePortOffset(root) : 0;
-    const port = await findFreePort(connection.host, connection.port + offset);
-
-    if (offset > 0) {
-      log(`linked worktree; the local database gets its own port ${port}`);
-    } else if (port !== connection.port) {
-      log(
-        `port ${connection.port} is in use; the local database will use ${port}`,
-      );
-    }
-    if (port !== connection.port) {
-      content = setEnvValue(
-        content,
-        "DATABASE_URL",
-        withPort(configured, port),
-      );
-    }
-
-    const origin =
-      offset > 0
-        ? deriveWebOrigin(parseEnvFile(content).get("BETTER_AUTH_URL"), offset)
-        : undefined;
-    if (origin !== undefined) {
-      content = setEnvValue(content, "BETTER_AUTH_URL", origin);
-      log(`the web app in this worktree defaults to ${origin}`);
-    }
-
+  let content = readFileIfPresent(absolute);
+  if (content === undefined) {
+    content = await webEnvironmentFromExample(root, example);
     writeFileSync(absolute, content);
     log(`created ${webEnvPath}`);
   }
 
-  let content = readFileSync(absolute, "utf8");
+  let settled = content;
+
+  const origin = worktreeWebOrigin(root, content, example);
+  if (origin !== undefined) {
+    settled = setEnvValue(settled, "BETTER_AUTH_URL", origin);
+    log(`the web app in this worktree defaults to ${origin}`);
+  }
+
   if ((parseEnvFile(content).get("BETTER_AUTH_SECRET") ?? "").length < 32) {
-    content = setEnvValue(
-      content,
+    settled = setEnvValue(
+      settled,
       "BETTER_AUTH_SECRET",
       randomBytes(32).toString("base64url"),
     );
-    writeFileSync(absolute, content);
     log("generated a local BETTER_AUTH_SECRET");
   }
 
+  if (settled !== content) {
+    writeFileSync(absolute, settled);
+    content = settled;
+  }
+
   return readDatabaseUrl(content, webEnvPath);
+}
+
+/**
+ * A file's contents, or undefined when it is not there. Reading and handling
+ * the failure gives the same answer as asking first, without the window
+ * between the question and the read in which the answer can stop being true.
+ */
+function readFileIfPresent(file: string): string | undefined {
+  try {
+    return readFileSync(file, "utf8");
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The `.env` a fresh checkout starts from. The database port moves to the next
+ * free one when the example's is already taken, so several products generated
+ * from this starter can run side by side, and a linked worktree offsets it by
+ * its own path first so siblings do not race onto one database.
+ */
+async function webEnvironmentFromExample(
+  root: string,
+  examplePath: string,
+): Promise<string> {
+  const example = readFileIfPresent(examplePath);
+  if (example === undefined) {
+    throw new BootstrapError(
+      `${webEnvPath}.example is missing.`,
+      "Restore the example file from version control.",
+    );
+  }
+
+  const configured = readDatabaseUrl(example, `${webEnvPath}.example`);
+  const connection = parseDatabaseUrl(configured);
+  const offset = isLinkedWorktree(root) ? worktreePortOffset(root) : 0;
+  const port = await findFreePort(connection.host, connection.port + offset);
+
+  if (offset > 0) {
+    log(`linked worktree; the local database gets its own port ${port}`);
+  } else if (port !== connection.port) {
+    log(
+      `port ${connection.port} is in use; the local database will use ${port}`,
+    );
+  }
+
+  return port === connection.port
+    ? example
+    : setEnvValue(example, "DATABASE_URL", withPort(configured, port));
+}
+
+/**
+ * The web origin a linked worktree should default to, or undefined when its
+ * `.env` already names the right one. Deriving here rather than only where the
+ * file is created is what makes the rule converge: a worktree bootstrapped
+ * before the derivation existed keeps a complete `.env`, so the creation branch
+ * never runs again, and it stays on the origin every sibling also names — where
+ * Playwright's `reuseExistingServer` silently attaches to whichever checkout's
+ * dev server reached the port first.
+ *
+ * Only the example's own value is replaced, so an origin a developer chose
+ * survives. The database port is deliberately not converged the same way: this
+ * checkout has already created a container and migrated data at the port its
+ * `.env` names, and moving it would strand both.
+ *
+ * The example is read rather than checked for first: a missing one is the same
+ * answer as one naming no origin, and asking before reading would be a check
+ * whose result the read cannot rely on.
+ */
+function worktreeWebOrigin(
+  root: string,
+  content: string,
+  examplePath: string,
+): string | undefined {
+  if (!isLinkedWorktree(root)) {
+    return undefined;
+  }
+
+  const example = readFileIfPresent(examplePath);
+  if (example === undefined) {
+    return undefined;
+  }
+
+  const shared = parseEnvFile(example).get("BETTER_AUTH_URL");
+  if (
+    shared === undefined ||
+    parseEnvFile(content).get("BETTER_AUTH_URL") !== shared
+  ) {
+    return undefined;
+  }
+
+  return deriveWebOrigin(shared, worktreePortOffset(root));
 }
 
 function readDatabaseUrl(content: string, source: string): string {

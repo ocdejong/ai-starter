@@ -128,4 +128,55 @@ describe("ensureWebEnvironment", () => {
 
     expect(second).toBe(first);
   });
+
+  function writeEnv(root: string, content: string): void {
+    writeFileSync(path.join(root, "apps", "web", ".env"), content);
+  }
+
+  it("re-points a worktree left on the shared example origin at its own", async () => {
+    // What a worktree bootstrapped before the derivation existed looks like:
+    // a complete .env still naming the origin every sibling also names.
+    const root = checkout("worktree");
+    writeEnv(root, exampleEnv);
+
+    await ensureWebEnvironment(root);
+
+    expect(writtenEnv(root).get("BETTER_AUTH_URL")).toBe(
+      `http://localhost:${13000 + worktreePortOffset(root)}`,
+    );
+  });
+
+  it("leaves the database of an existing .env where the checkout already migrated it", async () => {
+    const root = checkout("worktree");
+    writeEnv(root, exampleEnv);
+
+    const databaseUrl = await ensureWebEnvironment(root);
+
+    expect(parseDatabaseUrl(databaseUrl).port).toBe(15433);
+  });
+
+  it("keeps a web origin the developer chose", async () => {
+    const root = checkout("worktree");
+    writeEnv(
+      root,
+      exampleEnv.replace("http://localhost:13000", "http://localhost:13210"),
+    );
+
+    await ensureWebEnvironment(root);
+
+    expect(writtenEnv(root).get("BETTER_AUTH_URL")).toBe(
+      "http://localhost:13210",
+    );
+  });
+
+  it("leaves a primary checkout on the example origin", async () => {
+    const root = checkout("primary");
+    writeEnv(root, exampleEnv);
+
+    await ensureWebEnvironment(root);
+
+    expect(writtenEnv(root).get("BETTER_AUTH_URL")).toBe(
+      "http://localhost:13000",
+    );
+  });
 });
