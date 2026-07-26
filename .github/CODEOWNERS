@@ -1,0 +1,13 @@
+# Files that decide what every other change is allowed to do. The branch ruleset
+# in `.github/rulesets/main.json` sets `require_code_owner_review`, so editing
+# anything below needs an explicit approving review from an owner listed here.
+#
+# A downstream product replaces the handle: see `docs/repository-host.md`.
+
+/AGENTS.md                          @ocdejong
+/CLAUDE.md                          @ocdejong
+/GEMINI.md                          @ocdejong
+/.cursor/                           @ocdejong
+/.github/                           @ocdejong
+/packages/tooling/                  @ocdejong
+/docs/engineering-principles.md     @ocdejong

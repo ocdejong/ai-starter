@@ -29,6 +29,7 @@
     "lint:fix": "turbo run lint:fix",
     "policy": "node packages/tooling/src/bin/policy.ts",
     "postinstall": "pnpm db:generate",
+    "repo:host": "node packages/tooling/src/bin/repo-host.ts",
     "starter:init": "node packages/tooling/src/bin/starter-init.ts",
     "test": "turbo run test",
     "test:e2e": "pnpm --filter @ai-starter/web test:e2e",
@@ -50,17 +51,5 @@
   "packageManager": "pnpm@10.32.1",
   "engines": {
     "node": "^24 || >=26"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@sentry/cli"
-    ],
-    "packageExtensions": {
-      "@react-native/jest-preset@*": {
-        "dependencies": {
-          "@babel/runtime": "^7.29.7"
-        }
-      }
-    }
   }
 }
