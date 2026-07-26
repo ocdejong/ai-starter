@@ -10,6 +10,8 @@ on:
   workflow_dispatch:
 
 permissions:
+  # Required for codeql-action to read workflow-run metadata in a private repository.
+  actions: read
   contents: read
   security-events: write
 
