@@ -38,6 +38,19 @@ squash and rebase merges only (a merge commit cannot produce linear history),
 branch deletion on merge, secret scanning with push protection, Dependabot alerts
 and security updates, and private vulnerability reporting.
 
+## Applying it changes how the repository is developed
+
+This is the point of the ruleset rather than a side effect, and it is worth
+saying out loud before the first run. Afterwards nobody pushes to the default
+branch — not the owner, not an agent, not a script — and a branch lands as a
+squash or a rebase, never as a merge commit. A workflow built on "merge the
+default branch into the topic branch, then fast-forward the default branch"
+stops working the moment the ruleset is active, because it does both of the
+things the ruleset refuses.
+
+Deciding to keep that workflow means deciding not to enforce the branch, so the
+choice belongs here rather than in a commit that quietly loosens a rule.
+
 ## Required checks must be able to report
 
 A required status check that never reports leaves every pull request pending
