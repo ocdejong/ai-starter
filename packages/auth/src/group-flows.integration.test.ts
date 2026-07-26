@@ -705,6 +705,75 @@ describe("group ownership", () => {
   });
 });
 
+/**
+ * `changePassword({revokeOtherSessions: true})` deletes every session the user
+ * holds — the caller's included — and issues a replacement in the same
+ * response. The replacement is seeded like any other new session, so these
+ * pin down where it lands: in the group the caller was working in, and never
+ * in a group they do not belong to.
+ */
+describe("replacement sessions", () => {
+  const newPassword = "password5678";
+
+  /** Changes the password, revoking all sessions, and adopts the reissued one. */
+  async function changePasswordHeaders(headers: Headers): Promise<Headers> {
+    const response = await auth.api.changePassword({
+      asResponse: true,
+      body: {
+        currentPassword: password,
+        newPassword,
+        revokeOtherSessions: true,
+      },
+      headers,
+    });
+    return new Headers({ cookie: sessionCookie(response) });
+  }
+
+  it("keeps the switched group active when a password change replaces the session", async () => {
+    const headers = await signedInUser("rotating@example.com");
+    const created = await auth.api.createOrganization({
+      body: { name: "Second Wind", slug: "second-wind" },
+      headers,
+    });
+    await auth.api.setActiveOrganization({
+      body: { organizationId: created?.id ?? null },
+      headers,
+    });
+    expect(await activeGroupId(headers)).toBe(created?.id);
+
+    const reissued = await changePasswordHeaders(headers);
+
+    // The caller's row is already deleted when the replacement is seeded, so
+    // staying in the switched group — not falling back to the first one — is
+    // exactly what this asserts.
+    expect(await activeGroupId(reissued)).toBe(created?.id);
+  });
+
+  it("never seeds the replacement with a group the user is not a member of", async () => {
+    const headers = await signedInUser("tampered@example.com");
+    const personalGroupId = await activeGroupId(headers);
+    const outsiderHeaders = await signedInUser("outsider@example.com");
+    const foreign = await auth.api.createOrganization({
+      body: { name: "Foreign", slug: "foreign" },
+      headers: outsiderHeaders,
+    });
+
+    // A session row is data, not an authorization: point the caller's at a
+    // group they were never admitted to, as a stale or forged row would.
+    const user = await client.user.findFirstOrThrow({
+      where: { email: "tampered@example.com" },
+    });
+    await client.session.updateMany({
+      data: { activeOrganizationId: foreign?.id ?? "" },
+      where: { userId: user.id },
+    });
+
+    const reissued = await changePasswordHeaders(headers);
+
+    expect(await activeGroupId(reissued)).toBe(personalGroupId);
+  });
+});
+
 /** Invites `email` to `groupId` and accepts it as the already signed-in guest. */
 async function joinGroup(
   groupId: string,
