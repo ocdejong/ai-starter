@@ -30,6 +30,7 @@
     "instructions:write": "node packages/tooling/src/bin/instructions.ts --write",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",
+    "mutation": "pnpm --filter @ai-starter/domain --filter @ai-starter/api mutation",
     "policy": "node packages/tooling/src/bin/policy.ts",
     "postinstall": "pnpm db:generate",
     "repo:host": "node packages/tooling/src/bin/repo-host.ts",

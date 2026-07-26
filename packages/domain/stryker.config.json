@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comment": "Mutation testing answers the question coverage cannot: whether the tests would notice if the code were wrong. It runs on a schedule rather than per-edit because a full run rewrites and re-tests every statement, which is minutes of work for feedback that changes slowly.",
+  "packageManager": "pnpm",
+  "testRunner": "vitest",
+  "vitest": {
+    "configFile": "vitest.config.ts"
+  },
+  "mutate": ["src/**/*.ts", "!src/**/*.test.ts", "!src/index.ts"],
+  "reporters": ["clear-text", "progress", "html"],
+  "coverageAnalysis": "perTest",
+  "thresholds": {
+    "high": 95,
+    "low": 89,
+    "break": 89
+  },
+  "tempDirName": ".stryker-tmp",
+  "htmlReporter": {
+    "fileName": "../../reports/mutation/domain.html"
+  },
+  "plugins": ["@stryker-mutator/vitest-runner"],
+  "_threshold_comment": "The floor is the score this package already earns. Raise it when a test raises the measurement; never lower it to land a change."
+}

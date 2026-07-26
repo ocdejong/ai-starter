@@ -2,19 +2,20 @@
 
 ## Commands
 
-| Command                 | Purpose                                                         | Prerequisite                                     |
-| ----------------------- | --------------------------------------------------------------- | ------------------------------------------------ |
-| `pnpm verify`           | The complete authoritative suite, in CI's order                 | A bootstrapped environment                       |
-| `pnpm verify:changed`   | Only the checks the current diff can affect                     | A git checkout with a resolvable base revision   |
-| `pnpm test:unit`        | Domain, web component, and native component suites              | Dependencies installed                           |
-| `pnpm test:integration` | Prisma migrations and integrity against PostgreSQL              | Docker/Podman running                            |
-| `pnpm test:e2e`         | Playwright Chromium web journey                                 | Local database running and migrated              |
-| `pnpm test:e2e:mobile`  | Maestro native smoke flow; skips with a reason without a device | Maestro plus an installed simulator/device build |
-| `pnpm db:lint`          | Squawk over migration SQL a running database would have to take | Dependencies installed                           |
-| `pnpm check`            | Lint, typecheck, and unit/component tests                       | Dependencies installed                           |
-| `pnpm instructions`     | Agent instruction surfaces and document references              | A git checkout                                   |
-| `pnpm arch`             | Dependency direction, cycles, and deep imports across the graph | Dependencies installed                           |
-| `pnpm policy`           | Structural rules the module graph cannot see                    | Dependencies installed                           |
+| Command                 | Purpose                                                          | Prerequisite                                     |
+| ----------------------- | ---------------------------------------------------------------- | ------------------------------------------------ |
+| `pnpm verify`           | The complete authoritative suite, in CI's order                  | A bootstrapped environment                       |
+| `pnpm verify:changed`   | Only the checks the current diff can affect                      | A git checkout with a resolvable base revision   |
+| `pnpm test:unit`        | Domain, web component, and native component suites               | Dependencies installed                           |
+| `pnpm test:integration` | Prisma migrations and integrity against PostgreSQL               | Docker/Podman running                            |
+| `pnpm test:e2e`         | Playwright Chromium web journey                                  | Local database running and migrated              |
+| `pnpm test:e2e:mobile`  | Maestro native smoke flow; skips with a reason without a device  | Maestro plus an installed simulator/device build |
+| `pnpm db:lint`          | Squawk over migration SQL a running database would have to take  | Dependencies installed                           |
+| `pnpm mutation`         | Stryker over `domain` and `api`; scheduled, not part of `verify` | Dependencies installed                           |
+| `pnpm check`            | Lint, typecheck, and unit/component tests                        | Dependencies installed                           |
+| `pnpm instructions`     | Agent instruction surfaces and document references               | A git checkout                                   |
+| `pnpm arch`             | Dependency direction, cycles, and deep imports across the graph  | Dependencies installed                           |
+| `pnpm policy`           | Structural rules the module graph cannot see                     | Dependencies installed                           |
 
 `packages/tooling/src/verification.ts` holds the one ordered definition of the authoritative suite. `pnpm verify`, `pnpm verify:changed` and the CI workflow all read it, so the required checks cannot drift apart. Adding a check means adding it there.
 
@@ -54,6 +55,14 @@ Beyond that, the suite carries three levels of native evidence:
 - `build` runs `expo export --platform all`, so a bundle that no longer resolves or compiles fails the authoritative suite.
 
 What is still missing is the on-device run itself. Install Maestro and boot a simulator to get it locally, and add an EAS Workflow once the product is connected to an Expo project with credentials — then set `NATIVE_JOURNEY=required` there so that lane cannot go quiet. Do not substitute a browser run of React Native Web for it: that exercises a renderer the product does not ship, so it would report confidence the native build has not earned.
+
+## Coverage and mutation
+
+`packages/domain` and `packages/api` run their unit tests with a coverage floor, set in `packages/domain/vitest.config.ts` and `packages/api/vitest.config.ts` through `coveredVitestConfig`. The floor is the level the package already holds — 100% for `domain`, whose rules are pure and reachable from any test — so it cannot be satisfied by code nobody exercises, and the only way to fail it is to add some. Coverage counts the whole source tree, not only the files a test happened to import: without that, an untested module counts for nothing and a package can lose coverage by growing.
+
+Coverage says a line ran. It does not say a test would have noticed had the line been wrong, and a suite can reach 100% while asserting almost nothing. `pnpm mutation` answers the second question: Stryker rewrites each statement — flipping a comparison, emptying an object, dropping a condition — and reports how many of those the tests killed. When this landed, `domain` was at 100% coverage and 89% mutation score; the 25 survivors are the honest measure of what the assertions miss.
+
+It runs weekly through `.github/workflows/mutation.yml` and on request, never per edit: a full run is minutes of work for a signal that moves slowly. `packages/domain/stryker.config.json` and `packages/api/stryker.config.json` each carry a break threshold set to the score it already earns. Raise one when a test raises the measurement; never lower one to land a change.
 
 ## Choosing a level
 
