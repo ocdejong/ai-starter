@@ -15,10 +15,11 @@ This file is the only place repository rules are written. The files each agent l
 - Never commit secrets or generated Prisma output. Public environment variables are not secret.
 - Keep web and native UI separate. Share schemas, business logic, API types, and tokens—not DOM or React Native components.
 - Every colour in product UI comes from `packages/tokens`, and every string a person reads comes from both message catalogs in `packages/i18n`. Punctuation around a translated string is copy too: a locale may not punctuate the way English does.
-- Do not disable or focus a test, swallow an error in an empty `catch`, or assert between unrelated types by laundering through `unknown`. Each reports a confidence the code has not earned.
+- Do not disable or focus a test, swallow an error in an empty `catch`, or assert between unrelated types by laundering through `unknown`. Each reports a confidence the code has not earned. The two suppressions that survive — a described `@ts-expect-error` and a justified `eslint-disable` — are counted against a list that may only shrink, so adding one is a decision somebody records rather than a habit.
+- Delete what a change orphans. An export widened for a caller that has since moved, and a module the slice replacing it left behind, both still compile and still pass their own tests.
 - Prefer the smallest change that satisfies the requirement. Add dependencies and abstractions only when the product needs them.
 
-ESLint encodes many of these boundaries per file; `pnpm arch` (dependency-cruiser) enforces the direction and acyclicity across the whole module graph, and `pnpm policy` enforces the structural rules the graph cannot see. Do not weaken a rule to make a change pass; fix the dependency direction. The ordered golden principles and anti-rationalization rules in `docs/engineering-principles.md` are binding even where automation cannot yet enforce them.
+ESLint encodes many of these boundaries per file; `pnpm arch` (dependency-cruiser) enforces the direction and acyclicity across the whole module graph, `pnpm policy` enforces the structural rules the graph cannot see, and `pnpm knip` fails on the files, exports and dependencies nothing reaches at all. Do not weaken a rule to make a change pass; fix the dependency direction. The ordered golden principles and anti-rationalization rules in `docs/engineering-principles.md` are binding even where automation cannot yet enforce them.
 
 ## Where code belongs
 
@@ -30,7 +31,7 @@ ESLint encodes many of these boundaries per file; `pnpm arch` (dependency-cruise
 - `packages/config`: shared compiler, lint, and test configuration.
 - `packages/i18n`: shared EN/NL ICU message catalogs, the `Locale` schema, and locale negotiation. Platform-neutral; consumed by both apps.
 - `packages/tokens`: plain cross-platform design values.
-- `packages/tooling`: repository commands (`bootstrap`, `db:lint`, `diagnose`, `generate`, `instructions`, `policy`, `repo:host`, `test:e2e:mobile`, `verify`, `verify:changed`, `starter:init`). Node built-ins only: `diagnose` must inspect a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency. Editing it also requires `packages/tooling/AGENTS.md`.
+- `packages/tooling`: repository commands (`bootstrap`, `db:lint`, `diagnose`, `generate`, `instructions`, `links:check`, `policy`, `rehearse:template`, `repo:host`, `test:e2e:mobile`, `verify`, `verify:changed`, `starter:init`). Node built-ins only: `diagnose` must inspect a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency. Editing it also requires `packages/tooling/AGENTS.md`.
 
 ## Getting a checkout running
 
@@ -38,7 +39,9 @@ ESLint encodes many of these boundaries per file; `pnpm arch` (dependency-cruise
 
 ## Adding a feature
 
-`pnpm generate feature <name>` writes a vertical slice in the product's own words and registers it in every place a feature has to be registered; `pnpm generate context <name>` writes the domain half alone, and `pnpm generate adapter <name>` writes a consumer-owned port with a vendor-free adapter behind it. Run `pnpm generate --help` for what each emits. Generated output is expected to pass `pnpm verify:changed` untouched, and the command names the two things it cannot do: creating the migration, and translating the Dutch catalog entries. The committed `announcement` slice is that generator's output — `packages/tooling/src/generators/golden-path.test.ts` fails if it stops being — so read it, or regenerate it, rather than copying an older feature by hand.
+`pnpm rehearse:template` runs the whole golden path the way a downstream product first meets it — instantiate, `starter:init`, `bootstrap`, every generator, then the full suite over the result — and is the only check that compiles what the adapter generator emits. It runs weekly in CI; run it by hand after changing a generator, a template or `starter:init`.
+
+`pnpm generate feature <name>` writes a vertical slice in the product's own words and registers it in every place a feature has to be registered; `pnpm generate context <name>` writes the domain half alone, and `pnpm generate adapter <name>` writes a consumer-owned port with a vendor-free adapter behind it. Run `pnpm generate --help` for what each emits. Generated output is expected to pass `pnpm verify:changed` untouched, and the command names the two things it cannot do: creating the migration — whose SQL it dictates verbatim, both timeouts included, because `pnpm db:lint` rejects the file Prisma writes on its own — and translating the Dutch catalog entries. The committed `announcement` slice is that generator's output — `packages/tooling/src/generators/golden-path.test.ts` fails if it stops being — so read it, or regenerate it, rather than copying an older feature by hand.
 
 ## Required workflow
 
@@ -86,6 +89,7 @@ pnpm test:integration
 - Keep third-party SDKs behind a small adapter and validate their responses with Zod before passing data into domain logic.
 - Sentry is disabled without a DSN and must keep `sendDefaultPii: false` unless a documented privacy decision changes it.
 - Never log credentials, authorization headers, full provider payloads, or sensitive user content.
+- A workflow that runs on a schedule must file an issue when it fails, through `.github/actions/report-failure`; `pnpm policy` rejects one that does not. A red that only ever appears in the Actions tab is a signal nobody receives.
 - The repository host is configuration, not folklore: `.github/rulesets/main.json` and `.github/CODEOWNERS` are checked in, `pnpm repo:host` applies them, and `pnpm policy` fails when a workflow, an action pin, or a pnpm setting drifts from what `docs/repository-host.md` describes.
 
 ## Completion criteria

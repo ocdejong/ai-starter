@@ -102,3 +102,11 @@ Realtime AI chat streams from a server route (SSE/streamed HTTP by default; WebS
 Both platforms talk to that one route. The native transport is `apps/mobile/src/chat/transport.ts`: it targets `EXPO_PUBLIC_API_URL` — the same origin the tRPC client uses, because the session cookie is only valid for one — attaches that cookie per request since React Native has no cookie jar, and passes `expo/fetch`, whose response streams where the platform's own `fetch` buffers. Anything a native client cannot know for itself it learns from the server's answer rather than from a shipped copy of the configuration: an unconfigured deployment is recognised from the `chat_not_configured` refusal, not from a mobile environment variable.
 
 The starter's example chat keeps history ephemeral on purpose — nothing is persisted, so the example stays a vertical slice rather than a schema decision made on a product's behalf. A product that needs history persists final messages and important tool results while keeping transport chunks ephemeral.
+
+## Entropy
+
+Three kinds of drift are gradual enough that no single change looks wrong, so each is a check rather than a convention.
+
+`pnpm knip` reports what nothing reaches. `pnpm policy` carries a ratchet over the two suppressions that cannot be banned without lying — a `@ts-expect-error` that documents a genuine upstream defect and an `eslint-disable` that carries a reason — against a list in `packages/tooling/src/suppression-ratchet.ts` that may only shrink, in both directions: removing a suppression without lowering the number leaves a budget nobody spent. Everything that _can_ be banned already is, so a skipped test, a focused one, a laundered assertion and an undescribed directive fail outright rather than counting against a budget.
+
+The rest of the drift lives outside the checkout, in what the repository produces and what the world does to it, and is covered by the scheduled sensors in `docs/testing.md`.
