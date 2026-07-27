@@ -30,14 +30,27 @@ const markdownLink = /\[[^\]\n]*\]\((https?:\/\/[^)\s]+)\)/g;
 const bareUrl = /<(https?:\/\/[^>\s]+)>/g;
 
 /**
- * A localhost URL is an instruction to the reader, not a destination; checking
+ * Hosts this sensor will not send a request to.
+ *
+ * Two reasons, and the second is the one that matters. A `localhost` URL in the
+ * documentation is an instruction to the reader, not a destination — requesting
  * it would report whatever happens to be listening on the machine that ran the
- * sensor.
+ * sensor. And every other entry is a private, loopback or link-local address:
+ * this program reads its destinations out of files, so without this it is a
+ * request-forgery primitive that anyone able to commit a markdown link could
+ * point at whatever the runner can reach. CodeQL says so, correctly, and this is
+ * the answer rather than a dismissal.
  */
+const privateHost =
+  /^(localhost$|.*\.(local|internal|localhost)$|127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|\[?::1\]?$|\[?f[cde])/i;
+
 function isCheckable(url: string): boolean {
   try {
-    const { hostname } = new URL(url);
-    return hostname !== "localhost" && hostname !== "127.0.0.1";
+    const { hostname, protocol } = new URL(url);
+    return (
+      (protocol === "https:" || protocol === "http:") &&
+      !privateHost.test(hostname)
+    );
   } catch {
     return false;
   }
