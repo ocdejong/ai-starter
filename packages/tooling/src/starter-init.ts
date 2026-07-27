@@ -1,4 +1,4 @@
-import { existsSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { runCapture, runInherit } from "./command.ts";
@@ -135,10 +135,22 @@ export function handOverReadme(
   product: Identity,
 ): ReadmeHandover {
   const file = path.join(root, "README.md");
-  const content = existsSync(file) ? readTextFile(file) : undefined;
+
+  // Reading is the check. Asking `existsSync` first and writing afterwards is a
+  // check-then-use race — the file can go between the two calls — and there is
+  // no answer `existsSync` can give that makes the write safe.
+  let content: string | undefined;
+  try {
+    content = readTextFile(file);
+  } catch (error) {
+    return {
+      changed: false,
+      message: `Left README.md alone: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
 
   if (content === undefined) {
-    return { changed: false, message: "No README.md to hand over." };
+    return { changed: false, message: "README.md is not text; left it alone." };
   }
 
   const retitled = content.replace(/^# .*$/m, `# ${product.displayName}`);
