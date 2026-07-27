@@ -28,6 +28,8 @@ ESLint encodes many of these boundaries per file; `pnpm arch` (dependency-cruise
 - `packages/api`: framework-independent tRPC context, procedures, routers, use-case orchestration, and consumer-owned ports.
 - `packages/domain`: Zod schemas and deterministic business logic.
 - `packages/db`: Prisma schema, migrations, server-only client, and persistence adapters.
+- `packages/auth`: the `initAuth` factory over Better Auth — account, group, and session flows, the personal-group hooks, and the demo seed. Server-only; each app owns its own client.
+- `packages/email`: react-email templates plus the Resend and dev-mailbox adapters behind the `EmailSender` port `packages/api` declares.
 - `packages/config`: shared compiler, lint, and test configuration.
 - `packages/i18n`: shared EN/NL ICU message catalogs, the `Locale` schema, and locale negotiation. Platform-neutral; consumed by both apps.
 - `packages/tokens`: plain cross-platform design values.
