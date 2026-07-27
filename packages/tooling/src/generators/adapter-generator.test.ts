@@ -33,6 +33,7 @@ describe("generate adapter", () => {
     expect([...result.created].sort()).toEqual([
       "apps/web/src/server/payment-gateway/client.test.ts",
       "apps/web/src/server/payment-gateway/client.ts",
+      "packages/api/src/payment-gateway.test.ts",
       "packages/api/src/payment-gateway.ts",
     ]);
     expect([...result.edited, ...result.unchanged]).toEqual([
@@ -86,7 +87,7 @@ describe("generate adapter", () => {
 
     expect(second.created).toEqual([]);
     expect(second.edited).toEqual([]);
-    expect(second.skipped).toHaveLength(3);
+    expect(second.skipped).toHaveLength(4);
     expect(adapterRegistryEdits.map(({ file }) => read(file))).toEqual(before);
   });
 });
