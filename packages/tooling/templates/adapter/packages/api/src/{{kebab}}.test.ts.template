@@ -1,0 +1,27 @@
+import { describe, expect, it } from "vitest";
+
+import { {{pascal}}Failure } from "./{{kebab}}";
+
+/**
+ * The port's one piece of behaviour, tested where the port lives.
+ *
+ * A use case decides what to do next by reading `reason`, so it is the contract
+ * rather than a detail: an adapter that let a provider's own error escape, or
+ * that reported a refusal as a timeout, would change what every caller does. The
+ * adapter behind this port is tested at the composition root, where the vendor
+ * it hides actually is.
+ */
+describe("{{pascal}}Failure", () => {
+  it("carries the reason a caller acts on, and stays an Error", () => {
+    const failure = new {{pascal}}Failure(
+      "rateLimited",
+      "{{title}} refused: too many requests",
+    );
+
+    expect(failure.reason).toBe("rateLimited");
+    expect(failure).toBeInstanceOf(Error);
+    // Named, because an unnamed subclass reports itself as "Error" in a log and
+    // the one thing a reader needs is which boundary failed.
+    expect(failure.name).toBe("{{pascal}}Failure");
+  });
+});

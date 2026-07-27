@@ -20,5 +20,18 @@ excluded_rules = [
   # its own models from that mapping. Moving the schema to `timestamptz` is a
   # data-modeling decision for the Prisma schema, not something a migration
   # linter can settle one statement at a time.
+  #
+  # Re-examined in stage 16 and kept, on the same reasoning: every timestamp this
+  # starter writes is `now()` in UTC, and nothing reads one back in a local zone,
+  # so the exclusion costs nothing today. It stops being free the moment a
+  # product stores a time somebody chose — a scheduled send, an opening hour, an
+  # appointment. That product changes the Prisma mapping and deletes this entry
+  # rather than adding an ignore per migration.
   "prefer-timestamp-tz",
 ]
+
+# Note what is *not* here. A finding that genuinely does not apply to one
+# statement is ignored on that statement, with the reason next to it — see the
+# `changing-column-type` ignore in the `announcement_title_text` migration.
+# Excluding a rule here gives it up for every column this repository will ever
+# have, which is a much larger thing to trade for one green run.
