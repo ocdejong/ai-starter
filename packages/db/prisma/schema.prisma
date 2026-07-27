@@ -21,10 +21,12 @@ datasource db {
 /// most one announcement per group may be current, which PostgreSQL enforces
 /// with a partial unique index the migration adds by hand — Prisma cannot
 /// express a `WHERE` clause on an index, and an invariant only the application
-/// checks is one a second writer can break.
+/// checks is one a second writer can break. The title's length is a CHECK
+/// constraint in the same migration rather than a `varchar(n)`, which can only
+/// be widened under a lock that stops every read and write.
 model Announcement {
   id        String   @id @default(cuid())
-  title     String   @db.VarChar(120)
+  title     String
   isCurrent Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

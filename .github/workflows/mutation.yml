@@ -62,3 +62,34 @@ jobs:
           path: reports/mutation/
           if-no-files-found: ignore
           retention-days: 30
+
+  # A weekly job whose red appears only in the Actions tab is the same shape as
+  # the flow nobody ran. A mutation score that has silently dropped is exactly
+  # the finding that would sit there unread the longest, because nothing else in
+  # the suite goes red when it does.
+  report:
+    name: Report a scheduled failure
+    if: ${{ failure() }}
+    needs: mutate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    permissions:
+      issues: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: File or update the issue
+        uses: ./.github/actions/report-failure
+        with:
+          label: sensor:mutation
+          title: Mutation testing is below its threshold
+          summary: >-
+            The weekly mutation run failed. Either a package scored below the
+            break threshold in its `stryker.config.json` — assertions that no
+            longer notice a change they used to — or the run itself broke.
+          token: ${{ github.token }}

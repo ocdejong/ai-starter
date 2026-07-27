@@ -107,10 +107,10 @@ describe("generate feature", () => {
     // A Prisma `///` comment documents the block below it, so a model inserted
     // between an existing comment and its model would quietly steal it.
     expect(read(root, "packages/db/prisma/schema.prisma")).toMatch(
-      /checks is one a second writer can break\.\nmodel ReleaseNote \{/,
+      /stops every read and write\.\nmodel ReleaseNote \{/,
     );
     expect(read(root, "packages/db/prisma/schema.prisma")).toMatch(
-      /checks is one a second writer can break\.\nmodel Announcement \{/,
+      /stops every read and write\.\nmodel Announcement \{/,
     );
     expect(read(root, "apps/web/src/lib/routes.ts")).toContain(
       'export const releaseNotesPath = "/release-notes";',
@@ -156,6 +156,21 @@ describe("generate feature", () => {
       "pnpm db:migrate:dev --name add_releaseNotes --create-only",
     );
     expect(followUps.join("\n")).toContain("packages/i18n/messages/nl.json");
+  });
+
+  // The migration is the one follow-up whose output another gate judges: without
+  // both timeouts and with a `varchar(n)` title, `pnpm db:lint` rejects the file
+  // Prisma wrote. So the SQL is dictated rather than described, and the
+  // rehearsal applies the same text a reader is told to paste.
+  it("dictates the SQL the migration needs and Prisma cannot write", () => {
+    const printed = followUps.join("\n");
+
+    expect(printed).toContain("set lock_timeout = '1s';");
+    expect(printed).toContain("set statement_timeout = '5s';");
+    expect(printed).toContain(
+      'CREATE UNIQUE INDEX "ReleaseNote_groupId_current_key" ON "ReleaseNote"("groupId") WHERE "isCurrent";',
+    );
+    expect(printed).toContain('"ReleaseNote_title_length_check"');
   });
 
   it("changes nothing when it runs a second time", () => {

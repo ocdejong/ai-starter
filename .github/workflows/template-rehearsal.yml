@@ -1,0 +1,89 @@
+name: Template rehearsal
+
+# The only check that judges what this repository *produces* rather than what it
+# contains. It instantiates the template with no history, renames it with
+# `pnpm starter:init`, bootstraps it from nothing, runs every generator, finishes
+# the migration the feature generator cannot write, and runs the whole
+# authoritative suite over the result.
+#
+# Weekly rather than per-pull-request because it costs an install, a database and
+# a full suite — and because what it protects against moves on that scale: a
+# template that quietly stops compiling, and batteries rotting against a moving
+# Better Auth, AI SDK or Resend. Not a required check, and not in
+# `.github/rulesets/main.json`.
+on:
+  schedule:
+    # 05:30 UTC every Monday, after the mutation run so the two do not compete.
+    - cron: "30 5 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: rehearsal-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  rehearse:
+    name: Rehearse a fresh template
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          version: 10.32.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      # Installed into the shared browser cache, so the instantiated product
+      # finds them without installing its own. Nothing else here is prepared:
+      # `pnpm bootstrap` inside the copy is one of the things being rehearsed,
+      # including the database container it creates for itself.
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Rehearse
+        run: node packages/tooling/src/bin/rehearse-template.ts
+
+  report:
+    name: Report a scheduled failure
+    if: ${{ failure() }}
+    needs: rehearse
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    permissions:
+      issues: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: File or update the issue
+        uses: ./.github/actions/report-failure
+        with:
+          label: sensor:template
+          title: A fresh template no longer passes its own suite
+          summary: >-
+            The golden path broke. A generator emits code this repository's own
+            gates reject, `pnpm starter:init` left something behind, or the
+            batteries stopped working against a vendor that moved. The fix
+            belongs in the generator or its templates, never in a checkout.
+          token: ${{ github.token }}

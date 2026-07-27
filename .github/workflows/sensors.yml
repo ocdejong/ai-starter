@@ -1,0 +1,194 @@
+name: Sensors
+
+# The questions a pull request cannot answer, because nothing about the code
+# decides them. `main` was green when it merged; whether it is green *today*
+# depends on a runner image, a PostgreSQL tag, a browser build and somebody
+# else's website — all of which move without a commit here.
+#
+# Deliberately not required checks and deliberately absent from
+# `.github/rulesets/main.json`: a sensor that can block a merge is a sensor that
+# turns somebody else's outage into your outage. Each job files its own issue
+# instead, which is the whole point of running it at all.
+on:
+  schedule:
+    # 04:00 UTC daily, ahead of the mutation run and of a working morning in
+    # Europe, so a broken environment is known before anyone depends on it.
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: sensors-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  suite:
+    name: Suite on an unchanged main
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: read
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: starter_ci
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d starter_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      BETTER_AUTH_SECRET: ci-only-secret-at-least-thirty-two-characters-long
+      BETTER_AUTH_URL: http://localhost:3000
+      CI: true
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/starter_ci
+      EXPO_PUBLIC_API_URL: http://127.0.0.1:3000
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          version: 10.32.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      # The same command CI runs, on a commit CI already passed. What this can
+      # find is therefore never the code: it is the runner image, the PostgreSQL
+      # tag, the browser build, or a registry that stopped answering.
+      - name: Verify
+        run: pnpm verify
+
+  links:
+    name: External links
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
+      # Node built-ins only, so this needs no install — which is also what lets
+      # it run when the dependency graph is the thing that is broken.
+      - name: Request every external link
+        run: node packages/tooling/src/bin/check-links.ts
+
+  advisories:
+    name: Advisories against the committed lockfile
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          version: 10.32.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      # Dependabot already reports this, into the Security tab. This is the same
+      # question asked somewhere a person is looking, and it keeps working in a
+      # downstream product that never turned Dependabot on.
+      - name: Audit the resolved dependency tree
+        run: pnpm audit --audit-level high
+
+  report:
+    name: Report a scheduled failure
+    if: ${{ failure() }}
+    needs: [suite, links, advisories]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    # The sensors themselves run with `contents: read` and nothing else. Only
+    # this job holds a token that can write, and all it runs is the checked-in
+    # composite action.
+    permissions:
+      issues: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: The suite stopped passing on an unchanged main
+        if: ${{ needs.suite.result == 'failure' }}
+        uses: ./.github/actions/report-failure
+        with:
+          label: sensor:suite
+          title: The suite fails on a main nobody changed
+          summary: >-
+            `pnpm verify` failed on a commit it already passed on, so the cause
+            is the environment rather than the code: a runner image, the
+            PostgreSQL or Playwright build, or a registry.
+          token: ${{ github.token }}
+
+      - name: A link this repository points at is gone
+        if: ${{ needs.links.result == 'failure' }}
+        uses: ./.github/actions/report-failure
+        with:
+          label: sensor:links
+          title: An external link no longer resolves
+          summary: >-
+            One of the documentation links died on somebody else's schedule.
+            Point each reported link at what replaced it, or remove it.
+          token: ${{ github.token }}
+
+      - name: A dependency has a published advisory
+        if: ${{ needs.advisories.result == 'failure' }}
+        uses: ./.github/actions/report-failure
+        with:
+          label: sensor:advisories
+          title: A dependency in the lockfile has a high-severity advisory
+          summary: >-
+            `pnpm audit` found an advisory against a version this lockfile
+            resolves. Take the Dependabot pull request if one exists, or add an
+            override in `pnpm-workspace.yaml` naming the advisory.
+          token: ${{ github.token }}

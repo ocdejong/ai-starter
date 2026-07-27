@@ -266,6 +266,74 @@ describe("workflow policy", () => {
     });
   });
 
+  describe("scheduled sensors", () => {
+    const sensor = (reporting: string): string =>
+      workflow(`
+name: Sensors
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  sense:
+    name: Sense
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: ${pinnedCheckout}
+      - name: Sense
+        run: pnpm sense
+${reporting}`);
+
+    const reportingJob = `  report:
+    name: Report a scheduled failure
+    if: \${{ failure() }}
+    needs: sense
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Check out repository
+        uses: ${pinnedCheckout}
+      - name: File or update the issue
+        uses: ./.github/actions/report-failure
+        with:
+          label: sensor:sense
+          title: The sensor is failing
+          summary: It failed.
+          token: \${{ github.token }}
+`;
+
+    it("rejects a scheduled workflow whose red lands only in the Actions tab", () => {
+      const violations = check(
+        withFile(".github/workflows/sensors.yml", sensor("")),
+      );
+
+      expect(violations).toHaveLength(1);
+      expect(violations[0]?.file).toBe(".github/workflows/sensors.yml");
+      expect(problems(violations)).toContain("files nothing when it fails");
+      expect(violations[0]?.fix).toContain("./.github/actions/report-failure");
+    });
+
+    it("accepts one that files an issue instead", () => {
+      expect(
+        check(withFile(".github/workflows/sensors.yml", sensor(reportingJob))),
+      ).toEqual([]);
+    });
+
+    // The rule is about `schedule`, not about workflows in general: CI runs on
+    // every pull request, where a failure is already in front of somebody.
+    it("asks nothing of a workflow that does not run on a schedule", () => {
+      expect(check(baseFiles())).toEqual([]);
+    });
+  });
+
   describe("workflow permissions", () => {
     it("rejects a workflow with no top-level permissions block", () => {
       const violations = check(
