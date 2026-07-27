@@ -118,8 +118,11 @@ describe("generate feature", () => {
     expect(
       read(root, "apps/web/src/components/app-shell/app-shell.tsx"),
     ).toContain('href: releaseNotesPath, label: tNav("releaseNotes")');
+    // The marker the generator guards on, not the element it wrote: Prettier
+    // wraps a three-attribute `Tabs.Screen` across lines, so the opening tag and
+    // the name are only adjacent until something formats the file.
     expect(read(root, "apps/mobile/src/app/(app)/_layout.tsx")).toContain(
-      '<Tabs.Screen name="release-notes"',
+      'name="release-notes"',
     );
   });
 

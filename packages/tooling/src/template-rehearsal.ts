@@ -70,14 +70,16 @@ function log(message: string): void {
  * Reading the working tree rather than a commit is deliberate — the point is to
  * rehearse the change in front of you, before it lands.
  */
-export function instantiateTemplate(root: string, destination: string): number {
+export function instantiateTemplate(root: string, destination: string): void {
   const listed = runCapture(
     "git",
     ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
     { cwd: root },
   );
   if (listed.code !== 0) {
-    return listed.code;
+    throw new Error(
+      `${root} is not a git checkout, so nothing can say which files a template instantiation would ship. Run this from a clone.`,
+    );
   }
 
   const files = listed.stdout.split("\0").filter((entry) => entry.length > 0);
@@ -93,7 +95,6 @@ export function instantiateTemplate(root: string, destination: string): number {
   }
 
   log(`instantiated ${String(files.length)} files into ${destination}`);
-  return 0;
 }
 
 /**
@@ -184,11 +185,15 @@ export async function runRehearsal(
     failed: step,
   });
 
-  const instantiated = instantiateTemplate(root, checkout);
-  if (instantiated !== 0) {
+  try {
+    instantiateTemplate(root, checkout);
+  } catch (error) {
+    console.error(
+      `rehearse: ${error instanceof Error ? error.message : String(error)}`,
+    );
     return fail(
       { command: "git ls-files", name: "instantiate the template" },
-      instantiated,
+      1,
     );
   }
 
