@@ -27,7 +27,7 @@ export type RecordedRequest = {
   readonly body: unknown;
 };
 
-export type GitHubResponse = {
+type GitHubResponse = {
   readonly status: number;
   readonly body: unknown;
   /** GitHub's own explanation, or an empty string when it offered none. */
@@ -98,9 +98,9 @@ export function createGitHubClient(options: {
   };
 }
 
-export type StepOutcome = "unchanged" | "applied" | "planned" | "failed";
+type StepOutcome = "unchanged" | "applied" | "planned" | "failed";
 
-export type HostStep = {
+type HostStep = {
   readonly name: string;
   readonly outcome: StepOutcome;
   readonly detail: string;

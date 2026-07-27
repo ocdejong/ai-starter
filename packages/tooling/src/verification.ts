@@ -34,6 +34,9 @@ export const verificationSteps: readonly VerificationStep[] = [
   script("db:validate"),
   script("db:lint"),
   script("db:generate"),
+  // After `db:generate` for the same reason the compiling steps are: Knip
+  // resolves the import graph, and `packages/db` imports the generated client.
+  script("knip"),
   script("lint"),
   script("typecheck"),
   script("test:unit"),
@@ -44,9 +47,7 @@ export const verificationSteps: readonly VerificationStep[] = [
   script("test:e2e:mobile"),
 ];
 
-export const stepsByName = new Map(
-  verificationSteps.map((step) => [step.name, step]),
-);
+const stepsByName = new Map(verificationSteps.map((step) => [step.name, step]));
 
 export function requireStep(name: string): VerificationStep {
   const step = stepsByName.get(name);

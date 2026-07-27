@@ -56,11 +56,3 @@ export function runInherit(
 
   return result.status ?? 1;
 }
-
-export function commandVersion(
-  command: string,
-  cwd: string,
-): string | undefined {
-  const result = runCapture(command, ["--version"], { cwd });
-  return result.code === 0 ? result.stdout.trim() : undefined;
-}

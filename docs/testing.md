@@ -16,10 +16,11 @@
 | `pnpm instructions`     | Agent instruction surfaces and document references               | A git checkout                                   |
 | `pnpm arch`             | Dependency direction, cycles, and deep imports across the graph  | Dependencies installed                           |
 | `pnpm policy`           | Structural rules the module graph cannot see                     | Dependencies installed                           |
+| `pnpm knip`             | Files, exports and dependencies nothing in the graph reaches     | Dependencies installed                           |
 
 `packages/tooling/src/verification.ts` holds the one ordered definition of the authoritative suite. `pnpm verify`, `pnpm verify:changed` and the CI workflow all read it, so the required checks cannot drift apart. Adding a check means adding it there.
 
-`pnpm verify:changed` always runs `pnpm arch` and `pnpm policy` alongside formatting, because any change can shift the dependency graph or the repository structure. On top of that it selects work from Turborepo's affected graph — `--filter=...[base]` reaches every dependent, so a change to `packages/domain` typechecks and unit-tests the API, both apps and the email package — plus the rules the graph cannot infer from imports:
+`pnpm verify:changed` always runs `pnpm arch`, `pnpm policy` and `pnpm knip` alongside formatting, because any change can shift the dependency graph or the repository structure — and deleting the last caller of an export orphans it in a package the diff never named. On top of that it selects work from Turborepo's affected graph — `--filter=...[base]` reaches every dependent, so a change to `packages/domain` typechecks and unit-tests the API, both apps and the email package — plus the rules the graph cannot infer from imports:
 
 - a change under `packages/db/prisma/` adds schema validation, migration linting, client regeneration ahead of the affected typecheck, and the real-PostgreSQL tests;
 - a change under `packages/auth/` or `packages/db/` adds the real-PostgreSQL tests on its own;

@@ -15,7 +15,7 @@ export const groupOwnerRole = "owner";
  * person's own name keeps it language-neutral and recognisable. A blank name
  * falls back to the address the account was opened with.
  */
-export function personalGroupName(user: {
+function personalGroupName(user: {
   readonly name: string;
   readonly email: string;
 }): string {
@@ -27,7 +27,7 @@ export function personalGroupName(user: {
  * user id rather than the email: two people can share a local part across
  * domains, and deriving from that would make the second sign-up fail.
  */
-export function personalGroupSlug(userId: string): string {
+function personalGroupSlug(userId: string): string {
   return `personal-${userId}`;
 }
 
@@ -68,7 +68,7 @@ export async function createPersonalGroup(
  * The group a fresh session starts in: the oldest one the user belongs to,
  * which is the personal group unless they have since left it.
  */
-export async function firstGroupIdFor(
+async function firstGroupIdFor(
   database: Database,
   userId: string,
 ): Promise<string | null> {

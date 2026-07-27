@@ -57,5 +57,3 @@ export const auth = initAuth({
     ...(env.NODE_ENV === "development" ? ["exp://"] : []),
   ],
 });
-
-export type Session = typeof auth.$Infer.Session;

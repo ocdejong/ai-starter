@@ -118,6 +118,7 @@ export function selectChecks(
     requireStep("format:check"),
     requireStep("policy"),
     requireStep("arch"),
+    requireStep("knip"),
     ...(schemaChanged
       ? [
           requireStep("db:validate"),
@@ -140,7 +141,7 @@ export function selectChecks(
     },
   ];
   const reasons = [
-    "Checking repository structure and the architecture graph, which any change can affect.",
+    "Checking repository structure, the architecture graph and what nothing reaches, which any change can affect.",
     `Linting, typechecking and unit-testing packages affected since ${base}.`,
   ];
 

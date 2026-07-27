@@ -14,7 +14,7 @@ import {
 } from "./repository.ts";
 import { isPortAccepting } from "./tcp.ts";
 
-export type CheckStatus = "ok" | "warning" | "failure";
+type CheckStatus = "ok" | "warning" | "failure";
 
 export type Check = {
   readonly name: string;

@@ -319,7 +319,7 @@ export const adapterRegistryEdits: readonly RegistryEdit[] = [
   },
 ];
 
-export function adapterFollowUps(names: FeatureNames): string[] {
+function adapterFollowUps(names: FeatureNames): string[] {
   return [
     `Construct create${names.pascal}Client in apps/web's composition root where a use case needs it, reading its key and base URL from env.js.`,
     `Add that key to .env.example, to the diagnose checks, and to turbo.json's build env.`,
@@ -336,7 +336,7 @@ export type GenerationResult = {
 };
 
 /** The two things a generator cannot do for you, named with their commands. */
-export function featureFollowUps(names: FeatureNames): string[] {
+function featureFollowUps(names: FeatureNames): string[] {
   return [
     `Create the migration: pnpm db:migrate:dev --name add_${names.camelPlural} --create-only`,
     `Add the partial unique index and the title CHECK to that migration.sql (Prisma cannot express either), then apply it: pnpm db:migrate:dev`,

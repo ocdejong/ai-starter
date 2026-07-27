@@ -20,7 +20,7 @@ const dbDirectory = fileURLToPath(new URL("../../db", import.meta.url));
 const schemaPath = path.join(dbDirectory, "prisma/schema.prisma");
 
 /** One captured dispatch, so a test can assert the flow, recipient and link. */
-export type CapturedEmail = {
+type CapturedEmail = {
   readonly flow: "verify" | "reset" | "change" | "delete";
   readonly to: string;
   readonly url: string;
@@ -31,7 +31,7 @@ export type CapturedEmail = {
  * composition root does, from the app's own routing — so the factory hands over
  * the invitation id and this records exactly that.
  */
-export type CapturedInvitation = {
+type CapturedInvitation = {
   readonly to: string;
   readonly invitationId: string;
 };

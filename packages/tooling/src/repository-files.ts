@@ -88,7 +88,7 @@ function collect(root: string, directory: string, found: string[]): void {
   }
 }
 
-export function toRepositoryPath(root: string, absolute: string): string {
+function toRepositoryPath(root: string, absolute: string): string {
   return path.relative(root, absolute).split(path.sep).join("/");
 }
 

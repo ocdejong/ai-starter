@@ -23,6 +23,13 @@ describe("verificationSteps", () => {
     expect(position("db:generate")).toBeLessThan(position("typecheck"));
   });
 
+  // Knip resolves imports rather than compiling them, but `packages/db` imports
+  // the client Prisma generates — so without this ordering it reports the whole
+  // package as unreachable on a checkout that has not generated one.
+  it("resolves the generated client before asking what nothing reaches", () => {
+    expect(position("knip")).toBeGreaterThan(position("db:generate"));
+  });
+
   it("validates the schema before generating a client from it", () => {
     expect(position("db:validate")).toBeGreaterThan(-1);
     expect(position("db:validate")).toBeLessThan(position("db:generate"));

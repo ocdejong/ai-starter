@@ -37,8 +37,12 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
   return result;
 });
 
-export const publicProcedure = t.procedure.use(timingMiddleware);
-
+/**
+ * Every procedure this API serves is behind a session. There is deliberately no
+ * public one: an unauthenticated endpoint is a decision a product makes for a
+ * named use case, and it is one line — `t.procedure.use(timingMiddleware)` —
+ * next to these two, rather than a procedure sitting here inviting a caller.
+ */
 export const protectedProcedure = t.procedure
   .use(timingMiddleware)
   .use(({ ctx, next }) => {

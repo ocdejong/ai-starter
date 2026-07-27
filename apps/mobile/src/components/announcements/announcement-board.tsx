@@ -11,8 +11,13 @@ import {
  * A request that never reached the server carries no error payload; anything
  * else was refused by one. Those are the only two states a reader can act on
  * differently, so the interface does not invent more.
+ *
+ * Unexported, unlike its web twin: a native test cannot import this module at
+ * all, because the tRPC provider it reaches leads to a Better Auth client that
+ * jest-expo cannot load. Widening the surface for a test that cannot use it is
+ * how a module ends up with an export nothing reaches.
  */
-export function announcementFailure(
+function announcementFailure(
   error: { data?: unknown } | null,
 ): AnnouncementFailure | null {
   if (error === null) {

@@ -19,7 +19,7 @@ import {
   starterIdentityModulePath,
 } from "./starter-identity.ts";
 
-export type ResidualIdentity = {
+type ResidualIdentity = {
   readonly file: string;
   /** Empty when the identity is in the file's name rather than its content. */
   readonly occurrences: readonly Occurrence[];
@@ -85,7 +85,7 @@ export function initializeStarter(
  * file, so a path that still carries the starter identity has to be reported
  * rather than silently accepted.
  */
-export function findResidualIdentity(
+function findResidualIdentity(
   root: string,
   starter: Identity,
 ): ResidualIdentity[] {

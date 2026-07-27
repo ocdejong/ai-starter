@@ -41,7 +41,7 @@ export type AuthEmailDispatch = (message: {
  * the factory hands over the invitation id and the composition root turns it
  * into a link against its own routing.
  */
-export type AuthGroupInvitationDispatch = (message: {
+type AuthGroupInvitationDispatch = (message: {
   readonly to: string;
   readonly invitationId: string;
 }) => void;
