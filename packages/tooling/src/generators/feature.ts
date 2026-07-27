@@ -269,6 +269,44 @@ export type ${names.pascal}Repository = Readonly<{
 }>;`;
 }
 
+/** The length the title CHECK constraint allows, mirroring the domain policy. */
+const titleMaxLength = 120;
+
+/**
+ * The SQL a generated migration needs and Prisma cannot write.
+ *
+ * `header` goes above everything Prisma emitted; `body` below it. Both halves
+ * are here rather than in the follow-up text because the fresh-template
+ * rehearsal applies exactly what a reader is told to paste — a second copy would
+ * drift, and the one that drifts is always the one nobody runs.
+ */
+export function featureMigrationSql(names: FeatureNames): {
+  header: string;
+  body: string;
+} {
+  return {
+    body: `
+-- Prisma cannot express a partial index, and "at most one current ${names.lower}
+-- per group" is an invariant the application checks inside a transaction but
+-- cannot enforce against a second concurrent writer.
+CREATE UNIQUE INDEX "${names.pascal}_groupId_current_key" ON "${names.pascal}"("groupId") WHERE "isCurrent";
+
+-- Prisma has no CHECK syntax either, and the domain schema's \`.trim().min(1)\`
+-- protects the forms, not the table. This is the whole length bound: the column
+-- is \`text\`, because a \`varchar(n)\` can only be widened under a lock that stops
+-- every read and write.
+ALTER TABLE "${names.pascal}" ADD CONSTRAINT "${names.pascal}_title_length_check" CHECK (char_length(btrim("title")) BETWEEN 1 AND ${String(titleMaxLength)});
+`,
+    header: `-- Prisma applies each migration inside a transaction, so both timeouts are
+-- transaction-local. Without them a schema change waits behind whatever is
+-- already holding the table, for as long as that takes.
+set lock_timeout = '1s';
+set statement_timeout = '5s';
+
+`,
+  };
+}
+
 function prismaModel(names: FeatureNames): string {
   return `/// A group-owned record: the shape a generated feature slice follows.
 ///
@@ -276,10 +314,12 @@ function prismaModel(names: FeatureNames): string {
 /// most one ${names.lower} per group may be current, which PostgreSQL enforces
 /// with a partial unique index the migration adds by hand — Prisma cannot
 /// express a \`WHERE\` clause on an index, and an invariant only the application
-/// checks is one a second writer can break.
+/// checks is one a second writer can break. The title's length is a CHECK
+/// constraint in the same migration rather than a \`varchar(n)\`, which can only
+/// be widened under a lock that stops every read and write.
 model ${names.pascal} {
   id        String   @id @default(cuid())
-  title     String   @db.VarChar(120)
+  title     String
   isCurrent Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -337,11 +377,23 @@ export type GenerationResult = {
 
 /** The two things a generator cannot do for you, named with their commands. */
 function featureFollowUps(names: FeatureNames): string[] {
+  const sql = featureMigrationSql(names);
+
   return [
     `Create the migration: pnpm db:migrate:dev --name add_${names.camelPlural} --create-only`,
-    `Add the partial unique index and the title CHECK to that migration.sql (Prisma cannot express either), then apply it: pnpm db:migrate:dev`,
+    `Put this above what Prisma wrote in that migration.sql:\n\n${indent(sql.header.trimEnd())}`,
+    `And this below it — \`pnpm db:lint\` rejects the file without both:\n${indent(sql.body.trimEnd())}`,
+    `Apply it: pnpm db:migrate:dev`,
     `Translate the ${names.titlePlural} copy in packages/i18n/messages/nl.json; it was written in English.`,
   ];
+}
+
+/** Keeps a pasteable block readable under the command's own bullet indent. */
+function indent(block: string): string {
+  return block
+    .split("\n")
+    .map((line) => (line.length === 0 ? line : `      ${line}`))
+    .join("\n");
 }
 
 function writeRendered(

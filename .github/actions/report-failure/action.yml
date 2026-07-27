@@ -1,0 +1,70 @@
+name: Report a scheduled failure
+description: >-
+  Files or updates one GitHub issue for a scheduled sensor that failed, so the
+  red lands somewhere a person reads instead of in a workflow log nobody opens.
+
+inputs:
+  label:
+    description: >-
+      The label identifying this sensor's issue. One open issue is kept per
+      label: a second failure comments on it rather than filing a duplicate.
+    required: true
+  title:
+    description: Issue title, used only when there is no open issue yet.
+    required: true
+  summary:
+    description: One sentence saying what stopped working and what to do about it.
+    required: true
+  token:
+    description: "A token carrying `issues: write` on this repository."
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # `gh` ships on every GitHub-hosted runner, so this needs no pinned action
+    # and no third-party code in a job that holds an issues-write token.
+    - name: File or update the sensor's issue
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        LABEL: ${{ inputs.label }}
+        REPOSITORY: ${{ github.repository }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        SUMMARY: ${{ inputs.summary }}
+        TITLE: ${{ inputs.title }}
+      run: |
+        set -euo pipefail
+
+        gh label create "$LABEL" \
+          --repo "$REPOSITORY" \
+          --color B60205 \
+          --description "A scheduled sensor is failing" \
+          --force
+
+        existing=$(gh issue list \
+          --repo "$REPOSITORY" \
+          --label "$LABEL" \
+          --state open \
+          --limit 1 \
+          --json number \
+          --jq '.[0].number // empty')
+
+        if [ -n "$existing" ]; then
+          gh issue comment "$existing" \
+            --repo "$REPOSITORY" \
+            --body "Still failing: $RUN_URL"
+          echo "Commented on issue #$existing."
+          exit 0
+        fi
+
+        gh issue create \
+          --repo "$REPOSITORY" \
+          --label "$LABEL" \
+          --title "$TITLE" \
+          --body "$SUMMARY
+
+        Run: $RUN_URL
+
+        This issue was filed by a scheduled sensor. Close it once the run is
+        green again; the next failure files a new one."

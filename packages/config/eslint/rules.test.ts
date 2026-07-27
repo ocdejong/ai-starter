@@ -32,6 +32,26 @@ describe.only("focused", () => {
   xit("also skipped", () => undefined);
 });
 `,
+  // Playwright spells all of this differently, and the vitest selectors miss
+  // every one of them: `test.describe.skip` nests the runner one level deeper
+  // than `object.name` can see, and `fixme` is a spelling vitest has no word for.
+  "disabled-journey.ts": `
+declare const test: {
+  (name: string, body: () => void): void;
+  fixme: (name: string, body: () => void) => void;
+  describe: {
+    (name: string, body: () => void): void;
+    skip: (name: string, body: () => void) => void;
+    fixme: (name: string, body: () => void) => void;
+  };
+};
+
+test.describe.skip("skipped group", () => {
+  test("unreachable", () => undefined);
+});
+test.describe.fixme("broken group", () => undefined);
+test.fixme("expected to fail", () => undefined);
+`,
   "empty-catch.ts": `
 export function parse(text: string): void {
   try {
@@ -243,6 +263,17 @@ describe("the shared TypeScript rules", () => {
   it("rejects a skipped or focused test", () => {
     expect(
       rulesFor("disabled-test.ts").filter(
+        (rule) => rule === "no-restricted-syntax",
+      ),
+    ).toHaveLength(3);
+  });
+
+  // The journeys are where a skip hides longest: nobody reads a Playwright
+  // report that says "1 skipped", and the native flow has skipped for real
+  // since stage 15 for a reason the harness prints on every run.
+  it("rejects a skipped, focused or fixme'd journey", () => {
+    expect(
+      rulesFor("disabled-journey.ts").filter(
         (rule) => rule === "no-restricted-syntax",
       ),
     ).toHaveLength(3);

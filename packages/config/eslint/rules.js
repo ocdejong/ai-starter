@@ -30,6 +30,22 @@ export const suppressionSyntax = [
       "Do not disable a test. Fix it, or delete it and say so in the commit.",
     selector: "CallExpression[callee.name=/^x(it|test|describe)$/]",
   },
+  {
+    // Playwright nests its group under the runner (`test.describe.skip`), so
+    // the object of the member expression is another member expression and the
+    // selector above — which reads `object.name` — never sees it. Its own
+    // `fixme` spelling is invisible to that selector too.
+    message:
+      "Do not disable or focus a browser or native journey. Fix it, or delete it and say so in the commit.",
+    selector:
+      "MemberExpression[object.object.name='test'][object.property.name='describe'][property.name=/^(only|skip|todo|fixme)$/]",
+  },
+  {
+    message:
+      "Do not mark a journey as expected to fail. Fix it, or delete it and say so in the commit.",
+    selector:
+      "MemberExpression[object.name=/^(it|test)$/][property.name='fixme']",
+  },
 ];
 
 /** @type {import("eslint").Linter.RulesRecord} */

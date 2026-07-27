@@ -136,7 +136,10 @@ describe("{{lower}} repository against PostgreSQL", () => {
     ).rejects.toMatchObject({ code: "P2002" });
   });
 
-  it("refuses a title past the column limit", async () => {
+  // The bound lives in a CHECK constraint rather than the column type, and a
+  // constraint violation reaches Prisma with no error code at all — so this
+  // asserts the refusal itself, as the shared database integration test does.
+  it("refuses a title past the length the constraint allows", async () => {
     await seedGroup(client, "group-a", "user-a");
 
     await expect(
@@ -145,7 +148,7 @@ describe("{{lower}} repository against PostgreSQL", () => {
         groupId: "group-a",
         title: "x".repeat(121),
       }),
-    ).rejects.toMatchObject({ code: "P2000" });
+    ).rejects.toThrow();
   });
 
   it("renames only within the group that asked", async () => {

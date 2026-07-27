@@ -42,3 +42,32 @@ jobs:
         uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
         with:
           category: /language:javascript-typescript
+
+  # CodeQL also runs on every push and pull request, where a failure is already
+  # in front of somebody. Only the weekly run needs a destination of its own —
+  # nobody is waiting on it, and its finding is the kind that stays true.
+  report:
+    name: Report a scheduled failure
+    if: ${{ failure() && github.event_name == 'schedule' }}
+    needs: analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    permissions:
+      issues: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: File or update the issue
+        uses: ./.github/actions/report-failure
+        with:
+          label: sensor:code-scanning
+          title: Weekly CodeQL analysis is failing
+          summary: >-
+            The scheduled CodeQL run did not complete. Either the analysis itself
+            broke, or it found something `security-extended` considers a problem.
+          token: ${{ github.token }}

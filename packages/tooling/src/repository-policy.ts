@@ -532,6 +532,6 @@ export function formatViolations(
 
 export function summarise(violations: readonly PolicyViolation[]): string {
   return violations.length === 0
-    ? "policy: repository structure, exports, compiler flags, SDK locations, scripts, workflows, supply-chain settings and native flows are consistent."
+    ? "policy: repository structure, exports, compiler flags, SDK locations, scripts, workflows, supply-chain settings, native flows and the suppression ratchet are consistent."
     : `policy: ${violations.length} problem(s) found. Fix them and run \`pnpm policy\` again.`;
 }

@@ -272,6 +272,34 @@ function checkWorkflowPermissions(
   return violations;
 }
 
+const failureReportAction = "./.github/actions/report-failure";
+
+/**
+ * A scheduled job's red appears in the Actions tab and nowhere else, which is
+ * the same shape as the flow nobody ran: a signal exists, is never looked at,
+ * and rots into a claim the repository cannot back. So every workflow that runs
+ * on a schedule has to route its own failure somewhere a person will meet it.
+ *
+ * Checked as "somewhere in the file", not per job, deliberately. Where the
+ * reporting job sits and what it is called are design choices; that a scheduled
+ * sensor has a failure path at all is not.
+ */
+function checkScheduledSensorsReport(
+  workflows: readonly Workflow[],
+): PolicyViolation[] {
+  return workflows
+    .filter(
+      (workflow) =>
+        workflow.triggers.some((trigger) => trigger.name === "schedule") &&
+        !workflow.lines.some((line) => line.includes(failureReportAction)),
+    )
+    .map((workflow) => ({
+      file: workflow.file,
+      fix: `Add a job with \`if: failure()\`, \`permissions: { issues: write }\` and a step using \`${failureReportAction}\`, as .github/workflows/mutation.yml does.`,
+      problem: `This workflow runs on a schedule but files nothing when it fails, so its red would only ever appear in the Actions tab.`,
+    }));
+}
+
 function checkVerifiedDownloads(
   workflows: readonly Workflow[],
 ): PolicyViolation[] {
@@ -572,6 +600,7 @@ export function checkWorkflowPolicy(root: string): PolicyViolation[] {
     ...checkActionPins(workflows),
     ...checkWorkflowPermissions(workflows),
     ...checkVerifiedDownloads(workflows),
+    ...checkScheduledSensorsReport(workflows),
     ...checkRulesetPayload(rulesets),
     ...checkRequiredChecksReport(rulesets, workflows),
     ...checkPnpmSupplyChain(root),
