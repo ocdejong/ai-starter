@@ -50,15 +50,19 @@ overrides:
   # already resolved in this tree for every other consumer, so this dedupes to a
   # version the build had proven before the override existed.
   postcss: ^8.5.22
-  # `next`'s optional `sharp` range stops below 0.35.0, where four inherited
-  # libvips CVEs are fixed. It is the image-optimisation path, so it matters to
-  # the first product that serves an image a stranger uploaded, not to this
-  # template — but the fix costs one line and no product should inherit the
-  # question.
-  sharp: ^0.35.0
-  # `minimatch@10.2.5` asks for `^5.0.5`, so this one was only ever a stale
-  # lockfile: 5.0.8 satisfies its range and fixes an unbounded-expansion OOM.
-  # Pinned rather than left to a refresh because three separate chains reach it
-  # (eslint, typescript-eslint, testcontainers) and a lockfile refresh would only
-  # hold until one of them moved.
-  brace-expansion: ^5.0.8
+  # `minimatch@10.2.5` asks for `^5.0.5`, so 5.0.8 satisfies it and fixes an
+  # unbounded-expansion OOM. The selector is load-bearing: three majors of this
+  # package coexist here (`minimatch@3` wants `^1.1.7` and calls the export as a
+  # function, which v5 is not), so a bare `brace-expansion:` key collapses all
+  # three and ESLint dies with `TypeError: expand is not a function`. Override
+  # the line that carries the advisory, never the name.
+  brace-expansion@^5: ^5.0.8
+  #
+  # `sharp` is deliberately NOT overridden. Four inherited libvips CVEs are fixed
+  # in 0.35.0, but `next@15.5` declares `sharp: ^0.34.3` — a cap, not a stale
+  # lockfile — so clearing this one means running the image pipeline on a version
+  # its consumer does not claim to support. An override in a template is
+  # inherited by every product built from it, which is the wrong place to make
+  # that bet; the fix belongs in a Next release that widens the range. Nothing
+  # here reaches it (no `next/image` in the app), and it stays on the sensor's
+  # report until then.
