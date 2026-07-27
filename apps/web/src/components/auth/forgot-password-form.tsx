@@ -24,7 +24,7 @@ import { authClient } from "~/server/better-auth/client";
  * the token on its own endpoint first and then redirects here with `?token=`,
  * so this is a page, not the endpoint that does the work.
  */
-export const resetPasswordRedirectTo = "/reset-password";
+const resetPasswordRedirectTo = "/reset-password";
 
 export function ForgotPasswordForm() {
   const t = useTranslations("auth");

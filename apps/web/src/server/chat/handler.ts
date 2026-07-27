@@ -8,7 +8,7 @@ import {
 
 import type { RateLimitDecision } from "./rate-limit";
 
-export type ChatSession = { readonly user: { readonly id: string } };
+type ChatSession = { readonly user: { readonly id: string } };
 
 export type ChatDependencies = {
   /** `undefined` when the deployment has no provider key configured. */

@@ -12,11 +12,14 @@ describe("selectChecks", () => {
     expect(selectChecks([], base).steps).toEqual([]);
   });
 
-  it("always checks formatting, structure, the graph and the affected package graph", () => {
+  // Knip is always-on for the same reason `arch` is: deleting the last caller
+  // of an export orphans it in a package the diff never named.
+  it("always checks formatting, structure, the graph, what nothing reaches, and the affected package graph", () => {
     expect(names(["packages/domain/src/announcement.ts"])).toEqual([
       "format:check",
       "policy",
       "arch",
+      "knip",
       "affected lint, typecheck and unit tests",
       "test:e2e",
     ]);
@@ -134,7 +137,7 @@ describe("selectChecks", () => {
  * running `verify:changed` at all. Both are failures, so both are pinned.
  */
 describe("selectChecks by class of change", () => {
-  const always = ["format:check", "policy", "arch"];
+  const always = ["format:check", "policy", "arch", "knip"];
   const affected = "affected lint, typecheck and unit tests";
 
   it("a migration: schema gates, real PostgreSQL, and the browser journey", () => {

@@ -3,11 +3,7 @@
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import { httpBatchStreamLink, loggerLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
-import type {
-  AppRouter,
-  RouterInputs,
-  RouterOutputs,
-} from "@ai-starter/api/client";
+import type { AppRouter, RouterOutputs } from "@ai-starter/api/client";
 import { useState } from "react";
 import SuperJSON from "superjson";
 
@@ -26,13 +22,6 @@ const getQueryClient = () => {
 };
 
 export const api = createTRPCReact<AppRouter>();
-
-/**
- * Inference helper for inputs.
- *
- * @example type HelloInput = RouterInputs['example']['hello']
- */
-export type { RouterInputs };
 
 /**
  * Inference helper for outputs.

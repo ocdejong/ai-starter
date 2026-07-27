@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 import { type PolicyViolation } from "./policy-violation.ts";
+import { rulesetDirectory } from "./repository-host.ts";
 
 /**
  * The rules that keep the repository host and the supply chain from being
@@ -18,7 +19,6 @@ import { type PolicyViolation } from "./policy-violation.ts";
  */
 
 const workflowDirectory = ".github/workflows";
-const rulesetDirectory = ".github/rulesets";
 const codeownersPath = ".github/CODEOWNERS";
 const workspaceManifest = "pnpm-workspace.yaml";
 const rootManifest = "package.json";

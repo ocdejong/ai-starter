@@ -9,9 +9,7 @@ import { type FeatureNames } from "./naming.ts";
  * itself away, and the two title fields are labelled apart because a screen with
  * two fields both called "Title" is ambiguous to a reader and to a test.
  */
-export function featureCatalogNamespace(
-  names: FeatureNames,
-): Record<string, unknown> {
+function featureCatalogNamespace(names: FeatureNames): Record<string, unknown> {
   return {
     title: names.titlePlural,
     description: `${names.titlePlural} belong to the group you are working in. Switch groups and you are looking at another set.`,

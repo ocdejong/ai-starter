@@ -24,7 +24,7 @@ export const sourcePath = "packages/tooling/src/instruction-surfaces.ts";
  * cleanly and still matches, while the agent silently stops receiving the
  * contract. This pins each template to the vendor's requirement instead.
  */
-export type LoadMarker = {
+type LoadMarker = {
   /** Completes "would no longer …", so phrase it as an action. */
   readonly description: string;
   readonly pattern: RegExp;

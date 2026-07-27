@@ -1,3 +1,5 @@
+import "server-only";
+
 import { createAnthropic } from "@ai-sdk/anthropic";
 import type { LanguageModel } from "ai";
 

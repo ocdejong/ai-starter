@@ -4,21 +4,16 @@ import path from "node:path";
 import { type FeatureNames } from "./naming.ts";
 
 /** Where the template trees live, relative to this module. */
-export const templateRoot = path.resolve(
-  import.meta.dirname,
-  "..",
-  "..",
-  "templates",
-);
+const templateRoot = path.resolve(import.meta.dirname, "..", "..", "templates");
 
-export const templateSuffix = ".template";
+const templateSuffix = ".template";
 
 /**
  * Substitutes `{{token}}` placeholders. An unknown token is an error rather than
  * an empty string: a typo in a template would otherwise reach a generated file
  * and only surface as a syntax error in someone else's checkout.
  */
-export function renderTemplate(source: string, names: FeatureNames): string {
+function renderTemplate(source: string, names: FeatureNames): string {
   // Every name form is a string, so the record type is what `FeatureNames`
   // already is — no assertion needed to look one up by a token read from a
   // template.

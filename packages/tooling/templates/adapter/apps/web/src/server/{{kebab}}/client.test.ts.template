@@ -5,16 +5,20 @@ import { create{{pascal}}Client, redact } from "./client";
 
 const apiKey = "secret-{{kebab}}-key";
 
-function clientAnswering(
-  respond: (input: string, init?: RequestInit) => Promise<Response>,
-) {
+/**
+ * The fake takes the real `fetch` signature rather than the narrower one this
+ * adapter happens to call it with. Declaring the parameter as `string` would
+ * read better here and cost an assertion through `unknown` to hand over — and a
+ * double is only worth what it proves about the seam it stands in for.
+ */
+function clientAnswering(respond: typeof globalThis.fetch) {
   const call = vi.fn(respond);
   return {
     call,
     client: create{{pascal}}Client({
       apiKey,
       baseUrl: "https://provider.example",
-      fetch: call as unknown as typeof globalThis.fetch,
+      fetch: call,
       timeoutMs: 50,
     }),
   };
