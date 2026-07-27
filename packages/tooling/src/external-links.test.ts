@@ -45,6 +45,28 @@ afterAll(() => {
 });
 
 describe("externalLinks", () => {
+  // This program reads its destinations out of files, so the set it will
+  // request is a security boundary, not a convenience.
+  it.each([
+    "http://localhost:3000",
+    "http://127.0.0.1:8080",
+    "http://10.0.0.1/metadata",
+    "http://192.168.1.1/admin",
+    "http://169.254.169.254/latest/meta-data/",
+    "http://172.16.0.5/",
+    "https://registry.internal/private",
+    "https://db.local/",
+    "file:///etc/passwd",
+    "ftp://example.com/",
+  ])("refuses to request %s", (url) => {
+    const root = mkdtempSync(path.join(tmpdir(), "links-private-"));
+    writeFileSync(path.join(root, "README.md"), `A [link](${url}) here.\n`);
+
+    expect(externalLinks(root)).toEqual([]);
+
+    rmSync(root, { force: true, recursive: true });
+  });
+
   it("finds every distinct external destination, and nothing else", () => {
     expect(externalLinks(root).map((link) => link.url)).toEqual([
       "https://example.com/guide",
