@@ -40,3 +40,25 @@ overrides:
   # which carries a remotely triggerable DoS in `qs.stringify`. Every other
   # consumer in this tree already resolves 6.15.3; this makes that unanimous.
   qs: ^6.15.3
+  # The three below answer the advisories the daily sensor filed as issue #23,
+  # and each is here because a version bump could not have reached it. Dependabot
+  # proposes a newer *parent*; none of these parents can resolve the fix.
+  #
+  # `next@15.5` depends on `postcss` at an exact `8.4.31`, so no release in that
+  # line moves it, and two path-traversal advisories (<=8.5.11, <=8.5.17) read
+  # arbitrary files through a `sourceMappingURL` in a CSS comment. 8.5.22 was
+  # already resolved in this tree for every other consumer, so this dedupes to a
+  # version the build had proven before the override existed.
+  postcss: ^8.5.22
+  # `next`'s optional `sharp` range stops below 0.35.0, where four inherited
+  # libvips CVEs are fixed. It is the image-optimisation path, so it matters to
+  # the first product that serves an image a stranger uploaded, not to this
+  # template — but the fix costs one line and no product should inherit the
+  # question.
+  sharp: ^0.35.0
+  # `minimatch@10.2.5` asks for `^5.0.5`, so this one was only ever a stale
+  # lockfile: 5.0.8 satisfies its range and fixes an unbounded-expansion OOM.
+  # Pinned rather than left to a refresh because three separate chains reach it
+  # (eslint, typescript-eslint, testcontainers) and a lockfile refresh would only
+  # hold until one of them moved.
+  brace-expansion: ^5.0.8

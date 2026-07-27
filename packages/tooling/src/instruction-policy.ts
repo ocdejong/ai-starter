@@ -16,6 +16,7 @@ import {
   vendorPointers,
   writeCommand,
 } from "./instruction-surfaces.ts";
+import { workspaceDirectories } from "./repository-policy.ts";
 
 export type PolicyViolation = {
   /** Repository-relative file the reader has to open to fix this. */
@@ -285,6 +286,86 @@ function checkDuplication(root: string): PolicyViolation[] {
   return violations;
 }
 
+/**
+ * The contract names each place code belongs as a backticked bullet, so the
+ * paths it maps are the paths it lists.
+ */
+function contractPackages(contract: string): Set<string> {
+  const section =
+    /## Where code belongs\n([\s\S]*?)(?:\n## |$)/.exec(contract)?.[1] ?? "";
+
+  return new Set(
+    [...section.matchAll(/^- `([^`]+)`/gm)].flatMap(([, entry]) =>
+      entry === undefined ? [] : [entry],
+    ),
+  );
+}
+
+/**
+ * The README draws the same map as an indented tree, so one path is spread over
+ * two lines: an unindented parent ending in a slash, then its indented children.
+ */
+function readmePackages(readme: string): Set<string> {
+  const tree = /```text\n([\s\S]*?)```/.exec(readme)?.[1] ?? "";
+  const found = new Set<string>();
+  let parent: string | undefined;
+
+  for (const line of tree.split("\n")) {
+    const top = /^(\S+)\/\s*$/.exec(line)?.[1];
+    if (top !== undefined) {
+      parent = top;
+      continue;
+    }
+
+    const child = /^\s+(\S+)\//.exec(line)?.[1];
+    if (child !== undefined && parent !== undefined) {
+      found.add(`${parent}/${child}`);
+    }
+  }
+
+  return found;
+}
+
+/**
+ * Every workspace package is named by both maps of this repository: the
+ * contract's "Where code belongs" list, which is where an agent looks for the
+ * layer a change belongs in, and the README's tree, which is the first thing a
+ * human reads. A package missing from either is a package its reader is told
+ * does not exist — `packages/auth` and `packages/email` were absent from the
+ * contract from the stage that created them until the one that found this, and
+ * `checkReferences` cannot see it: that check can only prove the paths a
+ * document *does* name resolve, never that it named them all.
+ */
+function checkWorkspaceMap(root: string, contract: string): PolicyViolation[] {
+  const readme = read(root, "README.md");
+  const surfaces = [
+    {
+      file: rootContractPath,
+      how: 'a "Where code belongs" bullet',
+      named: contractPackages(contract),
+    },
+    ...(readme === undefined
+      ? []
+      : [
+          {
+            file: "README.md",
+            how: "a line in the workspace tree",
+            named: readmePackages(readme),
+          },
+        ]),
+  ];
+
+  return surfaces.flatMap((surface) =>
+    workspaceDirectories(root)
+      .filter((directory) => !surface.named.has(directory))
+      .map((directory) => ({
+        file: surface.file,
+        fix: `Add \`${directory}\` as ${surface.how}, saying what belongs there.`,
+        problem: `Maps the workspace without \`${directory}\`, so a reader is told that package does not exist.`,
+      })),
+  );
+}
+
 function checkReferences(root: string): PolicyViolation[] {
   const violations: PolicyViolation[] = [];
 
@@ -336,6 +417,7 @@ export function checkInstructionSurfaces(root: string): PolicyViolation[] {
     ...checkScoped(root, contract),
     ...checkDuplication(root),
     ...checkReferences(root),
+    ...checkWorkspaceMap(root, contract),
   ];
 }
 

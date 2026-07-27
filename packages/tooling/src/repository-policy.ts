@@ -118,7 +118,7 @@ function readJson(
 }
 
 /** The globbed workspace directories, read from `pnpm-workspace.yaml` itself. */
-function workspaceDirectories(root: string): string[] {
+export function workspaceDirectories(root: string): string[] {
   const text = readText(root, "pnpm-workspace.yaml") ?? "";
   const directories: string[] = [];
 

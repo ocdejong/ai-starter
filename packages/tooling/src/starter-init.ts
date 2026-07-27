@@ -1,4 +1,4 @@
-import { writeFileSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { runCapture, runInherit } from "./command.ts";
@@ -110,6 +110,67 @@ function findResidualIdentity(
   }
 
   return residual;
+}
+
+export type ReadmeHandover = {
+  readonly changed: boolean;
+  readonly message: string;
+};
+
+/** The section that exists only for a reader who has not run this command yet. */
+const instantiationHeading = "## Create a product from this template";
+
+/**
+ * Gives the product a README addressed to its owner rather than to the person
+ * about to instantiate it.
+ *
+ * The identity rewrite reaches every starter *identifier* in this file and none
+ * of its framing, so without this step a new product's front door still carries
+ * the template's title and a section telling its reader to run the command they
+ * have just run. Everything else — starting locally, adding a feature, verifying
+ * — is as true of the product as it was of the template, so it stays.
+ */
+export function handOverReadme(
+  root: string,
+  product: Identity,
+): ReadmeHandover {
+  const file = path.join(root, "README.md");
+  const content = existsSync(file) ? readTextFile(file) : undefined;
+
+  if (content === undefined) {
+    return { changed: false, message: "No README.md to hand over." };
+  }
+
+  const retitled = content.replace(/^# .*$/m, `# ${product.displayName}`);
+  const start = retitled.indexOf(instantiationHeading);
+  const rest =
+    start === -1
+      ? retitled
+      : `${retitled.slice(0, start)}${nextSection(retitled, start)}`;
+
+  if (rest === content) {
+    return {
+      changed: false,
+      message: "README.md already addresses the product.",
+    };
+  }
+
+  writeFileSync(file, rest);
+
+  return {
+    changed: true,
+    message: `Retitled README.md and removed "${instantiationHeading.slice(3)}".`,
+  };
+}
+
+/** Everything from the heading after `start`, or nothing when it was the last. */
+function nextSection(markdown: string, start: number): string {
+  const following = markdown.indexOf(
+    "\n## ",
+    start + instantiationHeading.length,
+  );
+
+  return following === -1 ? "" : markdown.slice(following + 1);
 }
 
 export type FinalizationResult = {

@@ -375,7 +375,7 @@ export type GenerationResult = {
   readonly followUps: readonly string[];
 };
 
-/** The two things a generator cannot do for you, named with their commands. */
+/** The three things a generator cannot do for you, named with their commands. */
 function featureFollowUps(names: FeatureNames): string[] {
   const sql = featureMigrationSql(names);
 
@@ -385,6 +385,11 @@ function featureFollowUps(names: FeatureNames): string[] {
     `And this below it — \`pnpm db:lint\` rejects the file without both:\n${indent(sql.body.trimEnd())}`,
     `Apply it: pnpm db:migrate:dev`,
     `Translate the ${names.titlePlural} copy in packages/i18n/messages/nl.json; it was written in English.`,
+    // Structure is all a generator can carry across domains. This slice is the
+    // worked example with a noun replaced, so it also carries the example's
+    // meaning, and a reader who keeps it ships a feature that describes a
+    // different one.
+    `Decide whether ${names.lowerPlural} are really shaped like the worked example: this slice models one current ${names.lower} per group with earlier ones superseded. If not, drop the \`isCurrent\` flag and its partial unique index, and rewrite the ${names.lower} copy in packages/i18n/messages/en.json — it currently says publishing supersedes.`,
   ];
 }
 

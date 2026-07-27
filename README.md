@@ -6,7 +6,7 @@ A strongly typed pnpm/Turborepo starter for a Next.js web app and Expo mobile ap
 
 - Next.js App Router, React, Tailwind CSS, and shadcn/ui
 - Expo Router and React Native
-- Better Auth with optional Google/GitHub OAuth
+- Better Auth: email and password, with the server half of Google/GitHub OAuth configured but no sign-in button on either platform yet
 - tRPC, TanStack Query, Zod, Prisma, and PostgreSQL
 - strict TypeScript; flat, type-aware ESLint; Prettier
 - Vitest/Testing Library, Jest/RNTL, Testcontainers, Playwright, and Maestro
@@ -20,11 +20,35 @@ packages/
   api/       tRPC routers and client-safe AppRouter types
   domain/    shared Zod schemas and platform-neutral business logic
   db/        server-only Prisma client, migrations, and integration tests
+  auth/      Better Auth factory: account, group, and session flows
+  email/     react-email templates, Resend and dev-mailbox adapters
   config/    shared TypeScript, ESLint, and Vitest configuration
+  i18n/      shared EN/NL message catalogs and locale negotiation
   tokens/    platform-neutral design tokens
+  tooling/   every `pnpm` command in this README
 ```
 
+## What you already have
+
+A new product does not start at a sign-in form. Working on web **and** native, in
+English and Dutch, in light and dark:
+
+- Register, verify the address by email, sign in, forgot and reset password.
+- A dashboard behind a session guard, hosting a streaming LLM chat.
+- Groups: a personal one per account, invitations by email, roles, and settings.
+- Account settings: profile, change email, change password, active sessions, delete account.
+- An `announcement` slice that is the feature generator's own output, kept so by a test.
+
+Everything above is yours to change. Nothing in it is a demo behind a flag.
+
+Vendors are optional and degrade honestly: with no Resend key email is written to
+a local mailbox, and with no model key the chat renders its "not configured"
+state. A clone with no keys at all boots, signs in and passes `pnpm verify`.
+
 ## Create a product from this template
+
+Requirements: Node.js 24 or 26+ (25 is not supported — dependency-cruiser refuses
+non-LTS majors), pnpm 10, and Docker or Podman.
 
 ```bash
 pnpm starter:init --name "Acme Notes"
@@ -32,7 +56,15 @@ pnpm bootstrap
 pnpm verify
 ```
 
-`starter:init` runs once in a fresh clone. It replaces every starter identifier — the workspace package scope, the repository, database and container names, the Expo name, slug and scheme, the iOS bundle identifier, the Android package, and the visible starter text — and then fails if any starter identity survives, including in a file name. It finishes by relinking the workspace and reformatting: the new identifiers have different lengths, so Prettier wraps a few files differently.
+Expect under five minutes from clone to a green suite on an unloaded laptop, and
+around ten on a cold CI runner. Those are the two figures `pnpm rehearse:template`
+measures, and it does strictly more than the three commands above — it also runs
+every generator and applies a migration. The clone itself is seconds,
+`starter:init` and `bootstrap` about a minute each, and `pnpm verify` is the rest.
+Measure on a quiet machine: a laptop already running other suites and database
+containers stretched the same `verify` several times over.
+
+`starter:init` runs once in a fresh clone. It replaces every starter identifier — the workspace package scope, the repository, database and container names, the Expo name, slug and scheme, the iOS bundle identifier, the Android package, and the visible starter text — and then fails if any starter identity survives, including in a file name. It also hands this README over: the title becomes the product's, and this section goes, because a product's front door should not tell its owner to create the product. It finishes by relinking the workspace and reformatting: the new identifiers have different lengths, so Prettier wraps a few files differently.
 
 | Option     | Default              | Purpose                                       |
 | ---------- | -------------------- | --------------------------------------------- |
@@ -43,8 +75,6 @@ pnpm verify
 `packages/tooling/src/starter-identity.ts` is deliberately left untouched: it stays the record of what was replaced.
 
 ## Start locally
-
-Requirements: Node.js 24 or 26+ (25 is not supported — dependency-cruiser refuses non-LTS majors), pnpm 10, and Docker or Podman.
 
 ```bash
 pnpm bootstrap
@@ -84,4 +114,4 @@ See `AGENTS.md` for the binding agent contract and `docs/README.md` for the repo
 
 Codex and compatible tools load `AGENTS.md` directly. Thin pointer files also route Claude Code, Gemini CLI, Cursor, and GitHub Copilot to that same source of truth without duplicating instructions.
 
-After creating a GitHub remote, protect `main` and enable Dependabot alerts, secret scanning, push protection, and private vulnerability reporting. The workflows and Dependabot/CodeQL configuration are already checked in.
+After creating a GitHub remote, run `pnpm repo:host`. It applies the checked-in branch ruleset and turns on Dependabot alerts, secret scanning, push protection and private vulnerability reporting — reading the host first and sending only the difference, so it is safe to re-run. `--dry-run` prints the plan instead. The workflows and the Dependabot/CodeQL configuration are already checked in; `docs/repository-host.md` explains what each setting buys. The one thing it cannot do for you is `.github/CODEOWNERS`, which still names this template's author.

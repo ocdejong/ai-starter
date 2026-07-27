@@ -2,15 +2,20 @@ import { ArgumentError, parseArguments } from "../argv.ts";
 import { deriveProductIdentity, IdentityError } from "../product-identity.ts";
 import { repositoryRoot } from "../repository.ts";
 import { starterIdentity } from "../starter-identity.ts";
-import { finalizeInitialization, initializeStarter } from "../starter-init.ts";
+import {
+  finalizeInitialization,
+  handOverReadme,
+  initializeStarter,
+} from "../starter-init.ts";
 
 const usage = `Usage: pnpm starter:init --name "<Product Name>" [--scope <npm-scope>] [--app-id <com.example.product>]
 
 Replaces every starter identifier with the downstream product's identity:
 workspace package scope, repository and database name, Expo name, slug and
 scheme, the iOS bundle identifier, the Android package and the visible starter
-text, then relinks the workspace and reformats the files whose line wrapping
-the rename changed. Run it once, then run \`pnpm bootstrap\`.
+text, then hands the README over to the product, relinks the workspace and
+reformats the files whose line wrapping the rename changed. Run it once, then
+run \`pnpm bootstrap\`.
 
   --name    Required. The product's display name, for example "Acme Notes".
   --scope   npm scope for workspace packages. Defaults to the slug of --name.
@@ -96,6 +101,9 @@ function main(): number {
   }
 
   console.log("starter:init: no starter identity remains.");
+
+  const handover = handOverReadme(repositoryRoot, product);
+  console.log(`starter:init: ${handover.message}`);
 
   const finalization = finalizeInitialization(repositoryRoot);
   console.log(`starter:init: ${finalization.message}`);

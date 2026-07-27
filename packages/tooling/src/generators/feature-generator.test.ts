@@ -161,6 +161,22 @@ describe("generate feature", () => {
     expect(followUps.join("\n")).toContain("packages/i18n/messages/nl.json");
   });
 
+  /**
+   * The templates are the `announcement` slice with the noun substituted, so the
+   * structure generalises and the *meaning* does not: every generated feature
+   * arrives modelling one current record per group, earlier ones superseded, and
+   * carrying copy that says so. A cold agent given "build chores" kept all of it
+   * and shipped a chore board that talks about publishing. Nothing failed, and
+   * nothing said so — so the command says it.
+   */
+  it("warns that the slice carries the worked example's shape, not just its structure", () => {
+    const printed = followUps.join("\n");
+
+    expect(printed).toContain("one current release note per group");
+    expect(printed).toContain("isCurrent");
+    expect(printed).toContain("packages/i18n/messages/en.json");
+  });
+
   // The migration is the one follow-up whose output another gate judges: without
   // both timeouts and with a `varchar(n)` title, `pnpm db:lint` rejects the file
   // Prisma wrote. So the SQL is dictated rather than described, and the
@@ -176,7 +192,14 @@ describe("generate feature", () => {
     expect(printed).toContain('"ReleaseNote_title_length_check"');
   });
 
-  it("changes nothing when it runs a second time", () => {
+  // The budget is explicit because this case spawns a subprocess, like every
+  // other one in this package that does (`knip.test.ts`, `rules.test.ts`, the
+  // depcruise cases). A single `pnpm exec prettier` was measured between 0.7s
+  // and 3.2s on an otherwise idle machine, and it runs here beside two other
+  // test suites under `turbo` — so the default 5s budget is one slow spawn from
+  // failing, which is how it failed inside a freshly instantiated product while
+  // passing in this repository. The assertion is about idempotency, not speed.
+  it("changes nothing when it runs a second time", { timeout: 60_000 }, () => {
     // The command formats what it wrote, so by the second run every inserted
     // line may have been rewrapped. Reproducing that here is what catches a
     // guard that compares the text it inserted rather than something Prettier

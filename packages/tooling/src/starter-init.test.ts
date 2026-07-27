@@ -14,7 +14,25 @@ import {
   starterIdentity,
   starterIdentityModulePath,
 } from "./starter-identity.ts";
-import { initializeStarter } from "./starter-init.ts";
+import { handOverReadme, initializeStarter } from "./starter-init.ts";
+
+/** The template's own framing: a title and a section aimed at whoever clones it. */
+const templateReadme = `# AI-first full-stack starter
+
+A strongly typed starter for a web app and a mobile app.
+
+## Create a product from this template
+
+\`\`\`bash
+pnpm starter:init --name "Acme Notes"
+\`\`\`
+
+\`starter:init\` runs once in a fresh clone.
+
+## Start locally
+
+\`pnpm bootstrap\` then \`pnpm dev\`.
+`;
 
 const product = deriveProductIdentity(
   { applicationId: "com.acme.notes", name: "Acme Notes", scope: "acme" },
@@ -120,5 +138,52 @@ describe("initializeStarter", () => {
     expect(second.matchedFiles).toBe(0);
     expect(second.changedFiles).toEqual([]);
     expect(second.residual).toEqual([]);
+  });
+});
+
+/**
+ * The identity rewrite reaches every starter *identifier* in the README and none
+ * of its framing, so a product used to be handed a front door still titled after
+ * the template and still telling its owner to run the command they had just run.
+ */
+describe("handOverReadme", () => {
+  it("titles the README after the product and drops the instantiation section", () => {
+    write("README.md", templateReadme);
+
+    const result = handOverReadme(root, product);
+    const readme = read("README.md");
+
+    expect(result.changed).toBe(true);
+    expect(readme).toContain("# Acme Notes");
+    expect(readme).not.toContain("Create a product from this template");
+    expect(readme).not.toContain("pnpm starter:init");
+  });
+
+  it("keeps everything that is as true of the product as it was of the template", () => {
+    write("README.md", templateReadme);
+
+    handOverReadme(root, product);
+    const readme = read("README.md");
+
+    expect(readme).toContain("A strongly typed starter");
+    expect(readme).toContain("## Start locally");
+    expect(readme).toContain("`pnpm bootstrap` then `pnpm dev`.");
+  });
+
+  it("is idempotent, so a second run reports nothing to hand over", () => {
+    write("README.md", templateReadme);
+
+    handOverReadme(root, product);
+    const after = read("README.md");
+    const second = handOverReadme(root, product);
+
+    expect(second.changed).toBe(false);
+    expect(read("README.md")).toBe(after);
+  });
+
+  it("says so rather than failing when there is no README to hand over", () => {
+    rmSync(path.join(root, "README.md"));
+
+    expect(handOverReadme(root, product).changed).toBe(false);
   });
 });

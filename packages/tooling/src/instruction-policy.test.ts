@@ -48,6 +48,41 @@ function cleanCheckout(): string {
   return root;
 }
 
+/** The contract's map, as its "Where code belongs" bullets render it. */
+function whereCodeBelongs(packages: readonly string[]): string {
+  const bullets = packages
+    .map((name) => `- \`packages/${name}\`: what belongs in ${name}.`)
+    .join("\n");
+
+  return `\n## Where code belongs\n\n${bullets}\n`;
+}
+
+/** The README's map, as its indented tree renders it. */
+function workspaceTree(packages: readonly string[]): string {
+  const lines = packages.map((name) => `  ${name}/  what belongs in ${name}`);
+
+  return `# Product\n\n\`\`\`text\npackages/\n${lines.join("\n")}\n\`\`\`\n`;
+}
+
+/**
+ * A clean checkout that also has a workspace, mapped correctly by both surfaces.
+ * The scoped-instruction package is already a directory under the glob, so it is
+ * mapped too — otherwise every case would report it alongside its own subject.
+ */
+function workspaceCheckout(packages: readonly string[]): string {
+  const root = cleanCheckout();
+  const mapped = [...packages, path.basename(path.dirname(scopedPath))].sort();
+
+  write(root, "pnpm-workspace.yaml", 'packages:\n  - "packages/*"\n');
+  for (const name of packages) {
+    write(root, `packages/${name}/package.json`, "{}\n");
+  }
+  write(root, "AGENTS.md", `${contract}${whereCodeBelongs(mapped)}`);
+  write(root, "README.md", workspaceTree(mapped));
+
+  return root;
+}
+
 function write(root: string, file: string, content: string): void {
   const absolute = path.join(root, file);
   mkdirSync(path.dirname(absolute), { recursive: true });
@@ -163,6 +198,43 @@ describe("instruction surface policy", () => {
     expect(checkInstructionSurfaces(root)[0]?.problem).toContain(
       "docs/moved-architecture.md",
     );
+  });
+
+  /**
+   * `packages/auth` and `packages/email` existed for several stages while the
+   * contract's map did not mention them, and nothing failed: the reference check
+   * proves the paths a document names resolve, never that it named them all. The
+   * clean checkout has no workspace at all, so each case below adds one and
+   * removes it from exactly one surface.
+   */
+  it("reports a workspace package the contract does not map", () => {
+    const root = workspaceCheckout(["api", "email"]);
+    const kept = [path.basename(path.dirname(scopedPath)), "api"].sort();
+    write(root, "AGENTS.md", `${contract}${whereCodeBelongs(kept)}`);
+
+    const violations = checkInstructionSurfaces(root);
+
+    expect(problems(violations)).toBe(
+      'AGENTS.md: Maps the workspace without `packages/email`, so a reader is told that package does not exist. Add `packages/email` as a "Where code belongs" bullet, saying what belongs there.',
+    );
+  });
+
+  it("reports a workspace package the README tree does not map", () => {
+    const root = workspaceCheckout(["api", "email"]);
+    const kept = [path.basename(path.dirname(scopedPath)), "api"].sort();
+    write(root, "README.md", workspaceTree(kept));
+
+    const violations = checkInstructionSurfaces(root);
+
+    expect(problems(violations)).toBe(
+      "README.md: Maps the workspace without `packages/email`, so a reader is told that package does not exist. Add `packages/email` as a line in the workspace tree, saying what belongs there.",
+    );
+  });
+
+  it("accepts a workspace both surfaces map in full", () => {
+    expect(
+      checkInstructionSurfaces(workspaceCheckout(["api", "email"])),
+    ).toEqual([]);
   });
 
   it("reports scoped instructions the root contract never mentions", () => {
