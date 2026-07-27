@@ -50,10 +50,16 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      # Installed into the shared browser cache, so the instantiated product
-      # finds them without installing its own. Nothing else here is prepared:
-      # `pnpm bootstrap` inside the copy is one of the things being rehearsed,
-      # including the database container it creates for itself.
+      # Only to put the Playwright binary on disk, so the next step can reach
+      # it. It prepares nothing the rehearsal uses: `node_modules` is gitignored
+      # and therefore never copied into the instantiated product, which runs its
+      # own `pnpm install` inside `pnpm bootstrap` — one of the things being
+      # rehearsed, along with the database container it creates for itself.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The browsers land in the shared cache, where the instantiated product
+      # finds them without installing its own.
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
 
