@@ -32,7 +32,7 @@
     "@ai-starter/config": "workspace:*",
     "@testcontainers/postgresql": "^12.0.4",
     "@types/node": "^20.14.10",
-    "eslint": "^9.23.0",
+    "eslint": "^10.6.0",
     "prisma": "^6.6.0",
     "typescript": "^5.8.2",
     "vitest": "^4.1.10"
