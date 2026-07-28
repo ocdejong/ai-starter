@@ -43,7 +43,11 @@ test("publishes, renames and supersedes a group's {{lowerPlural}}", async ({
     await page.getByLabel("Current title").fill("The renamed {{lower}}");
     await page.getByRole("button", { name: "Save" }).click();
 
-    await expect(page.getByText("Saved.")).toBeVisible();
+    // The first assertion after a click waits on the round trip, so it gets the
+    // same budget as every other one in this file. It is the only one that ever
+    // ran on the 5s default, and a weekly sensor that fails on a slow mutation
+    // is a red nobody can read.
+    await expect(page.getByText("Saved.")).toBeVisible({ timeout: 30_000 });
     await page.reload();
     await expect(page.getByLabel("Current title")).toHaveValue(
       "The renamed {{lower}}",
