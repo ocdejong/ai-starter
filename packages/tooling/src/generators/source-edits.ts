@@ -225,3 +225,263 @@ export function insertBeforeLine(
   lines.splice(index, 0, text);
   return lines.join("\n");
 }
+
+/**
+ * The reverse of the edits above.
+ *
+ * Every one of them works by *pattern* rather than by reconstructing the text a
+ * generator once wrote, and that is the whole design. Removal runs in a product
+ * that has been living with the slice: it has renamed the schema, reworded a
+ * comment, added a field. Matching what the generator would emit today would
+ * quietly skip exactly the registrations somebody has touched, which is the
+ * subset most likely to be left behind.
+ */
+
+/** Removes a whole `export … from "./module";` statement, however it wraps. */
+export function removeReexport(content: string, module: string): string {
+  const pattern = new RegExp(
+    `^export [^;]*?from "${module.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}";\\n`,
+    "m",
+  );
+  return content.replace(pattern, "");
+}
+
+/**
+ * Removes names from a braced import or export list, and the statement itself
+ * once nothing is left in it.
+ */
+export function removeBraceListNames(
+  content: string,
+  pattern: RegExp,
+  removals: readonly string[],
+): string {
+  const match = pattern.exec(content);
+  if (match?.[1] === undefined) {
+    return content;
+  }
+
+  const kept = match[1]
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0 && !removals.includes(entry));
+
+  if (kept.length === 0) {
+    return content.replace(`${match[0]}\n`, "").replace(match[0], "");
+  }
+
+  return content.replace(
+    match[0],
+    match[0].replace(match[1], ` ${kept.join(", ")} `),
+  );
+}
+
+/**
+ * Removes `key` and its value from the object literal that `opener` opens,
+ * however many lines the value spans.
+ */
+export function removeObjectEntry(
+  content: string,
+  opener: string,
+  key: string,
+): string {
+  const start = content.indexOf(opener);
+  if (start === -1) {
+    return content;
+  }
+
+  const body = start + opener.length;
+  const lines = content.slice(body).split("\n");
+  let depth = 0;
+  let lineStart = body;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (depth === 0) {
+      const existing = /^([A-Za-z_$][\w$]*)\s*[:,]/.exec(trimmed);
+      if (existing?.[1] === key) {
+        return `${content.slice(0, lineStart)}${content.slice(entryEnd(content, lineStart))}`;
+      }
+      if (trimmed.startsWith("}")) {
+        return content;
+      }
+    }
+    depth += (line.match(/[{[(]/g) ?? []).length;
+    depth -= (line.match(/[}\])]/g) ?? []).length;
+    lineStart += line.length + 1;
+  }
+
+  return content;
+}
+
+/** Where the entry beginning at `start` ends, counting its nested braces. */
+function entryEnd(content: string, start: number): number {
+  let depth = 0;
+  let index = start;
+
+  while (index < content.length) {
+    const character = content[index] ?? "";
+    if ("{[(".includes(character)) {
+      depth += 1;
+    } else if ("}])".includes(character)) {
+      depth -= 1;
+    } else if (character === "\n" && depth === 0) {
+      return index + 1;
+    }
+    index += 1;
+  }
+
+  return content.length;
+}
+
+/** Removes every line containing `marker`. */
+export function removeLinesContaining(content: string, marker: string): string {
+  return content
+    .split("\n")
+    .filter((line) => !line.includes(marker))
+    .join("\n");
+}
+
+/**
+ * Where the documentation of the declaration at `start` begins.
+ *
+ * Both spellings count: a `/** … *\/` block and a run of `//` lines. The
+ * composition root's wiring is documented with the second, so a helper that only
+ * knew the first would delete the constant and leave two lines of comment
+ * explaining a port that is no longer there.
+ */
+function commentAbove(content: string, start: number): number {
+  const lines = content.slice(0, start).split("\n");
+  // The last entry is whatever precedes the declaration on its own line.
+  let index = lines.length - 1;
+
+  while (index > 0) {
+    const line = (lines[index - 1] ?? "").trim();
+    if (line.startsWith("//")) {
+      index -= 1;
+      continue;
+    }
+    if (line.endsWith("*/")) {
+      while (index > 0 && !(lines[index - 1] ?? "").trim().startsWith("/*")) {
+        index -= 1;
+      }
+      index -= 1;
+      continue;
+    }
+    break;
+  }
+
+  return lines.slice(0, index).join("\n").length + (index === 0 ? 0 : 1);
+}
+
+/**
+ * Removes a top-level `export type X = …;` or `export const x = …;` together
+ * with the documentation comment directly above it.
+ */
+export function removeDeclaration(
+  content: string,
+  declaration: string,
+): string {
+  const start = content.indexOf(declaration);
+  if (start === -1) {
+    return content;
+  }
+
+  const from = commentAbove(content, start);
+
+  let depth = 0;
+  let index = start;
+  while (index < content.length) {
+    const character = content[index] ?? "";
+    if ("{[(".includes(character)) {
+      depth += 1;
+    } else if ("}])".includes(character)) {
+      depth -= 1;
+    } else if (character === ";" && depth === 0) {
+      index += 1;
+      break;
+    }
+    index += 1;
+  }
+
+  return `${content.slice(0, from)}${content.slice(index).replace(/^\n+/, "\n")}`;
+}
+
+/**
+ * Removes the whole self-closing JSX element that contains `marker`.
+ *
+ * Deleting the marker's *line* is not enough, and the reason is stage 13's trap
+ * seen from the other side: the generator guards on an attribute Prettier cannot
+ * reflow, precisely because Prettier wraps the element across lines — so by the
+ * time anything is removed, the attribute and the rest of the element are on
+ * different lines. Taking the line leaves a `<Tabs.Screen>` with no name and a
+ * translation key for a feature that is gone, which typechecks nowhere and is
+ * reported as a message-key error rather than as a removal that half happened.
+ */
+export function removeJsxElementContaining(
+  content: string,
+  marker: string,
+): string {
+  const at = content.indexOf(marker);
+  if (at === -1) {
+    return content;
+  }
+
+  const open = content.lastIndexOf("<", at);
+  const close = content.indexOf("/>", at);
+  if (open === -1 || close === -1) {
+    return content;
+  }
+
+  const lineStart = content.lastIndexOf("\n", open) + 1;
+  const lineEnd = content.indexOf("\n", close);
+
+  return `${content.slice(0, lineStart)}${lineEnd === -1 ? "" : content.slice(lineEnd + 1)}`;
+}
+
+/**
+ * Removes the brace-delimited object literal that contains `marker`, and the
+ * comma after it. Same reason as above: an entry long enough for Prettier to
+ * wrap is an entry a line-based removal would leave half of.
+ */
+export function removeObjectLiteralContaining(
+  content: string,
+  marker: string,
+): string {
+  const at = content.indexOf(marker);
+  if (at === -1) {
+    return content;
+  }
+
+  const open = content.lastIndexOf("{", at);
+  if (open === -1) {
+    return content;
+  }
+
+  let depth = 0;
+  let index = open;
+  while (index < content.length) {
+    const character = content[index] ?? "";
+    if (character === "{") {
+      depth += 1;
+    } else if (character === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        break;
+      }
+    }
+    index += 1;
+  }
+
+  const after = content[index + 1] === "," ? index + 2 : index + 1;
+  const lineStart = content.lastIndexOf("\n", open) + 1;
+  const lineEnd = content.indexOf("\n", after);
+  const trailing = content
+    .slice(after, lineEnd === -1 ? undefined : lineEnd)
+    .trim();
+
+  // Take the surrounding lines only when the entry had them to itself.
+  return trailing.length === 0 &&
+    content.slice(lineStart, open).trim().length === 0
+    ? `${content.slice(0, lineStart)}${lineEnd === -1 ? "" : content.slice(lineEnd + 1)}`
+    : `${content.slice(0, open)}${content.slice(after)}`;
+}

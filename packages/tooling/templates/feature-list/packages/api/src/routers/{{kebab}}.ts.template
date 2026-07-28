@@ -1,0 +1,60 @@
+import {
+  create{{pascal}}InputSchema,
+  rename{{pascal}}InputSchema,
+} from "@ai-starter/domain";
+import { TRPCError } from "@trpc/server";
+
+import { createTRPCRouter, groupProcedure } from "../trpc";
+
+/**
+ * {{titlePlural}} belong to a group, so every procedure here is a
+ * `groupProcedure`: the group comes from the verified membership behind the
+ * request and never from the input. That is what makes reading or writing
+ * another group's {{lowerPlural}} impossible rather than merely checked — copy
+ * this shape for any group-owned feature.
+ */
+export const {{camel}}Router = createTRPCRouter({
+  /** The active group's {{lowerPlural}}, newest first. It takes no group id. */
+  list: groupProcedure.query(({ ctx }) =>
+    ctx.{{camelPlural}}.listByGroup(ctx.group.groupId),
+  ),
+
+  /**
+   * Adds one {{lower}} to the active group's list. It changes nothing that is
+   * already stored, so it is a single write and the repository needs no
+   * transaction to keep two rows agreeing with each other.
+   */
+  create: groupProcedure
+    .input(create{{pascal}}InputSchema)
+    .mutation(({ ctx, input }) =>
+      ctx.{{camelPlural}}.create({
+        createdById: ctx.session.user.id,
+        groupId: ctx.group.groupId,
+        title: input.title,
+      }),
+    ),
+
+  /**
+   * Renames one of the active group's {{lowerPlural}}. The identifier arrives from
+   * the caller and is therefore never trusted alone: it is paired with the
+   * verified group, and an identifier from anywhere else matches no row.
+   */
+  rename: groupProcedure
+    .input(rename{{pascal}}InputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const renamed = await ctx.{{camelPlural}}.rename({
+        {{camel}}Id: input.{{camel}}Id,
+        groupId: ctx.group.groupId,
+        title: input.title,
+      });
+
+      if (renamed === null) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "This group has no such {{lower}}.",
+        });
+      }
+
+      return renamed;
+    }),
+});

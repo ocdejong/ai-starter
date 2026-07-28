@@ -16,8 +16,8 @@ import {
 } from "./container-runtime.ts";
 import { parseDatabaseUrl } from "./database-url.ts";
 import { parseEnvFile, setEnvValue } from "./env-file.ts";
-import { featureMigrationSql } from "./generators/feature.ts";
 import { featureNames } from "./generators/naming.ts";
+import { featureMigrationSql, type FeatureShape } from "./generators/shape.ts";
 import { webEnvPath } from "./repository.ts";
 import { findFreePort } from "./tcp.ts";
 
@@ -59,6 +59,19 @@ export const rehearsalSlices = {
   context: "billing-period",
   feature: "release-note",
 } as const;
+
+/**
+ * The shape the rehearsal generates, and it is deliberately not the committed
+ * one.
+ *
+ * `golden-path.test.ts` pins the `current` shape to the `announcement` slice, so
+ * every `pnpm verify` already compiles and runs those templates. Nothing does
+ * that for the other shape's overlay — the debt stage 13 recorded for the
+ * adapter template, at larger size. Generating `list` here is what pays it: the
+ * rehearsal is the only check that compiles either overlay, and it should spend
+ * that on the half nothing else covers.
+ */
+export const rehearsalFeatureShape = "list";
 
 function log(message: string): void {
   console.log(`rehearse: ${message}`);
@@ -106,6 +119,7 @@ export function instantiateTemplate(root: string, destination: string): void {
 export function finishFeatureMigration(
   checkout: string,
   feature: string,
+  shape: FeatureShape,
 ): string {
   const directory = path.join(checkout, "packages/db/prisma/migrations");
   const written = readdirSync(directory, { withFileTypes: true })
@@ -119,7 +133,7 @@ export function finishFeatureMigration(
   }
 
   const file = path.join(directory, written, "migration.sql");
-  const sql = featureMigrationSql(featureNames(feature));
+  const sql = featureMigrationSql(featureNames(feature), shape);
   writeFileSync(file, `${sql.header}${readFileSync(file, "utf8")}${sql.body}`);
 
   return `packages/db/prisma/migrations/${written}/migration.sql`;
@@ -136,34 +150,34 @@ export function finishFeatureMigration(
  * reading it.
  *
  * It can, because the rehearsal's noun is fixed. This is real Dutch for
- * `release-note` and nothing else, which is why {@link finishDutchCopy} takes no
- * feature: a map like this cannot be written for a name it has not seen.
+ * `release-note` in the `list` shape and nothing else, which is why
+ * {@link finishDutchCopy} takes neither a feature nor a shape: a map like this
+ * cannot be written for a name it has not seen, and the keys belong to the shape
+ * {@link rehearsalFeatureShape} names.
  */
 const rehearsalDutchCopy: Readonly<Record<string, string>> = {
   "app.nav.releaseNotes": "Releasenotities",
   "app.releaseNotes.count":
     "{count, plural, =0 {Nog geen releasenotities} one {# releasenotitie} other {# releasenotities}}",
-  "app.releaseNotes.current.empty": "Deze groep heeft nog niets gepubliceerd.",
-  "app.releaseNotes.current.label": "Huidige titel",
-  "app.releaseNotes.current.saved": "Opgeslagen.",
-  "app.releaseNotes.current.submit": "Opslaan",
-  "app.releaseNotes.current.submitting": "Opslaan…",
-  "app.releaseNotes.current.title": "Huidige releasenotitie",
+  "app.releaseNotes.create.description":
+    "Elke releasenotitie die je toevoegt blijft in de lijst staan.",
+  "app.releaseNotes.create.label": "Nieuwe titel",
+  "app.releaseNotes.create.submit": "Toevoegen",
+  "app.releaseNotes.create.submitting": "Toevoegen…",
+  "app.releaseNotes.create.title": "Nieuwe releasenotitie",
   "app.releaseNotes.description":
     "Releasenotities horen bij de groep waarin je werkt. Wissel je van groep, dan zie je een andere set.",
-  "app.releaseNotes.earlier.empty": "Er is nog niets vervangen.",
-  "app.releaseNotes.earlier.title": "Eerdere releasenotities",
   "app.releaseNotes.errors.network":
     "De server is niet bereikbaar. Controleer je verbinding en probeer het opnieuw.",
   "app.releaseNotes.errors.unexpected":
     "Er ging iets mis. Probeer het opnieuw.",
+  "app.releaseNotes.list.empty": "Deze groep heeft nog niets toegevoegd.",
+  "app.releaseNotes.list.title": "Alle releasenotities",
   "app.releaseNotes.loading": "Releasenotities laden…",
-  "app.releaseNotes.publish.description":
-    "Publiceren vervangt de huidige releasenotitie.",
-  "app.releaseNotes.publish.label": "Nieuwe titel",
-  "app.releaseNotes.publish.submit": "Publiceren",
-  "app.releaseNotes.publish.submitting": "Publiceren…",
-  "app.releaseNotes.publish.title": "Nieuwe releasenotitie",
+  "app.releaseNotes.rename.label": "Titel",
+  "app.releaseNotes.rename.saved": "Opgeslagen.",
+  "app.releaseNotes.rename.submit": "Opslaan",
+  "app.releaseNotes.rename.submitting": "Opslaan…",
   "app.releaseNotes.title": "Releasenotities",
   "app.releaseNotes.validation.releaseNoteTitleRequired": "Vul een titel in.",
   "app.releaseNotes.validation.releaseNoteTitleTooLong":
@@ -343,8 +357,14 @@ export async function runRehearsal(
       name: "generate a bounded context",
     },
     {
-      args: ["generate", "feature", rehearsalSlices.feature],
-      command: `pnpm generate feature ${rehearsalSlices.feature}`,
+      args: [
+        "generate",
+        "feature",
+        rehearsalSlices.feature,
+        "--shape",
+        rehearsalFeatureShape,
+      ],
+      command: `pnpm generate feature ${rehearsalSlices.feature} --shape ${rehearsalFeatureShape}`,
       name: "generate a vertical slice",
     },
     {
@@ -385,7 +405,9 @@ export async function runRehearsal(
     return fail(createMigration, created);
   }
 
-  log(`finished ${finishFeatureMigration(checkout, rehearsalSlices.feature)}`);
+  log(
+    `finished ${finishFeatureMigration(checkout, rehearsalSlices.feature, rehearsalFeatureShape)}`,
+  );
 
   const applyMigration: RehearsalStep = {
     command: "pnpm db:migrate:dev",
@@ -402,6 +424,43 @@ export async function runRehearsal(
   const verified = runInherit("pnpm", ["verify"], { cwd: checkout });
   if (verified !== 0) {
     return fail(verify, verified);
+  }
+
+  /*
+   * The golden path travelled backwards.
+   *
+   * A product that adopts this template has to be able to change its mind, and
+   * the only honest proof of that is a suite that is green *after* the slice is
+   * gone — not a removal command whose output somebody read. The slice removed
+   * here is the one this run generated: the committed example is pinned as
+   * generator output, and taking it out is a different case, covered by
+   * `feature-generator.test.ts` where it costs seconds rather than a suite.
+   *
+   * The table it leaves behind is deliberate. Its migration has been applied, so
+   * dropping it is a migration a product writes, and the command says so.
+   */
+  const remove: RehearsalStep = {
+    command: `pnpm generate feature --remove ${rehearsalSlices.feature}`,
+    name: "remove the slice again",
+  };
+  log(remove.name);
+  const removed = runInherit(
+    "pnpm",
+    ["generate", "feature", "--remove", rehearsalSlices.feature],
+    { cwd: checkout },
+  );
+  if (removed !== 0) {
+    return fail(remove, removed);
+  }
+
+  const reverify: RehearsalStep = {
+    command: "pnpm verify",
+    name: "verify what is left",
+  };
+  log("verify — the same suite, over a product that changed its mind");
+  const reverified = runInherit("pnpm", ["verify"], { cwd: checkout });
+  if (reverified !== 0) {
+    return fail(reverify, reverified);
   }
 
   return { checkout, code: 0, failed: undefined };

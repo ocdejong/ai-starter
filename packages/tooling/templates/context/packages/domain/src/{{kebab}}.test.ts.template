@@ -3,13 +3,13 @@ import { describe, expect, it } from "vitest";
 import {
   {{camel}}TitlePolicy,
   parse{{pascal}}ValidationCode,
-  publish{{pascal}}InputSchema,
+  create{{pascal}}InputSchema,
   rename{{pascal}}InputSchema,
 } from "./{{kebab}}";
 
-describe("publish{{pascal}}InputSchema", () => {
+describe("create{{pascal}}InputSchema", () => {
   it("trims the title before it reaches the database", () => {
-    const result = publish{{pascal}}InputSchema.safeParse({
+    const result = create{{pascal}}InputSchema.safeParse({
       title: "  Office closed on Friday  ",
     });
 
@@ -20,13 +20,13 @@ describe("publish{{pascal}}InputSchema", () => {
   });
 
   it("reports a blank title as a stable code", () => {
-    const result = publish{{pascal}}InputSchema.safeParse({ title: "   " });
+    const result = create{{pascal}}InputSchema.safeParse({ title: "   " });
 
     expect(result.error?.issues[0]?.message).toBe("{{camel}}TitleRequired");
   });
 
   it("reports a title past the column limit as a stable code", () => {
-    const result = publish{{pascal}}InputSchema.safeParse({
+    const result = create{{pascal}}InputSchema.safeParse({
       title: "x".repeat({{camel}}TitlePolicy.maxLength + 1),
     });
 

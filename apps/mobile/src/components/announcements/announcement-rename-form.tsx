@@ -1,4 +1,4 @@
-import { publishAnnouncementInputSchema } from "@ai-starter/domain";
+import { createAnnouncementInputSchema } from "@ai-starter/domain";
 import { useState } from "react";
 import { useTranslations } from "use-intl";
 
@@ -7,7 +7,7 @@ import { TextField } from "../auth/text-field";
 import { useAnnouncementFieldError } from "./use-announcement-field-error";
 
 /**
- * Renames the group's current announcement.
+ * Renames one announcement.
  *
  * `useState` seeds from a prop, which is the shape that goes stale: a second
  * announcement arriving in the same mounted form would still show the first
@@ -26,13 +26,13 @@ export function AnnouncementRenameForm({
   saved: boolean;
   title: string;
 }) {
-  const t = useTranslations("app.announcements.current");
+  const t = useTranslations("app.announcements.rename");
   const [value, setValue] = useState(title);
   const [message, setMessage] = useState<string | null>(null);
   const fieldError = useAnnouncementFieldError();
 
   function submit(): void {
-    const parsed = publishAnnouncementInputSchema.safeParse({ title: value });
+    const parsed = createAnnouncementInputSchema.safeParse({ title: value });
     if (!parsed.success) {
       setMessage(parsed.error.issues[0]?.message ?? null);
       return;

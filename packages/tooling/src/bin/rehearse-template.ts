@@ -66,7 +66,8 @@ async function main(): Promise<number> {
   } else {
     console.log(
       "\nrehearse: a fresh template initialised, bootstrapped, grew a context," +
-        " a feature and an adapter, and passed the whole suite.",
+        " a feature and an adapter, passed the whole suite, then removed the" +
+        " feature again and passed it a second time.",
     );
   }
 

@@ -1,5 +1,5 @@
 import type { RouterOutputs } from "@ai-starter/api/client";
-import { publishAnnouncementInputSchema } from "@ai-starter/domain";
+import { createAnnouncementInputSchema } from "@ai-starter/domain";
 import { spacing } from "@ai-starter/tokens";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
@@ -33,17 +33,17 @@ export type AnnouncementFailure = "network" | "unexpected";
 export function AnnouncementPanel({
   announcements,
   failure,
-  isPublishing,
+  isCreating,
   isRenaming,
-  onPublish,
+  onCreate,
   onRename,
   renameSaved,
 }: {
   announcements: readonly Announcement[];
   failure: AnnouncementFailure | null;
-  isPublishing: boolean;
+  isCreating: boolean;
   isRenaming: boolean;
-  onPublish: (title: string) => void;
+  onCreate: (title: string) => void;
   onRename: (input: { announcementId: string; title: string }) => void;
   renameSaved: boolean;
 }) {
@@ -56,15 +56,15 @@ export function AnnouncementPanel({
   const current = announcements.find((entry) => entry.isCurrent) ?? null;
   const earlier = announcements.filter((entry) => !entry.isCurrent);
 
-  function publish(): void {
-    const parsed = publishAnnouncementInputSchema.safeParse({ title: draft });
+  function create(): void {
+    const parsed = createAnnouncementInputSchema.safeParse({ title: draft });
     if (!parsed.success) {
       setMessage(parsed.error.issues[0]?.message ?? null);
       return;
     }
     setMessage(null);
     setDraft("");
-    onPublish(parsed.data.title);
+    onCreate(parsed.data.title);
   }
 
   return (
@@ -97,21 +97,21 @@ export function AnnouncementPanel({
         )}
       </Section>
 
-      <Section title={t("publish.title")}>
+      <Section title={t("create.title")}>
         <Text style={[styles.body, { color: theme["muted-foreground"] }]}>
-          {t("publish.description")}
+          {t("create.description")}
         </Text>
         <TextField
           error={fieldError(message)}
-          label={t("publish.label")}
+          label={t("create.label")}
           onChangeText={setDraft}
           value={draft}
         />
         <SubmitButton
-          label={t("publish.submit")}
-          onPress={publish}
-          pending={isPublishing}
-          pendingLabel={t("publish.submitting")}
+          label={t("create.submit")}
+          onPress={create}
+          pending={isCreating}
+          pendingLabel={t("create.submitting")}
         />
       </Section>
 

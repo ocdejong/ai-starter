@@ -1,0 +1,73 @@
+import "server-only";
+
+import type { Database } from "./client";
+
+/** Exactly what the port promises — the row is wider than the contract. */
+const {{camel}}Fields = { id: true, title: true } as const;
+
+/**
+ * Reads and writes {{lowerPlural}} for the API layer's {{lower}} contract.
+ *
+ * It is built from an injected client so an integration test can bind it to a
+ * throwaway container; the composition root passes the shared singleton. Every
+ * statement is keyed by the group, including the update — a repository that
+ * offered a lookup by identifier alone would hand the layer above a way to reach
+ * another group's rows without meaning to.
+ */
+export const createPrisma{{pascal}}Repository = (database: Database) => ({
+  listByGroup: (groupId: string) =>
+    database.{{camel}}.findMany({
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      select: {{camel}}Fields,
+      where: { groupId },
+    }),
+
+  /**
+   * Adds one {{lower}} to the group's list.
+   *
+   * There is deliberately no transaction here. Nothing this writes has to agree
+   * with a row that is already stored — that is what the list shape means — and
+   * a transaction around a single statement would suggest an invariant the
+   * schema does not have.
+   */
+  create: ({
+    createdById,
+    groupId,
+    title,
+  }: {
+    createdById: string;
+    groupId: string;
+    title: string;
+  }) =>
+    database.{{camel}}.create({
+      data: { createdById, groupId, title },
+      select: {{camel}}Fields,
+    }),
+
+  /**
+   * Renames one {{lower}} of one group. The identifier and the group are a
+   * single `where`, so an identifier from elsewhere updates no row and the
+   * result is `null` rather than someone else's record.
+   */
+  rename: async ({
+    {{camel}}Id,
+    groupId,
+    title,
+  }: {
+    {{camel}}Id: string;
+    groupId: string;
+    title: string;
+  }) => {
+    const { count } = await database.{{camel}}.updateMany({
+      data: { title },
+      where: { groupId, id: {{camel}}Id },
+    });
+
+    return count === 0
+      ? null
+      : database.{{camel}}.findUniqueOrThrow({
+          select: {{camel}}Fields,
+          where: { id: {{camel}}Id },
+        });
+  },
+});

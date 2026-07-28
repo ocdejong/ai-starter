@@ -55,7 +55,7 @@ describe("{{lower}} repository against PostgreSQL", () => {
     await seedGroup(client, "group-a", "user-a");
     await seedGroup(client, "group-b", "user-b");
 
-    await {{camelPlural}}.publish({
+    await {{camelPlural}}.create({
       createdById: "user-a",
       groupId: "group-a",
       title: "The first {{lower}}",
@@ -70,12 +70,12 @@ describe("{{lower}} repository against PostgreSQL", () => {
   it("supersedes the previous current {{lower}} in one transaction", async () => {
     await seedGroup(client, "group-a", "user-a");
 
-    const first = await {{camelPlural}}.publish({
+    const first = await {{camelPlural}}.create({
       createdById: "user-a",
       groupId: "group-a",
       title: "An earlier {{lower}}",
     });
-    const second = await {{camelPlural}}.publish({
+    const second = await {{camelPlural}}.create({
       createdById: "user-a",
       groupId: "group-a",
       title: "A second {{lower}}",
@@ -93,12 +93,12 @@ describe("{{lower}} repository against PostgreSQL", () => {
     await seedGroup(client, "group-a", "user-a");
     await seedGroup(client, "group-b", "user-b");
 
-    await {{camelPlural}}.publish({
+    await {{camelPlural}}.create({
       createdById: "user-a",
       groupId: "group-a",
       title: "This group's {{lower}}",
     });
-    await {{camelPlural}}.publish({
+    await {{camelPlural}}.create({
       createdById: "user-b",
       groupId: "group-b",
       title: "Another group's {{lower}}",
@@ -114,7 +114,7 @@ describe("{{lower}} repository against PostgreSQL", () => {
 
   it("refuses a second current {{lower}} written around the transaction", async () => {
     await seedGroup(client, "group-a", "user-a");
-    await {{camelPlural}}.publish({
+    await {{camelPlural}}.create({
       createdById: "user-a",
       groupId: "group-a",
       title: "The first {{lower}}",
@@ -143,7 +143,7 @@ describe("{{lower}} repository against PostgreSQL", () => {
     await seedGroup(client, "group-a", "user-a");
 
     await expect(
-      {{camelPlural}}.publish({
+      {{camelPlural}}.create({
         createdById: "user-a",
         groupId: "group-a",
         title: "x".repeat(121),
@@ -154,7 +154,7 @@ describe("{{lower}} repository against PostgreSQL", () => {
   it("renames only within the group that asked", async () => {
     await seedGroup(client, "group-a", "user-a");
     await seedGroup(client, "group-b", "user-b");
-    const mine = await {{camelPlural}}.publish({
+    const mine = await {{camelPlural}}.create({
       createdById: "user-a",
       groupId: "group-a",
       title: "This group's {{lower}}",
@@ -181,7 +181,7 @@ describe("{{lower}} repository against PostgreSQL", () => {
 
   it("loses its {{lowerPlural}} when the group is deleted", async () => {
     await seedGroup(client, "group-a", "user-a");
-    await {{camelPlural}}.publish({
+    await {{camelPlural}}.create({
       createdById: "user-a",
       groupId: "group-a",
       title: "This group's {{lower}}",

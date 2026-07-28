@@ -1,11 +1,12 @@
 "use client";
 
 import {
-  publishAnnouncementInputSchema,
-  type PublishAnnouncementInput,
+  createAnnouncementInputSchema,
+  type CreateAnnouncementInput,
 } from "@ai-starter/domain";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
+import { useId } from "react";
 import { useForm } from "react-hook-form";
 
 import { AnnouncementFieldError } from "~/components/announcements/announcement-field-error";
@@ -14,7 +15,7 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 
 /**
- * Renames the group's current announcement.
+ * Renames one announcement.
  *
  * The field is seeded from a prop, which is exactly the shape that goes stale:
  * `useForm` reads `defaultValues` once, so a second announcement arriving in the
@@ -33,14 +34,18 @@ export function AnnouncementRenameForm({
   readonly saved: boolean;
   readonly title: string;
 }) {
-  const t = useTranslations("app.announcements.current");
+  const t = useTranslations("app.announcements.rename");
+  // A shape that lists several records renders one of these per record, so the
+  // field is identified per instance rather than per feature.
+  const fieldId = useId();
+  const errorId = `${fieldId}-error`;
   const {
     formState: { errors },
     handleSubmit,
     register,
-  } = useForm<PublishAnnouncementInput>({
+  } = useForm<CreateAnnouncementInput>({
     defaultValues: { title },
-    resolver: zodResolver(publishAnnouncementInputSchema),
+    resolver: zodResolver(createAnnouncementInputSchema),
   });
 
   return (
@@ -53,26 +58,19 @@ export function AnnouncementRenameForm({
     >
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-56 flex-1 space-y-1.5">
-          <Label htmlFor="announcement-rename">{t("label")}</Label>
+          <Label htmlFor={fieldId}>{t("label")}</Label>
           <Input
             {...register("title")}
-            aria-describedby={
-              errors.title === undefined
-                ? undefined
-                : "announcement-rename-error"
-            }
+            aria-describedby={errors.title === undefined ? undefined : errorId}
             aria-invalid={errors.title !== undefined}
-            id="announcement-rename"
+            id={fieldId}
           />
         </div>
         <Button disabled={isSaving} type="submit">
           {isSaving ? t("submitting") : t("submit")}
         </Button>
       </div>
-      <AnnouncementFieldError
-        id="announcement-rename-error"
-        message={errors.title?.message}
-      />
+      <AnnouncementFieldError id={errorId} message={errors.title?.message} />
       {saved ? (
         <p className="text-muted-foreground text-sm" role="status">
           {t("saved")}

@@ -40,7 +40,7 @@ export function {{pascal}}Board() {
   const utils = api.useUtils();
   const {{camelPlural}} = api.{{camel}}.list.useQuery();
 
-  const publish = api.{{camel}}.publish.useMutation({
+  const create = api.{{camel}}.create.useMutation({
     onSuccess: async () => {
       await utils.{{camel}}.list.invalidate();
     },
@@ -70,12 +70,12 @@ export function {{pascal}}Board() {
     <{{pascal}}Panel
       {{camelPlural}}={{{camelPlural}}.data}
       failure={
-        {{camel}}Failure(publish.error) ?? {{camel}}Failure(rename.error)
+        {{camel}}Failure(create.error) ?? {{camel}}Failure(rename.error)
       }
-      isPublishing={publish.isPending}
+      isCreating={create.isPending}
       isRenaming={rename.isPending}
-      onPublish={(title) => {
-        publish.mutate({ title });
+      onCreate={(title) => {
+        create.mutate({ title });
       }}
       onRename={(input) => {
         rename.mutate(input);

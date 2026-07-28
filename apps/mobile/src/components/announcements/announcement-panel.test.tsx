@@ -21,9 +21,9 @@ function props(overrides: Partial<PanelProps> = {}): PanelProps {
   return {
     announcements: [current, superseded],
     failure: null,
-    isPublishing: false,
+    isCreating: false,
     isRenaming: false,
-    onPublish: jest.fn(),
+    onCreate: jest.fn(),
     onRename: jest.fn(),
     renameSaved: false,
     ...overrides,
@@ -64,7 +64,7 @@ describe("AnnouncementPanel", () => {
     );
     await user.press(screen.getByRole("button", { name: "Publish" }));
 
-    expect(given.onPublish).toHaveBeenCalledWith("A second announcement");
+    expect(given.onCreate).toHaveBeenCalledWith("A second announcement");
   });
 
   it("refuses a blank title without calling the API", async () => {
@@ -73,7 +73,7 @@ describe("AnnouncementPanel", () => {
     await user.press(screen.getByRole("button", { name: "Publish" }));
 
     expect(screen.getByText("Enter a title.")).toBeOnTheScreen();
-    expect(given.onPublish).not.toHaveBeenCalled();
+    expect(given.onCreate).not.toHaveBeenCalled();
   });
 
   /**

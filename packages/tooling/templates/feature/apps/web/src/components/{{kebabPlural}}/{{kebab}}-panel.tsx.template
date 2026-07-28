@@ -1,8 +1,8 @@
 "use client";
 
 import {
-  publish{{pascal}}InputSchema,
-  type Publish{{pascal}}Input,
+  create{{pascal}}InputSchema,
+  type Create{{pascal}}Input,
 } from "@ai-starter/domain";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
@@ -34,17 +34,17 @@ export type {{pascal}}Failure = "network" | "unexpected";
 export function {{pascal}}Panel({
   {{camelPlural}},
   failure,
-  isPublishing,
+  isCreating,
   isRenaming,
-  onPublish,
+  onCreate,
   onRename,
   renameSaved,
 }: {
   readonly {{camelPlural}}: readonly {{pascal}}[];
   readonly failure: {{pascal}}Failure | null;
-  readonly isPublishing: boolean;
+  readonly isCreating: boolean;
   readonly isRenaming: boolean;
-  readonly onPublish: (title: string) => void;
+  readonly onCreate: (title: string) => void;
   readonly onRename: (input: { {{camel}}Id: string; title: string }) => void;
   readonly renameSaved: boolean;
 }) {
@@ -53,9 +53,9 @@ export function {{pascal}}Panel({
     formState: { errors },
     handleSubmit,
     register,
-  } = useForm<Publish{{pascal}}Input>({
+  } = useForm<Create{{pascal}}Input>({
     defaultValues: { title: "" },
-    resolver: zodResolver(publish{{pascal}}InputSchema),
+    resolver: zodResolver(create{{pascal}}InputSchema),
   });
 
   const current = {{camelPlural}}.find((entry) => entry.isCurrent) ?? null;
@@ -99,23 +99,23 @@ export function {{pascal}}Panel({
         )}
       </section>
 
-      <section aria-labelledby="{{camel}}-publish" className="space-y-3">
-        <h2 className="text-lg font-semibold" id="{{camel}}-publish">
-          {t("publish.title")}
+      <section aria-labelledby="{{camel}}-create" className="space-y-3">
+        <h2 className="text-lg font-semibold" id="{{camel}}-create">
+          {t("create.title")}
         </h2>
         <p className="text-muted-foreground text-sm">
-          {t("publish.description")}
+          {t("create.description")}
         </p>
         <form
           className="space-y-3"
           noValidate
           onSubmit={handleSubmit((input) => {
-            onPublish(input.title);
+            onCreate(input.title);
           })}
         >
           <div className="flex flex-wrap items-end gap-3">
             <div className="min-w-56 flex-1 space-y-1.5">
-              <Label htmlFor="{{camel}}-title">{t("publish.label")}</Label>
+              <Label htmlFor="{{camel}}-title">{t("create.label")}</Label>
               <Input
                 {...register("title")}
                 aria-describedby={
@@ -127,8 +127,8 @@ export function {{pascal}}Panel({
                 id="{{camel}}-title"
               />
             </div>
-            <Button disabled={isPublishing} type="submit">
-              {isPublishing ? t("publish.submitting") : t("publish.submit")}
+            <Button disabled={isCreating} type="submit">
+              {isCreating ? t("create.submitting") : t("create.submit")}
             </Button>
           </div>
           <{{pascal}}FieldError

@@ -43,11 +43,11 @@ const {{camel}}TitleSchema = z
   });
 
 /**
- * Publishing takes a title and nothing else. The group it belongs to and the
+ * Creating one takes a title and nothing else. The group it belongs to and the
  * account that wrote it are established by the request, never sent with it — a
  * client that could name either would be choosing what it is allowed to change.
  */
-export const publish{{pascal}}InputSchema = z.object({
+export const create{{pascal}}InputSchema = z.object({
   title: {{camel}}TitleSchema,
 });
 
@@ -61,8 +61,8 @@ export const rename{{pascal}}InputSchema = z.object({
   title: {{camel}}TitleSchema,
 });
 
-export type Publish{{pascal}}Input = z.infer<
-  typeof publish{{pascal}}InputSchema
+export type Create{{pascal}}Input = z.infer<
+  typeof create{{pascal}}InputSchema
 >;
 export type Rename{{pascal}}Input = z.infer<
   typeof rename{{pascal}}InputSchema

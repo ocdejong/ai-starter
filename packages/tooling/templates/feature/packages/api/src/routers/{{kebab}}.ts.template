@@ -1,5 +1,5 @@
 import {
-  publish{{pascal}}InputSchema,
+  create{{pascal}}InputSchema,
   rename{{pascal}}InputSchema,
 } from "@ai-starter/domain";
 import { TRPCError } from "@trpc/server";
@@ -25,10 +25,10 @@ export const {{camel}}Router = createTRPCRouter({
    * two current {{lowerPlural}} — or none, after a half-applied change — is a
    * state the interface has no way to describe.
    */
-  publish: groupProcedure
-    .input(publish{{pascal}}InputSchema)
+  create: groupProcedure
+    .input(create{{pascal}}InputSchema)
     .mutation(({ ctx, input }) =>
-      ctx.{{camelPlural}}.publish({
+      ctx.{{camelPlural}}.create({
         createdById: ctx.session.user.id,
         groupId: ctx.group.groupId,
         title: input.title,

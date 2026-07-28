@@ -24,7 +24,7 @@ describe("addFeatureNamespace", () => {
 
   /** The catalog a translator leaves behind: label and namespace both Dutch. */
   function translated(): string {
-    const parsed = JSON.parse(addFeatureNamespace(empty, names)) as {
+    const parsed = JSON.parse(addFeatureNamespace(empty, names, "current")) as {
       app: {
         nav: Record<string, string>;
         releaseNotes: Record<string, unknown>;
@@ -38,7 +38,7 @@ describe("addFeatureNamespace", () => {
   }
 
   it("writes the namespace and its navigation label into a fresh catalog", () => {
-    const parsed = JSON.parse(addFeatureNamespace(empty, names)) as {
+    const parsed = JSON.parse(addFeatureNamespace(empty, names, "current")) as {
       app: { nav: Record<string, string>; releaseNotes: { title: string } };
     };
 
@@ -49,6 +49,6 @@ describe("addFeatureNamespace", () => {
   it("leaves a translated navigation label and namespace untouched", () => {
     const dutch = translated();
 
-    expect(addFeatureNamespace(dutch, names)).toBe(dutch);
+    expect(addFeatureNamespace(dutch, names, "current")).toBe(dutch);
   });
 });

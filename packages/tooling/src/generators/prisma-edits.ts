@@ -89,3 +89,55 @@ export function addPrismaField(
   body.splice(last, 0, `  ${field}`);
   return `${content.slice(0, start)}${body.join("\n")}${content.slice(end)}`;
 }
+
+/** Removes a model and the `///` documentation that belongs to it. */
+export function removePrismaModel(content: string, model: string): string {
+  const opener = new RegExp(`^model ${model} \\{$`, "m").exec(content);
+  if (opener === null) {
+    return content;
+  }
+
+  const before = content.slice(0, opener.index).split("\n");
+  let documentation = before.length - 1;
+  while (
+    documentation > 0 &&
+    (before[documentation - 1] ?? "").startsWith("///")
+  ) {
+    documentation -= 1;
+  }
+  const from = before.slice(0, documentation).join("\n").length + 1;
+
+  const end = content.indexOf("\n}", opener.index);
+  if (end === -1) {
+    return content;
+  }
+
+  return `${content.slice(0, from)}${content.slice(end + 2).replace(/^\n+/, "")}`;
+}
+
+/** Removes a field from a model, matched by its name rather than its type. */
+export function removePrismaField(
+  content: string,
+  model: string,
+  field: string,
+): string {
+  const opener = new RegExp(`^model ${model} \\{$`, "m").exec(content);
+  if (opener === null) {
+    return content;
+  }
+
+  const start = opener.index + opener[0].length + 1;
+  const end = content.indexOf("\n}", start);
+  if (end === -1) {
+    return content;
+  }
+
+  const name = field.trim().split(/\s+/)[0] ?? field;
+  const body = content
+    .slice(start, end)
+    .split("\n")
+    .filter((line) => line.trim().split(/\s+/)[0] !== name)
+    .join("\n");
+
+  return `${content.slice(0, start)}${body}${content.slice(end)}`;
+}

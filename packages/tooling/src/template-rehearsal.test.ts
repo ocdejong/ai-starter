@@ -12,14 +12,15 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { runCapture } from "./command.ts";
 import { addFeatureNamespace } from "./generators/catalog-edits.ts";
-import { featureMigrationSql } from "./generators/feature.ts";
 import { featureNames } from "./generators/naming.ts";
+import { featureMigrationSql } from "./generators/shape.ts";
 import { starterIdentity } from "./starter-identity.ts";
 import {
   finishDutchCopy,
   finishFeatureMigration,
   instantiateTemplate,
   moveWebOrigin,
+  rehearsalFeatureShape,
   rehearsalProductName,
   rehearsalSlices,
 } from "./template-rehearsal.ts";
@@ -132,16 +133,25 @@ describe("finishFeatureMigration", () => {
     });
     writeFileSync(path.join(checkout, migration), prismaWrote);
 
-    const reported = finishFeatureMigration(checkout, rehearsalSlices.feature);
+    const reported = finishFeatureMigration(
+      checkout,
+      rehearsalSlices.feature,
+      rehearsalFeatureShape,
+    );
     const sql = readFileSync(path.join(checkout, migration), "utf8");
-    const expected = featureMigrationSql(featureNames(rehearsalSlices.feature));
+    const expected = featureMigrationSql(
+      featureNames(rehearsalSlices.feature),
+      rehearsalFeatureShape,
+    );
 
     expect(reported).toBe(migration);
     expect(sql.indexOf("set lock_timeout")).toBeLessThan(
       sql.indexOf("CREATE TABLE"),
     );
+    // The CHECK, not the partial index: every shape bounds its title, and only
+    // the `current` shape has an index to add.
     expect(sql.indexOf("CREATE TABLE")).toBeLessThan(
-      sql.indexOf("CREATE UNIQUE INDEX"),
+      sql.indexOf("ADD CONSTRAINT"),
     );
     // The instruction a reader is given and the text the sensor applies are the
     // same string, so a follow-up that stops being runnable fails the sensor.
@@ -155,7 +165,11 @@ describe("finishFeatureMigration", () => {
     });
 
     expect(() =>
-      finishFeatureMigration(checkout, rehearsalSlices.feature),
+      finishFeatureMigration(
+        checkout,
+        rehearsalSlices.feature,
+        rehearsalFeatureShape,
+      ),
     ).toThrow(/no migration/);
   });
 });
@@ -182,7 +196,11 @@ describe("finishDutchCopy", () => {
     for (const [locale, catalog] of Object.entries(base)) {
       writeFileSync(
         path.join(messages, `${locale}.json`),
-        addFeatureNamespace(`${JSON.stringify(catalog, null, 2)}\n`, names),
+        addFeatureNamespace(
+          `${JSON.stringify(catalog, null, 2)}\n`,
+          names,
+          rehearsalFeatureShape,
+        ),
       );
     }
 
@@ -195,7 +213,9 @@ describe("finishDutchCopy", () => {
     const before = checkTranslationPolicy(checkout, []);
     // Every key the generator wrote, and only those: the fixture's own copy is
     // already translated, so a violation here can only come from the slice.
-    expect(before).toHaveLength(22);
+    // Twenty is the `list` shape's namespace — the `current` shape has two more,
+    // because it names a current record and the ones it superseded.
+    expect(before).toHaveLength(20);
     expect(before.every((found) => found.file.endsWith("nl.json"))).toBe(true);
 
     expect(finishDutchCopy(checkout)).toBe("packages/i18n/messages/nl.json");
