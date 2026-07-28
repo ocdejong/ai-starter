@@ -1,7 +1,6 @@
 {
   "extends": "./packages/config/typescript/base.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
       "~/*": ["apps/web/src/*"],
       "@/*": ["apps/mobile/src/*"],
