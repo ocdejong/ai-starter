@@ -28,7 +28,7 @@
     "@types/node": "^20.14.10",
     "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^9.23.0",
-    "typescript": "^5.8.2",
+    "typescript": "^6.0.3",
     "vitest": "^4.1.10"
   }
 }
