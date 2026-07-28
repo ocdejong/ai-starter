@@ -56,10 +56,11 @@ function object(value: unknown, path: string): Record<string, unknown> {
 /**
  * Adds the feature's namespace and its navigation label to one catalog.
  *
- * Both locales get the same English copy: a generator cannot translate a
- * product's own noun, and the catalogs' parity test compares keys and ICU
- * arguments rather than words — so the Dutch file is left correct-but-untranslated
- * and the generator says so.
+ * Both locales get the same English copy, because a generator cannot translate a
+ * product's own noun. That leaves the Dutch file correct-but-untranslated, so the
+ * generator says so in a follow-up *and* `pnpm policy` fails on every value that
+ * still reads as English — a printed instruction nobody has to notice is how the
+ * Dutch stayed English through a whole cold-agent run.
  */
 export function addFeatureNamespace(
   catalog: string,

@@ -11,16 +11,19 @@ import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { runCapture } from "./command.ts";
+import { addFeatureNamespace } from "./generators/catalog-edits.ts";
 import { featureMigrationSql } from "./generators/feature.ts";
 import { featureNames } from "./generators/naming.ts";
 import { starterIdentity } from "./starter-identity.ts";
 import {
+  finishDutchCopy,
   finishFeatureMigration,
   instantiateTemplate,
   moveWebOrigin,
   rehearsalProductName,
   rehearsalSlices,
 } from "./template-rehearsal.ts";
+import { checkTranslationPolicy } from "./translation-policy.ts";
 
 /**
  * The rehearsal itself takes an install, a database and a full suite, so it is
@@ -154,6 +157,66 @@ describe("finishFeatureMigration", () => {
     expect(() =>
       finishFeatureMigration(checkout, rehearsalSlices.feature),
     ).toThrow(/no migration/);
+  });
+});
+
+/**
+ * The rehearsal is weekly and takes an hour, so a defect in its Dutch would be
+ * invisible for a week. This composes both halves of the gate in one place: the
+ * generator writes English into both catalogs, `pnpm policy` goes red on every
+ * key it wrote, and the rehearsal's own translation is what turns it green.
+ */
+describe("finishDutchCopy", () => {
+  const names = featureNames(rehearsalSlices.feature);
+  const base = {
+    en: { app: { nav: { home: "Home" } } },
+    nl: { app: { nav: { home: "Start" } } },
+  };
+
+  /** A checkout whose catalogs have just had a feature generated into them. */
+  function generated(directory: string): string {
+    const checkout = path.join(workspace, directory);
+    const messages = path.join(checkout, "packages/i18n/messages");
+    mkdirSync(messages, { recursive: true });
+
+    for (const [locale, catalog] of Object.entries(base)) {
+      writeFileSync(
+        path.join(messages, `${locale}.json`),
+        addFeatureNamespace(`${JSON.stringify(catalog, null, 2)}\n`, names),
+      );
+    }
+
+    return checkout;
+  }
+
+  it("turns a generated slice from untranslated to translated", () => {
+    const checkout = generated("dutch-copy");
+
+    const before = checkTranslationPolicy(checkout, []);
+    // Every key the generator wrote, and only those: the fixture's own copy is
+    // already translated, so a violation here can only come from the slice.
+    expect(before).toHaveLength(22);
+    expect(before.every((found) => found.file.endsWith("nl.json"))).toBe(true);
+
+    expect(finishDutchCopy(checkout)).toBe("packages/i18n/messages/nl.json");
+    expect(checkTranslationPolicy(checkout, [])).toEqual([]);
+  });
+
+  it("refuses to translate a slice whose shape it does not recognise", () => {
+    const checkout = generated("dutch-copy-drift");
+    const file = path.join(checkout, "packages/i18n/messages/nl.json");
+    const catalog = JSON.parse(readFileSync(file, "utf8")) as {
+      app: Record<string, Record<string, string>>;
+    };
+    catalog.app[names.camelPlural] = {
+      ...catalog.app[names.camelPlural],
+      archived: "Archived",
+    };
+    writeFileSync(file, `${JSON.stringify(catalog, null, 2)}\n`);
+
+    expect(() => finishDutchCopy(checkout)).toThrow(
+      `untranslated: app.${names.camelPlural}.archived`,
+    );
   });
 });
 

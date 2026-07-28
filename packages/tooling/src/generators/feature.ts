@@ -384,7 +384,7 @@ function featureFollowUps(names: FeatureNames): string[] {
     `Put this above what Prisma wrote in that migration.sql:\n\n${indent(sql.header.trimEnd())}`,
     `And this below it — \`pnpm db:lint\` rejects the file without both:\n${indent(sql.body.trimEnd())}`,
     `Apply it: pnpm db:migrate:dev`,
-    `Translate the ${names.titlePlural} copy in packages/i18n/messages/nl.json; it was written in English.`,
+    `Translate the ${names.titlePlural} copy in packages/i18n/messages/nl.json; it was written in English, and \`pnpm policy\` fails on every value that still matches en.json.`,
     // Structure is all a generator can carry across domains. This slice is the
     // worked example with a noun replaced, so it also carries the example's
     // meaning, and a reader who keeps it ships a feature that describes a

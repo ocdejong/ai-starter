@@ -22,7 +22,12 @@ import { type PolicyViolation } from "./policy-violation.ts";
 
 const flowDirectory = "apps/mobile/.maestro";
 const appManifest = "apps/mobile/app.json";
-const catalogPath = "packages/i18n/messages/en.json";
+/**
+ * Every catalog, not the English one: a device runs in one language, and which
+ * language a flow drives is the flow's own choice. Reading `en.json` alone would
+ * report a Dutch journey as drift the day somebody wrote one.
+ */
+const catalogDirectory = "packages/i18n/messages";
 
 /** Commands whose argument is text a person reads on the screen. */
 const copyCommands = new Set([
@@ -131,8 +136,8 @@ function checkFlow(
 
     violations.push({
       file: location,
-      fix: `Assert copy the product ships: add "${value}" to ${catalogPath}, or quote the message the screen now renders.`,
-      problem: `The flow expects "${value}", which is not a message in ${catalogPath}.`,
+      fix: `Assert copy the product ships: add "${value}" to a catalog in ${catalogDirectory}/, or quote the message the screen now renders.`,
+      problem: `The flow expects "${value}", which no catalog in ${catalogDirectory}/ carries.`,
     });
   });
 
@@ -167,10 +172,21 @@ function applicationIdentifiers(root: string): Set<string> {
   return found;
 }
 
-/** Every string a message catalog can render, at any nesting depth. */
+/** Every string any message catalog can render, at any nesting depth. */
 function catalogValues(root: string): Set<string> {
+  const directory = path.join(root, catalogDirectory);
   const found = new Set<string>();
-  collectStrings(readJson(path.join(root, catalogPath)), found);
+
+  if (!existsSync(directory)) {
+    return found;
+  }
+
+  for (const file of readdirSync(directory).filter((entry) =>
+    entry.endsWith(".json"),
+  )) {
+    collectStrings(readJson(path.join(directory, file)), found);
+  }
+
   return found;
 }
 
