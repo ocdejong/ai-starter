@@ -26,7 +26,8 @@ Give [plural] only when English needs help: \`pnpm generate feature person peopl
 
 Two things it cannot do for you, and says so when it finishes: creating the
 migration (Prisma cannot express a partial index or a CHECK, so that SQL is
-written by hand) and translating the Dutch catalog entries.`;
+written by hand) and translating the Dutch catalog entries, which \`pnpm policy\`
+reports as untranslated until somebody writes them.`;
 
 const [kind, name, plural] = process.argv.slice(2);
 
@@ -80,7 +81,9 @@ function report(result: GenerationResult): void {
   }
 
   console.log(
-    "\nThen run `pnpm verify:changed`; the generated slice is expected to pass it untouched.",
+    result.followUps.length > 0
+      ? "\nThen run `pnpm verify:changed`; the slice is expected to pass it once the follow-ups above are done."
+      : "\nThen run `pnpm verify:changed`; the generated slice is expected to pass it untouched.",
   );
 }
 

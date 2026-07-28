@@ -37,8 +37,14 @@ const flow = `appId: com.example.aistarter
 
 let checkout: string | undefined;
 
+const dutchCatalog = JSON.stringify({
+  auth: { signIn: { description: "Welkom terug.", title: "Inloggen" } },
+});
+
 function build(
-  overrides: Partial<Record<"appJson" | "catalog" | "flow", string>> = {},
+  overrides: Partial<
+    Record<"appJson" | "catalog" | "dutchCatalog" | "flow", string>
+  > = {},
 ): string {
   const root = mkdtempSync(path.join(tmpdir(), "native-flow-policy-"));
   checkout = root;
@@ -52,6 +58,10 @@ function build(
   writeFileSync(
     path.join(root, "packages/i18n/messages/en.json"),
     overrides.catalog ?? catalog,
+  );
+  writeFileSync(
+    path.join(root, "packages/i18n/messages/nl.json"),
+    overrides.dutchCatalog ?? dutchCatalog,
   );
   if (overrides.flow !== "") {
     writeFileSync(
@@ -98,7 +108,7 @@ describe("checkNativeFlowPolicy", () => {
 
     expect(violations).toHaveLength(1);
     expect(violations[0]?.problem).toContain("Welcome home.");
-    expect(violations[0]?.fix).toContain("packages/i18n/messages/en.json");
+    expect(violations[0]?.fix).toContain("packages/i18n/messages/");
   });
 
   it("rejects a tap target the catalog no longer carries", () => {
@@ -108,6 +118,24 @@ describe("checkNativeFlowPolicy", () => {
 
     expect(violations).toHaveLength(1);
     expect(violations[0]?.problem).toContain("Continue");
+  });
+
+  // A device runs one language at a time, and the language a flow drives is a
+  // choice the flow makes. Reading only the English catalog would report a
+  // perfectly good Dutch journey as drift the moment somebody wrote one.
+  it("accepts a flow that asserts copy from a translated catalog", () => {
+    const violations = checkNativeFlowPolicy(
+      build({
+        flow: `appId: com.example.aistarter
+---
+- launchApp
+- assertVisible: "Welkom terug."
+- tapOn: "Inloggen"
+`,
+      }),
+    );
+
+    expect(violations).toEqual([]);
   });
 
   it("rejects a flow that asserts nothing", () => {

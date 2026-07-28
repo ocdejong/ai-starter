@@ -126,6 +126,139 @@ export function finishFeatureMigration(
 }
 
 /**
+ * The Dutch the rehearsal's generated slice ships, written by hand.
+ *
+ * `pnpm generate feature` writes English into both catalogs and says so, because
+ * a generator cannot translate a product's own noun. `pnpm policy` now fails
+ * until somebody does, which is the honest shape — and it means the rehearsal,
+ * whose whole job is to end on a green `pnpm verify`, has to do the translating
+ * the same way it does the migration: by executing the follow-up rather than
+ * reading it.
+ *
+ * It can, because the rehearsal's noun is fixed. This is real Dutch for
+ * `release-note` and nothing else, which is why {@link finishDutchCopy} takes no
+ * feature: a map like this cannot be written for a name it has not seen.
+ */
+const rehearsalDutchCopy: Readonly<Record<string, string>> = {
+  "app.nav.releaseNotes": "Releasenotities",
+  "app.releaseNotes.count":
+    "{count, plural, =0 {Nog geen releasenotities} one {# releasenotitie} other {# releasenotities}}",
+  "app.releaseNotes.current.empty": "Deze groep heeft nog niets gepubliceerd.",
+  "app.releaseNotes.current.label": "Huidige titel",
+  "app.releaseNotes.current.saved": "Opgeslagen.",
+  "app.releaseNotes.current.submit": "Opslaan",
+  "app.releaseNotes.current.submitting": "Opslaan…",
+  "app.releaseNotes.current.title": "Huidige releasenotitie",
+  "app.releaseNotes.description":
+    "Releasenotities horen bij de groep waarin je werkt. Wissel je van groep, dan zie je een andere set.",
+  "app.releaseNotes.earlier.empty": "Er is nog niets vervangen.",
+  "app.releaseNotes.earlier.title": "Eerdere releasenotities",
+  "app.releaseNotes.errors.network":
+    "De server is niet bereikbaar. Controleer je verbinding en probeer het opnieuw.",
+  "app.releaseNotes.errors.unexpected":
+    "Er ging iets mis. Probeer het opnieuw.",
+  "app.releaseNotes.loading": "Releasenotities laden…",
+  "app.releaseNotes.publish.description":
+    "Publiceren vervangt de huidige releasenotitie.",
+  "app.releaseNotes.publish.label": "Nieuwe titel",
+  "app.releaseNotes.publish.submit": "Publiceren",
+  "app.releaseNotes.publish.submitting": "Publiceren…",
+  "app.releaseNotes.publish.title": "Nieuwe releasenotitie",
+  "app.releaseNotes.title": "Releasenotities",
+  "app.releaseNotes.validation.releaseNoteTitleRequired": "Vul een titel in.",
+  "app.releaseNotes.validation.releaseNoteTitleTooLong":
+    "Gebruik {max} tekens of minder.",
+};
+
+const dutchCatalogPath = "packages/i18n/messages/nl.json";
+
+/**
+ * Translates the slice `pnpm generate feature` just wrote into the Dutch
+ * catalog, and refuses to guess.
+ *
+ * The keys it writes must be exactly the keys the generator emitted — no more,
+ * no fewer. A slice that grows a message, loses one, or renames a namespace
+ * fails here by name, rather than leaving a value in English for `pnpm policy`
+ * to report from inside a rehearsal nobody is watching.
+ */
+export function finishDutchCopy(checkout: string): string {
+  const names = featureNames(rehearsalSlices.feature);
+  const file = path.join(checkout, dutchCatalogPath);
+  const catalog = JSON.parse(readFileSync(file, "utf8")) as Record<
+    string,
+    unknown
+  >;
+
+  const generated = new Set([
+    `app.nav.${names.camelPlural}`,
+    ...leafPaths(read(catalog, ["app", names.camelPlural]) ?? {}).map(
+      (leaf) => `app.${names.camelPlural}.${leaf}`,
+    ),
+  ]);
+  const written = new Set(Object.keys(rehearsalDutchCopy));
+
+  const missing = [...generated].filter((key) => !written.has(key)).sort();
+  const unknown = [...written].filter((key) => !generated.has(key)).sort();
+  if (missing.length > 0 || unknown.length > 0) {
+    throw new Error(
+      `The Dutch copy in template-rehearsal.ts no longer matches what \`pnpm generate feature ${rehearsalSlices.feature}\` writes.${
+        missing.length > 0 ? `\n  untranslated: ${missing.join(", ")}` : ""
+      }${unknown.length > 0 ? `\n  no longer generated: ${unknown.join(", ")}` : ""}`,
+    );
+  }
+
+  for (const [key, dutch] of Object.entries(rehearsalDutchCopy)) {
+    write(catalog, key.split("."), dutch);
+  }
+  writeFileSync(file, `${JSON.stringify(catalog, null, 2)}\n`);
+
+  return dutchCatalogPath;
+}
+
+/** Every leaf path inside a catalog namespace, dotted and relative to it. */
+function leafPaths(value: unknown, prefix = ""): string[] {
+  if (typeof value !== "object" || value === null) {
+    return prefix === "" ? [] : [prefix];
+  }
+
+  return Object.entries(value as Record<string, unknown>).flatMap(
+    ([key, nested]) =>
+      leafPaths(nested, prefix === "" ? key : `${prefix}.${key}`),
+  );
+}
+
+function read(catalog: Record<string, unknown>, keys: string[]): unknown {
+  return keys.reduce<unknown>(
+    (value, key) =>
+      typeof value === "object" && value !== null
+        ? (value as Record<string, unknown>)[key]
+        : undefined,
+    catalog,
+  );
+}
+
+function write(
+  catalog: Record<string, unknown>,
+  keys: string[],
+  value: string,
+): void {
+  const [head, ...rest] = keys;
+  if (head === undefined) {
+    return;
+  }
+  if (rest.length === 0) {
+    catalog[head] = value;
+    return;
+  }
+
+  const nested = catalog[head];
+  if (typeof nested !== "object" || nested === null) {
+    throw new Error(`The Dutch catalog has no "${head}" object to extend.`);
+  }
+  write(nested as Record<string, unknown>, rest, value);
+}
+
+/**
  * Moves the instantiated product's web origin to a port nothing holds.
  *
  * `pnpm bootstrap` gives a plain checkout the example's own port, which is the
@@ -231,6 +364,9 @@ export async function runRehearsal(
       log(
         `the browser journey will run on port ${String(await moveWebOrigin(checkout))}`,
       );
+    }
+    if (step.name === "generate a vertical slice") {
+      log(`translated ${finishDutchCopy(checkout)}`);
     }
   }
 
