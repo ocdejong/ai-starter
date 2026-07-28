@@ -47,7 +47,7 @@ export default async function InvitationPage({
 
   return (
     <main className="bg-background text-foreground relative flex min-h-screen flex-col items-center justify-center p-4">
-      <div className="absolute right-4 top-4 flex items-center gap-2">
+      <div className="absolute top-4 right-4 flex items-center gap-2">
         <LocaleSwitcher />
         <ThemeToggle />
       </div>

@@ -61,7 +61,7 @@ export function Chat({ isConfigured, initialMessages, isSignedIn }: ChatProps) {
             {message.parts.map((part, index) =>
               part.type === "text" ? (
                 <p
-                  className="whitespace-pre-wrap text-sm"
+                  className="text-sm whitespace-pre-wrap"
                   key={`${message.id}-${index}`}
                 >
                   {part.text}
