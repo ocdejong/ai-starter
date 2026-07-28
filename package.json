@@ -52,9 +52,9 @@
     "dotenv-cli": "^11.0.0",
     "knip": "^6.29.0",
     "prettier": "^3.5.3",
-    "prettier-plugin-tailwindcss": "^0.6.11",
+    "prettier-plugin-tailwindcss": "^0.8.1",
     "squawk-cli": "^2.61.0",
-    "turbo": "^2.10.5"
+    "turbo": "^2.10.6"
   },
   "packageManager": "pnpm@10.32.1",
   "engines": {
