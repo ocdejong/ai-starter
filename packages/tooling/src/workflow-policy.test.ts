@@ -332,6 +332,28 @@ ${reporting}`);
     it("asks nothing of a workflow that does not run on a schedule", () => {
       expect(check(baseFiles())).toEqual([]);
     });
+
+    it("rejects a scheduled workflow the testing document never mentions", () => {
+      const violations = check({
+        ...withFile(".github/workflows/sensors.yml", sensor(reportingJob)),
+        "docs/testing.md":
+          "# Testing\n\n## Sensors\n\nNothing runs here yet.\n",
+      });
+
+      expect(violations).toHaveLength(1);
+      expect(violations[0]?.file).toBe("docs/testing.md");
+      expect(problems(violations)).toContain("runs on a schedule");
+    });
+
+    it("accepts one the testing document describes", () => {
+      expect(
+        check({
+          ...withFile(".github/workflows/sensors.yml", sensor(reportingJob)),
+          "docs/testing.md":
+            "# Testing\n\n## Sensors\n\n`.github/workflows/sensors.yml` runs daily.\n",
+        }),
+      ).toEqual([]);
+    });
   });
 
   describe("workflow permissions", () => {

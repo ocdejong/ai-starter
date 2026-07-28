@@ -13,8 +13,9 @@ const usage = `Usage: pnpm policy
 
 Checks the structural rules the module graph cannot see: workspace dependency
 allowlists, public export surfaces, strict compiler flags in every tsconfig,
-vendor SDK locations, silenced guardrails, generated-client cleanliness and the
-verification scripts, plus the repository-host half — commit-pinned actions,
+vendor SDK locations, silenced guardrails, generated-client cleanliness, the
+verification scripts, the build task's environment and the error-reporting
+gates, plus the repository-host half — commit-pinned actions,
 least-privilege workflow permissions, checksummed downloads, a branch ruleset
 whose required checks can actually report, and one pnpm lifecycle-script
 allowlist — plus the native flows, whose application id and asserted copy are

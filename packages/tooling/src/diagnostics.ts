@@ -122,6 +122,9 @@ export async function runDiagnostics(root: string): Promise<Check[]> {
   checks.push(checkMobileEnvironment(root));
   checks.push(checkEmail(root));
   checks.push(checkChat(root));
+  checks.push(checkSocialSignIn(root));
+  checks.push(checkRateLimit(root));
+  checks.push(checkErrorReporting(root));
   checks.push(await checkPostgres(environment.databaseUrl));
   checks.push(checkGeneratedClient(root));
 
@@ -306,6 +309,26 @@ function checkWebEnvironment(root: string): EnvironmentCheck {
     };
   }
 
+  // The origin the auth server builds emailed action links from, and the one
+  // the browser suite drives. A link built from a wrong origin lands on a server
+  // that cannot see the cookie, which reads as a broken flow rather than a
+  // broken variable.
+  const authUrl = values.get("BETTER_AUTH_URL") ?? "";
+  if (!URL.canParse(authUrl)) {
+    return {
+      check: {
+        detail:
+          authUrl === ""
+            ? `${webEnvPath} does not set BETTER_AUTH_URL, so emailed sign-in and reset links have no origin.`
+            : `${webEnvPath} sets BETTER_AUTH_URL to "${authUrl}", which is not a URL.`,
+        fix: "Set BETTER_AUTH_URL to this checkout's own origin, or run `pnpm bootstrap`, which derives one.",
+        name: "Web environment",
+        status: "failure",
+      },
+      databaseUrl,
+    };
+  }
+
   const secret = values.get("BETTER_AUTH_SECRET") ?? "";
   if (secret.length < 32) {
     return {
@@ -321,7 +344,7 @@ function checkWebEnvironment(root: string): EnvironmentCheck {
 
   return {
     check: {
-      detail: `${webEnvPath} defines DATABASE_URL and BETTER_AUTH_SECRET.`,
+      detail: `${webEnvPath} defines DATABASE_URL, BETTER_AUTH_URL and BETTER_AUTH_SECRET.`,
       name: "Web environment",
       status: "ok",
     },
@@ -430,6 +453,159 @@ export function chatCheck(
     name: "LLM chat",
     status: "ok",
   };
+}
+
+/**
+ * Social sign-in is optional, and half of a pair configures nothing — which is
+ * the state worth reporting, because the landing page silently falls back to the
+ * hint and nothing else says why. Pure so the branch logic is unit-testable.
+ */
+export function socialSignInCheck(
+  credentials: Readonly<Record<string, string | undefined>>,
+): Check {
+  const providers = [
+    { id: "BETTER_AUTH_GOOGLE_CLIENT_ID", name: "Google" },
+    { id: "BETTER_AUTH_GITHUB_CLIENT_ID", name: "GitHub" },
+  ].map(({ id, name }) => ({
+    clientId: credentials[id] ?? "",
+    clientSecret: credentials[id.replace("_ID", "_SECRET")] ?? "",
+    name,
+  }));
+
+  const half = providers.find(
+    (provider) => (provider.clientId === "") !== (provider.clientSecret === ""),
+  );
+  if (half !== undefined) {
+    return {
+      detail: `${half.name} has only one half of its OAuth pair, so no provider button is offered.`,
+      fix: `Set both BETTER_AUTH_${half.name.toUpperCase()}_CLIENT_ID and BETTER_AUTH_${half.name.toUpperCase()}_CLIENT_SECRET in apps/web/.env, or clear both.`,
+      name: "Social sign-in",
+      status: "warning",
+    };
+  }
+
+  const configured = providers.filter(
+    (provider) => provider.clientId !== "" && provider.clientSecret !== "",
+  );
+  if (configured.length === 0) {
+    return {
+      detail:
+        "No OAuth credentials; the landing page offers email sign-in and says how to add a provider.",
+      name: "Social sign-in",
+      status: "ok",
+    };
+  }
+
+  return {
+    detail: `${configured.map((provider) => provider.name).join(" and ")} configured; the landing page offers ${configured[0]?.name ?? ""}.`,
+    name: "Social sign-in",
+    status: "ok",
+  };
+}
+
+/**
+ * Error reporting is off without a DSN, by design. The build-time trio is
+ * reported separately because it uploads source maps and is easy to half-set.
+ */
+export function errorReportingCheck(
+  dsn: string | undefined,
+  sourceMapCredentials: Readonly<Record<string, string | undefined>>,
+): Check {
+  const missing = ["SENTRY_ORG", "SENTRY_PROJECT", "SENTRY_AUTH_TOKEN"].filter(
+    (name) => (sourceMapCredentials[name] ?? "") === "",
+  );
+
+  if (dsn === undefined || dsn === "") {
+    return {
+      detail:
+        "No NEXT_PUBLIC_SENTRY_DSN; Sentry stays disabled and nothing is reported.",
+      name: "Error reporting",
+      status: "ok",
+    };
+  }
+
+  if (missing.length > 0 && missing.length < 3) {
+    return {
+      detail: `NEXT_PUBLIC_SENTRY_DSN is set; source-map upload is half-configured (missing ${missing.join(", ")}).`,
+      fix: `Set ${missing.join(" and ")} in apps/web/.env, or clear all three to skip source-map upload.`,
+      name: "Error reporting",
+      status: "warning",
+    };
+  }
+
+  return {
+    detail:
+      missing.length === 3
+        ? "NEXT_PUBLIC_SENTRY_DSN is set; errors are reported without uploaded source maps."
+        : "NEXT_PUBLIC_SENTRY_DSN is set and the build can upload source maps.",
+    name: "Error reporting",
+    status: "ok",
+  };
+}
+
+/**
+ * The one variable in this repository that turns a security control off.
+ *
+ * It exists for the browser suite, whose journeys all share one address, and a
+ * checkout that has it set has no brute-force guard on its auth endpoints. That
+ * is a failure rather than a warning: nothing else would ever say so, because
+ * the guard's absence looks exactly like the guard not being reached.
+ */
+export function rateLimitCheck(disabled: string | undefined): Check {
+  return disabled === "true"
+    ? {
+        detail:
+          "BETTER_AUTH_RATE_LIMIT_DISABLED is true, so the auth endpoints accept unlimited attempts from one address.",
+        fix: "Clear BETTER_AUTH_RATE_LIMIT_DISABLED in apps/web/.env. Only the browser suite's own servers may set it, and playwright.config.ts does that per process.",
+        name: "Auth rate limit",
+        status: "failure",
+      }
+    : {
+        detail:
+          "Better Auth limits attempts per address on the auth endpoints, in production.",
+        name: "Auth rate limit",
+        status: "ok",
+      };
+}
+
+function checkRateLimit(root: string): Check {
+  const values = webEnvValues(root);
+  return rateLimitCheck(values?.get("BETTER_AUTH_RATE_LIMIT_DISABLED"));
+}
+
+function checkSocialSignIn(root: string): Check {
+  const values = webEnvValues(root);
+  return values === undefined
+    ? {
+        detail: `${webEnvPath} is missing, so no OAuth credentials can be read.`,
+        fix: "Run `pnpm bootstrap`, which creates it from apps/web/.env.example.",
+        name: "Social sign-in",
+        status: "warning",
+      }
+    : socialSignInCheck(Object.fromEntries(values));
+}
+
+function checkErrorReporting(root: string): Check {
+  const values = webEnvValues(root);
+  return values === undefined
+    ? {
+        detail: `${webEnvPath} is missing, so error reporting cannot be configured.`,
+        fix: "Run `pnpm bootstrap`, which creates it from apps/web/.env.example.",
+        name: "Error reporting",
+        status: "warning",
+      }
+    : errorReportingCheck(
+        values.get("NEXT_PUBLIC_SENTRY_DSN"),
+        Object.fromEntries(values),
+      );
+}
+
+/** The web env file's values, or undefined when the file is not there yet. */
+function webEnvValues(root: string): Map<string, string> | undefined {
+  const absolute = path.join(root, webEnvPath);
+  return existsSync(absolute)
+    ? parseEnvFile(readFileSync(absolute, "utf8"))
+    : undefined;
 }
 
 function checkChat(root: string): Check {

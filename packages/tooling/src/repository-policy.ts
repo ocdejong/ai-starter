@@ -504,6 +504,198 @@ function checkRequiredScripts(all: readonly Manifest[]): PolicyViolation[] {
   return violations;
 }
 
+/**
+ * Error reporting stays off without a DSN, and never sends personal data.
+ *
+ * Both are rules `AGENTS.md` states and nothing enforced: four `Sentry.init`
+ * call sites, no test, and a default — `sendDefaultPii` — whose absence reads
+ * exactly like its presence. The options object is read as text because that is
+ * what a reviewer reads, and because these files run before anything a test
+ * could import them into.
+ */
+function checkErrorReporting(root: string): PolicyViolation[] {
+  const sources = listFiles(root).filter(
+    (file) =>
+      /^(apps|packages)\//.test(file) &&
+      // This package may import no installed dependency, so it can never
+      // initialize an SDK — and its own source carries the call this looks for.
+      !file.startsWith("packages/tooling/") &&
+      tsExtensions.has(path.extname(file)) &&
+      !/\.test\.tsx?$/.test(file),
+  );
+
+  return sources.flatMap((file) => {
+    const text = readText(root, file);
+    const options = text === undefined ? undefined : sentryInitOptions(text);
+    if (options === undefined) {
+      return [];
+    }
+
+    const violations: PolicyViolation[] = [];
+    const pii = options.get("sendDefaultPii");
+    const enabled = options.get("enabled");
+
+    if (pii !== "false") {
+      violations.push({
+        file,
+        fix: "Pass `sendDefaultPii: false` to Sentry.init, or record the privacy decision that changes it.",
+        problem:
+          pii === undefined
+            ? "Sentry.init does not set sendDefaultPii, so the SDK's own default decides whether personal data is sent."
+            : `Sentry.init sets sendDefaultPii to ${pii}.`,
+      });
+    }
+
+    if (enabled === undefined || !/dsn/i.test(enabled)) {
+      violations.push({
+        file,
+        fix: "Gate `enabled` on the DSN, so a deployment that configured none reports nothing.",
+        problem:
+          enabled === undefined
+            ? "Sentry.init has no `enabled` gate, so it initializes whether or not a DSN is configured."
+            : "Sentry.init's `enabled` gate does not depend on the DSN.",
+      });
+    }
+
+    return violations;
+  });
+}
+
+/**
+ * The keys of the object literal passed to `Sentry.init`, mapped to their value
+ * text. Depth counting is enough here: the options are a literal by convention,
+ * and a call this cannot read reports as having no options at all — which fails,
+ * rather than passing quietly.
+ */
+function sentryInitOptions(text: string): Map<string, string> | undefined {
+  const start = text.indexOf("Sentry.init({");
+  if (start === -1) {
+    return undefined;
+  }
+
+  const bodyStart = text.indexOf("{", start) + 1;
+  let depth = 1;
+  let index = bodyStart;
+  while (index < text.length && depth > 0) {
+    const character = text[index];
+    if (character === "{" || character === "(" || character === "[") {
+      depth += 1;
+    } else if (character === "}" || character === ")" || character === "]") {
+      depth -= 1;
+    }
+    index += 1;
+  }
+
+  const options = new Map<string, string>();
+  for (const entry of splitTopLevel(text.slice(bodyStart, index - 1))) {
+    const separator = entry.indexOf(":");
+    if (separator === -1) {
+      continue;
+    }
+    options.set(
+      entry.slice(0, separator).trim(),
+      entry.slice(separator + 1).trim(),
+    );
+  }
+
+  return options;
+}
+
+/** Splits an object body on the commas that separate its own entries. */
+function splitTopLevel(body: string): string[] {
+  const entries: string[] = [];
+  let depth = 0;
+  let current = "";
+
+  for (const character of body) {
+    if (character === "{" || character === "(" || character === "[") {
+      depth += 1;
+    } else if (character === "}" || character === ")" || character === "]") {
+      depth -= 1;
+    }
+
+    if (character === "," && depth === 0) {
+      entries.push(current);
+      current = "";
+      continue;
+    }
+    current += character;
+  }
+
+  entries.push(current);
+  return entries.filter((entry) => entry.trim() !== "");
+}
+
+/**
+ * Every environment variable an app declares has to be in the build task's
+ * environment, or Turborepo can serve a cached build made under a different
+ * value. The failure is silent by construction — the build is *correct*, just
+ * for yesterday's configuration — and it is what let the two Google OAuth
+ * variables sit outside the hash from the stage that introduced them.
+ *
+ * The app's own `env` module is the source: it names what the app reads, and
+ * `process.env.X` is the one shape every entry in it takes.
+ */
+function checkBuildEnvironment(root: string): PolicyViolation[] {
+  const declared = readJson(root, "turbo.json")?.tasks;
+  const build =
+    typeof declared === "object" && declared !== null
+      ? (declared as Record<string, unknown>).build
+      : undefined;
+  const listed =
+    typeof build === "object" && build !== null
+      ? (build as Record<string, unknown>).env
+      : undefined;
+
+  if (!Array.isArray(listed)) {
+    return [];
+  }
+
+  const patterns = listed.filter(
+    (entry): entry is string => typeof entry === "string",
+  );
+  const covered = (name: string): boolean =>
+    patterns.some((pattern) =>
+      pattern.endsWith("*")
+        ? name.startsWith(pattern.slice(0, -1))
+        : pattern === name,
+    );
+
+  return appEnvModules(root).flatMap((file) => {
+    const source = readText(root, file) ?? "";
+    const names = new Set(
+      [...source.matchAll(/process\.env\.([A-Z][A-Z0-9_]*)/g)].flatMap(
+        ([, name]) => (name === undefined ? [] : [name]),
+      ),
+    );
+
+    return [...names]
+      .filter((name) => !covered(name))
+      .sort()
+      .map((name) => ({
+        file: "turbo.json",
+        fix: `Add "${name}" to tasks.build.env, or a prefix pattern that covers it.`,
+        problem: `${file} reads ${name}, which is outside the build task's environment, so a change to it can be served a stale cached build.`,
+      }));
+  });
+}
+
+/** Each app's declared environment contract, `apps/<app>/src/env.{js,ts}`. */
+function appEnvModules(root: string): string[] {
+  const apps = path.join(root, "apps");
+  if (!existsSync(apps)) {
+    return [];
+  }
+
+  return readdirSync(apps, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .flatMap((entry) =>
+      ["js", "ts"]
+        .map((extension) => `apps/${entry.name}/src/env.${extension}`)
+        .filter((file) => existsSync(path.join(root, file))),
+    );
+}
+
 /** Every way the repository structure can drift, checked against one checkout. */
 export function checkRepositoryPolicy(root: string): PolicyViolation[] {
   const all = manifests(root);
@@ -516,6 +708,8 @@ export function checkRepositoryPolicy(root: string): PolicyViolation[] {
     ...checkForbiddenBypasses(root),
     ...checkGeneratedCleanliness(root),
     ...checkRequiredScripts(all),
+    ...checkBuildEnvironment(root),
+    ...checkErrorReporting(root),
   ];
 }
 
@@ -532,6 +726,6 @@ export function formatViolations(
 
 export function summarise(violations: readonly PolicyViolation[]): string {
   return violations.length === 0
-    ? "policy: repository structure, exports, compiler flags, SDK locations, scripts, workflows, supply-chain settings, native flows, translated copy and the suppression ratchet are consistent."
+    ? "policy: repository structure, exports, compiler flags, SDK locations, scripts, build environment, error reporting, workflows, supply-chain settings, native flows, translated copy and the suppression ratchet are consistent."
     : `policy: ${violations.length} problem(s) found. Fix them and run \`pnpm policy\` again.`;
 }

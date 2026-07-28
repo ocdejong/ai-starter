@@ -237,6 +237,57 @@ describe("instruction surface policy", () => {
     ).toEqual([]);
   });
 
+  /**
+   * The same shape one directory over: nothing imports a repository command, so
+   * a command the contract never names is invisible to every other check.
+   */
+  it("reports a repository command the contract does not name", () => {
+    const root = cleanCheckout();
+    write(
+      root,
+      "AGENTS.md",
+      `${contract}\n- \`packages/tooling\`: repository commands (\`verify\`).\n`,
+    );
+    write(
+      root,
+      "package.json",
+      JSON.stringify({
+        scripts: {
+          "db:seed": "dotenv -- node packages/tooling/src/bin/db-seed.ts",
+          verify: "node packages/tooling/src/bin/verify.ts",
+        },
+      }),
+    );
+
+    const violations = checkInstructionSurfaces(root);
+
+    expect(problems(violations)).toBe(
+      "AGENTS.md: Lists the repository commands without `db:seed`, so nothing tells a reader packages/tooling/src/bin/db-seed.ts exists. Add `db:seed` to the `packages/tooling` bullet's list of repository commands.",
+    );
+  });
+
+  it("accepts a command named through one of its own script spellings", () => {
+    const root = cleanCheckout();
+    write(
+      root,
+      "AGENTS.md",
+      `${contract}\n- \`packages/tooling\`: repository commands (\`instructions\`).\n`,
+    );
+    write(
+      root,
+      "package.json",
+      JSON.stringify({
+        scripts: {
+          instructions: "node packages/tooling/src/bin/instructions.ts",
+          "instructions:write":
+            "node packages/tooling/src/bin/instructions.ts --write",
+        },
+      }),
+    );
+
+    expect(checkInstructionSurfaces(root)).toEqual([]);
+  });
+
   it("reports scoped instructions the root contract never mentions", () => {
     const root = cleanCheckout();
     write(

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { Chat } from "~/app/_components/chat";
+import { SocialSignIn } from "~/app/_components/social-sign-in";
 import { LocaleSwitcher } from "~/components/locale-switcher";
 import { ThemeToggle } from "~/components/theme-toggle";
 import { Button } from "~/components/ui/button";
@@ -71,32 +72,25 @@ export default async function Home() {
                   <Link href="/sign-in">{t("signIn")}</Link>
                 </Button>
               </div>
-              {socialProvider ? (
-                <form>
-                  <Button
-                    formAction={async () => {
-                      "use server";
-                      const res = await auth.api.signInSocial({
-                        body: {
-                          provider: socialProvider,
-                          callbackURL: dashboardPath,
-                        },
-                      });
-                      if (!res.url) {
-                        throw new Error("No URL returned from signInSocial");
-                      }
-                      redirect(res.url);
-                    }}
-                    variant="ghost"
-                  >
-                    {t("signInWith", { provider: socialProvider })}
-                  </Button>
-                </form>
-              ) : (
-                <p className="text-muted-foreground text-sm">
-                  {t("oauthHint")}
-                </p>
-              )}
+              <SocialSignIn
+                provider={socialProvider}
+                signIn={async () => {
+                  "use server";
+                  if (socialProvider === null) {
+                    return;
+                  }
+                  const res = await auth.api.signInSocial({
+                    body: {
+                      provider: socialProvider,
+                      callbackURL: dashboardPath,
+                    },
+                  });
+                  if (!res.url) {
+                    throw new Error("No URL returned from signInSocial");
+                  }
+                  redirect(res.url);
+                }}
+              />
             </>
           )}
         </nav>

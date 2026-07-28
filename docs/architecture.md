@@ -95,7 +95,7 @@ The web uses Tailwind CSS and shadcn components in `apps/web/src/components/ui`.
 
 ## Optional integrations
 
-Sentry initializes on Next.js and Expo only when a DSN exists. Build-time org/project/token variables enable source maps. Other external services—email, AI providers, payments, calendars—should enter through server-side adapters with typed configuration, timeouts, error translation, Zod response parsing, idempotency where relevant, and tests at the adapter boundary.
+Sentry initializes on Next.js and Expo only when a DSN exists, and `pnpm policy` checks both halves of that at every call site: an `enabled` gate that depends on the DSN, and `sendDefaultPii: false`. Build-time org/project/token variables enable source maps; on native they are read by `sentry-cli` during a native build, not by the app. `pnpm email:preview` opens the react-email preview over `packages/email/src/templates`, which is how a template is looked at without sending anything; the dev mailbox under `.mail/` is how a sent one is read. Other external services—email, AI providers, payments, calendars—should enter through server-side adapters with typed configuration, timeouts, error translation, Zod response parsing, idempotency where relevant, and tests at the adapter boundary.
 
 An adapter must expose a narrow product-oriented contract and keep vendor request/response types private. Centralize retries, rate-limit handling, idempotency, observability, and error translation there. Keep authorization visible at the use-case or procedure boundary; never rely on an implicit UI check.
 

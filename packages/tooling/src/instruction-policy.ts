@@ -366,6 +366,69 @@ function checkWorkspaceMap(root: string, contract: string): PolicyViolation[] {
   );
 }
 
+/**
+ * Every repository command is named where an agent looks for one.
+ *
+ * The contract's `packages/tooling` bullet is that list, and it is the only
+ * place a reader is told a command exists — nothing imports these, so neither
+ * the module graph nor Knip can notice one going unmentioned. It had drifted to
+ * thirteen of fifteen. Scripts are grouped by the file they run, because
+ * `instructions` and `instructions:write` are one command with a flag, while
+ * `db:seed` and `db:push:prototype` are two.
+ */
+function checkToolingCommands(
+  root: string,
+  contract: string,
+): PolicyViolation[] {
+  const named = new Set(
+    [...(toolingBullet(contract).matchAll(inlineCodePattern) ?? [])].flatMap(
+      ([, entry]) => (entry === undefined ? [] : [entry]),
+    ),
+  );
+
+  const byBin = new Map<string, string[]>();
+  for (const [script, command] of Object.entries(rootScripts(root))) {
+    const bin = /packages\/tooling\/src\/bin\/([\w-]+\.ts)/.exec(command)?.[1];
+    if (bin !== undefined) {
+      byBin.set(bin, [...(byBin.get(bin) ?? []), script]);
+    }
+  }
+
+  return [...byBin]
+    .filter(([, scripts]) => !scripts.some((script) => named.has(script)))
+    .map(([bin, scripts]) => ({
+      file: rootContractPath,
+      fix: `Add \`${scripts[0] ?? bin}\` to the \`packages/tooling\` bullet's list of repository commands.`,
+      problem: `Lists the repository commands without ${scripts.map((script) => `\`${script}\``).join(" or ")}, so nothing tells a reader packages/tooling/src/bin/${bin} exists.`,
+    }));
+}
+
+function toolingBullet(contract: string): string {
+  return /^- `packages\/tooling`:.*$/m.exec(contract)?.[0] ?? "";
+}
+
+function rootScripts(root: string): Record<string, string> {
+  const content = read(root, "package.json");
+  if (content === undefined) {
+    return {};
+  }
+
+  const parsed: unknown = JSON.parse(content);
+  const scripts =
+    typeof parsed === "object" && parsed !== null
+      ? (parsed as Record<string, unknown>).scripts
+      : undefined;
+  if (typeof scripts !== "object" || scripts === null) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(scripts).filter(
+      (entry): entry is [string, string] => typeof entry[1] === "string",
+    ),
+  );
+}
+
 function checkReferences(root: string): PolicyViolation[] {
   const violations: PolicyViolation[] = [];
 
@@ -418,6 +481,7 @@ export function checkInstructionSurfaces(root: string): PolicyViolation[] {
     ...checkDuplication(root),
     ...checkReferences(root),
     ...checkWorkspaceMap(root, contract),
+    ...checkToolingCommands(root, contract),
   ];
 }
 

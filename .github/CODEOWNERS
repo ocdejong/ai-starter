@@ -1,6 +1,11 @@
-# Files that decide what every other change is allowed to do. The branch ruleset
-# in `.github/rulesets/main.json` sets `require_code_owner_review`, so editing
-# anything below needs an explicit approving review from an owner listed here.
+# Files that decide what every other change is allowed to do. GitHub requests a
+# review from the owner listed here whenever a pull request touches one of them.
+#
+# It requests; it does not require. The branch ruleset in
+# `.github/rulesets/main.json` sets `require_code_owner_review` to false, and its
+# `reviewPolicy` says why: a sole maintainer cannot approve their own pull
+# request, so requiring one would block every merge. Turn it on the day a second
+# reviewer exists — these entries are what it will then enforce.
 #
 # A downstream product replaces the handle: see `docs/repository-host.md`.
 

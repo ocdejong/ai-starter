@@ -70,6 +70,23 @@ export type InitAuthOptions = {
   readonly trustedOrigins: readonly string[];
   /** Social providers the composition root configured from optional env. */
   readonly socialProviders?: BetterAuthOptions["socialProviders"];
+  /**
+   * The per-IP request limit on the auth endpoints.
+   *
+   * Better Auth turns this on for `NODE_ENV === "production"` and off
+   * everywhere else, which means the guard exists in exactly the environment no
+   * unit test and no development server ever runs. Its defaults are strict —
+   * three requests per ten seconds on sign-in, sign-up, change-password and
+   * change-email, three per minute on the mails that carry a token — and this
+   * factory keeps them: they are the right numbers for a product, and a caller
+   * that passes nothing gets the guard.
+   *
+   * The one caller that passes something is the browser suite's own server,
+   * because every journey it runs shares one address. See
+   * `init-auth.integration.test.ts` for the test that keeps the guard covered
+   * once the journeys stop meeting it.
+   */
+  readonly rateLimit?: BetterAuthOptions["rateLimit"];
   /** Fire-and-forget email dispatch, wired at the composition root. */
   readonly email: AuthEmailDispatchers;
   /**
@@ -189,6 +206,9 @@ export function initAuth(options: InitAuthOptions) {
       // later exposes account unlinking should decide this again.
       freshAge: 0,
     },
+    ...(options.rateLimit === undefined
+      ? {}
+      : { rateLimit: options.rateLimit }),
     ...(options.socialProviders === undefined
       ? {}
       : { socialProviders: options.socialProviders }),

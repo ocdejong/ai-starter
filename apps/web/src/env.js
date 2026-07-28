@@ -14,6 +14,15 @@ export const env = createEnv({
         ? z.string()
         : z.string().optional(),
     BETTER_AUTH_URL: z.string().url(),
+    /**
+     * Turns off Better Auth's per-IP request limit. The browser suite sets it,
+     * because every journey it runs shares one address; a deployment must not.
+     * `pnpm diagnose` reports it as a failure whenever it is set.
+     */
+    BETTER_AUTH_RATE_LIMIT_DISABLED: z
+      .enum(["true", "false"])
+      .optional()
+      .transform((value) => value === "true"),
     BETTER_AUTH_GITHUB_CLIENT_ID: z.string().optional(),
     BETTER_AUTH_GITHUB_CLIENT_SECRET: z.string().optional(),
     BETTER_AUTH_GOOGLE_CLIENT_ID: z.string().optional(),
@@ -53,6 +62,8 @@ export const env = createEnv({
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
     BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
+    BETTER_AUTH_RATE_LIMIT_DISABLED:
+      process.env.BETTER_AUTH_RATE_LIMIT_DISABLED,
     BETTER_AUTH_GITHUB_CLIENT_ID: process.env.BETTER_AUTH_GITHUB_CLIENT_ID,
     BETTER_AUTH_GITHUB_CLIENT_SECRET:
       process.env.BETTER_AUTH_GITHUB_CLIENT_SECRET,

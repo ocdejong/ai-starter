@@ -13,6 +13,15 @@ import {
  * Where an emailed group invitation lands. Better Auth never builds this URL,
  * so the route lives here, in the application that serves it, and the page at
  * `${groupInvitationPath}/[invitationId]` must honour it.
+ *
+ * An invitation is answered on the web, on every platform. The native app sends
+ * invitations and lists the pending ones; it has no screen for accepting one,
+ * because reaching a screen from an email needs a universal link — an
+ * `apple-app-site-association` and an `assetlinks.json` served from the
+ * product's own verified domain, which a template cannot ship. A custom scheme
+ * is not a substitute: mail clients do not render `ai-starter://` as a link, and
+ * on a device without the app it goes nowhere. A product that has a domain wires
+ * the association files and adds the screen back.
  */
 export const groupInvitationPath = "/invitations";
 

@@ -273,6 +273,74 @@ describe("repository policy", () => {
     expect(checkRepositoryPolicy(root)[0]?.problem).toContain("typecheck");
   });
 
+  it("reports error reporting that can send personal data", () => {
+    const root = checkout({
+      "apps/web/instrumentation.ts":
+        "Sentry.init({ dsn, enabled: Boolean(dsn), tracesSampleRate: 1 });\n",
+    });
+
+    const violations = checkRepositoryPolicy(root);
+
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.file).toBe("apps/web/instrumentation.ts");
+    expect(violations[0]?.problem).toContain("sendDefaultPii");
+  });
+
+  it("reports error reporting that initializes without a DSN gate", () => {
+    const root = checkout({
+      "apps/mobile/src/app/_layout.tsx":
+        "Sentry.init({ dsn, enabled: true, sendDefaultPii: false });\n",
+    });
+
+    const violations = checkRepositoryPolicy(root);
+
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.problem).toContain("does not depend on the DSN");
+  });
+
+  it("accepts error reporting gated on its DSN and sending no personal data", () => {
+    const root = checkout({
+      "apps/web/instrumentation.ts": [
+        "Sentry.init({",
+        "  dsn,",
+        "  enabled: Boolean(dsn) && process.env.NODE_ENV !== 'test',",
+        "  sendDefaultPii: false,",
+        "  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1,",
+        "});",
+      ].join("\n"),
+    });
+
+    expect(checkRepositoryPolicy(root)).toEqual([]);
+  });
+
+  it("reports an app environment variable outside the build task's hash", () => {
+    const root = checkout({
+      "apps/web/src/env.js":
+        "export const env = { secret: process.env.BETTER_AUTH_SECRET };\n",
+      "turbo.json": JSON.stringify({
+        tasks: { build: { env: ["DATABASE_URL"] } },
+      }),
+    });
+
+    const violations = checkRepositoryPolicy(root);
+
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.file).toBe("turbo.json");
+    expect(violations[0]?.problem).toContain("BETTER_AUTH_SECRET");
+  });
+
+  it("accepts an app environment variable a prefix pattern covers", () => {
+    const root = checkout({
+      "apps/mobile/src/env.ts":
+        "export const env = { url: process.env.EXPO_PUBLIC_API_URL };\n",
+      "turbo.json": JSON.stringify({
+        tasks: { build: { env: ["EXPO_PUBLIC_*"] } },
+      }),
+    });
+
+    expect(checkRepositoryPolicy(root)).toEqual([]);
+  });
+
   it("reports the root missing a verification-step script", () => {
     const step = verificationSteps[0]?.name ?? "";
     const remaining = { ...rootScripts };
