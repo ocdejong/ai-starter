@@ -5,9 +5,18 @@ import { describe, expect, it } from "vitest";
 
 import { repositoryRoot } from "../repository.ts";
 import { adapterRegistryEdits, generateAdapter } from "./feature.ts";
-import { featureNames } from "./naming.ts";
+import { featureNames, type FeatureNames } from "./naming.ts";
 
-function fixtureCheckout(): string {
+/**
+ * The same precondition `feature-generator.test.ts` states, for the same reason.
+ *
+ * This copies the *product's* re-export barrel, and generation is idempotent, so
+ * an adapter the checkout already has would leave the barrel untouched and every
+ * assertion below would read somebody else's registration. It is the noun the
+ * rehearsal generates, which makes a rehearsed product exactly where it would
+ * bite — and where `release-note` and `chore` both bit before.
+ */
+function fixtureCheckout(names: FeatureNames): string {
   const root = mkdtempSync(path.join(tmpdir(), "generate-adapter-"));
 
   for (const { file } of adapterRegistryEdits) {
@@ -19,13 +28,27 @@ function fixtureCheckout(): string {
     );
   }
 
+  const barrel = "packages/api/src/index.ts";
+  if (
+    readFileSync(path.join(root, barrel), "utf8").includes(
+      `from "./${names.kebab}";`,
+    )
+  ) {
+    throw new Error(
+      `This checkout already exports an adapter called "${names.kebab}" from ` +
+        `${barrel}. Generating it again changes nothing, so the assertions ` +
+        `would read that adapter instead of freshly generated output. Pick a ` +
+        `noun this repository does not ship.`,
+    );
+  }
+
   return root;
 }
 
 const names = featureNames("payment-gateway");
 
 describe("generate adapter", () => {
-  const root = fixtureCheckout();
+  const root = fixtureCheckout(names);
   const result = generateAdapter(root, names);
   const read = (file: string) => readFileSync(path.join(root, file), "utf8");
 
