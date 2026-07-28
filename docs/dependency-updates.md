@@ -44,7 +44,7 @@ git push
 
 Pushing to a Dependabot branch makes Dependabot stop managing it, so do this when the merge is next rather than as housekeeping: from that point the rebases are yours too. The canonical case is a Prettier bump, which reformats files the bump never touched — `format:check` fails, and no version of the proposal can ever fix it by itself.
 
-**The red is a coupled sibling.** A package whose major needs another package's major arrives red however long it waits. Group the family in `.github/dependabot.yml` so the next run proposes them together, close the split proposal naming the group, and let the schedule re-propose. The four families already grouped there each carry the failure that proved the coupling.
+**The red is a coupled sibling.** A package whose major needs another package's major arrives red however long it waits. Group the family in `.github/dependabot.yml` so the next run proposes them together, close the split proposal naming the group, and let the schedule re-propose. The three families already grouped there — `eslint`, `prisma`, `jest` — each carry the failure that proved the coupling, and each was a pull request that could never have gone green.
 
 **The red is a migration.** A deprecation to remove, an API that moved, a peer that has not caught up. Close it, write what the migration requires in the pull request, and open an issue for the work. `@dependabot ignore this major version` stops the same major being re-proposed weekly while leaving the next one to arrive normally — use it only alongside that issue, because an ignore with nothing tracking it is how a deliberate deferral becomes an accidental pin.
 

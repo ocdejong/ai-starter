@@ -140,6 +140,17 @@ describe("formatBacklog", () => {
     expect(report).toMatch(/moving/i);
     expect(report).not.toMatch(/repair/i);
   });
+
+  // A drained backlog and a channel that stopped proposing are the same empty
+  // list. An invalid `.github/dependabot.yml` produces the second silently, and
+  // this sensor exists because a channel that silently did not work went a week
+  // unnoticed — so the one thing it must not do is call that health.
+  it("does not call an empty backlog a moving loop", () => {
+    const report = formatBacklog([]);
+
+    expect(report).not.toMatch(/moving/i);
+    expect(report).toMatch(/dependabot\.yml/i);
+  });
 });
 
 describe("readDependabotPulls", () => {

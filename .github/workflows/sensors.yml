@@ -144,7 +144,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
+    # `checks: read` is load-bearing and fails quietly without: the check-runs
+    # endpoint answers 403, every proposal reports "no checks reported", and the
+    # distinction between a green one nobody merged and a red one nobody triaged
+    # — the whole point of reading them — disappears without an error.
     permissions:
+      checks: read
       contents: read
       pull-requests: read
 

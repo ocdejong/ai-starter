@@ -96,6 +96,13 @@ function outstanding(pull: ReviewedPull): string {
 export function formatBacklog(reviewed: readonly ReviewedPull[]): string {
   const stale = reviewed.filter((pull) => pull.stale);
 
+  // An empty list is ambiguous and must not be read as health: a drained
+  // backlog and a channel that stopped proposing look identical from here, and
+  // an invalid `.github/dependabot.yml` produces the second without a word.
+  if (reviewed.length === 0) {
+    return "deps: nothing open. Either the backlog is drained or the channel stopped proposing — check that GitHub accepted .github/dependabot.yml.";
+  }
+
   if (stale.length === 0) {
     return `deps: ${String(reviewed.length)} open proposal(s), none older than ${String(staleAfterDays)} days. The loop is moving.`;
   }
