@@ -45,7 +45,7 @@ function fixtureCheckout(names: FeatureNames): string {
   return root;
 }
 
-const names = featureNames("payment-gateway");
+const names = featureNames("shipping-carrier");
 
 describe("generate adapter", () => {
   const root = fixtureCheckout(names);
@@ -54,39 +54,39 @@ describe("generate adapter", () => {
 
   it("puts the port in the API layer and the adapter at the composition root", () => {
     expect([...result.created].sort()).toEqual([
-      "apps/web/src/server/payment-gateway/client.test.ts",
-      "apps/web/src/server/payment-gateway/client.ts",
-      "packages/api/src/payment-gateway.test.ts",
-      "packages/api/src/payment-gateway.ts",
+      "apps/web/src/server/shipping-carrier/client.test.ts",
+      "apps/web/src/server/shipping-carrier/client.ts",
+      "packages/api/src/shipping-carrier.test.ts",
+      "packages/api/src/shipping-carrier.ts",
     ]);
     expect([...result.edited, ...result.unchanged]).toEqual([
       "packages/api/src/index.ts",
     ]);
     expect(read("packages/api/src/index.ts")).toContain(
-      'from "./payment-gateway";',
+      'from "./shipping-carrier";',
     );
   });
 
   it("names no vendor", () => {
-    const client = read("apps/web/src/server/payment-gateway/client.ts");
+    const client = read("apps/web/src/server/shipping-carrier/client.ts");
 
     // The generator cannot know which provider this will be, and a template that
     // guessed would be a dependency nobody chose.
     expect(client).not.toMatch(/stripe|resend|twilio|sendgrid/i);
-    expect(client).toContain("createPaymentGatewayClient");
+    expect(client).toContain("createShippingCarrierClient");
   });
 
   it("carries the four things an adapter owes its caller", () => {
-    const client = read("apps/web/src/server/payment-gateway/client.ts");
+    const client = read("apps/web/src/server/shipping-carrier/client.ts");
 
     expect(client).toContain("AbortSignal.timeout(timeoutMs)");
     expect(client).toContain("referenceResponseSchema.safeParse(body)");
-    expect(client).toContain("PaymentGatewayFailure");
+    expect(client).toContain("ShippingCarrierFailure");
     expect(client).toContain("redact(thrown.message, config.apiKey)");
   });
 
   it("tests the failure paths, not only the happy one", () => {
-    const test = read("apps/web/src/server/payment-gateway/client.test.ts");
+    const test = read("apps/web/src/server/shipping-carrier/client.test.ts");
 
     for (const reason of [
       "unauthorized",
