@@ -92,10 +92,10 @@ OAuth and Sentry are optional. Copy the relevant values from the environment exa
 ## Add a feature
 
 ```bash
-pnpm generate feature invoice --shape list  # the whole vertical slice
-pnpm generate context billing-period        # the domain half alone
-pnpm generate adapter payment-gateway       # a port and a vendor-free adapter
-pnpm generate feature --remove invoice      # and the way back out
+pnpm generate feature reminder --shape list  # the whole vertical slice
+pnpm generate context pricing-tier           # the domain half alone
+pnpm generate adapter sms-sender             # a port and a vendor-free adapter
+pnpm generate feature --remove reminder      # and the way back out
 ```
 
 A generated feature arrives in the product's own words and already registered everywhere it has to be: the domain export, the API port and router, the composition root, the Prisma model, both message catalogs, and the navigation on web and native. It is expected to pass `pnpm verify:changed` once you have done the follow-ups the command prints — the two things it cannot do for you: writing the migration's hand-written SQL, and translating the Dutch copy it wrote in English, which `pnpm policy` reports as untranslated until you do.

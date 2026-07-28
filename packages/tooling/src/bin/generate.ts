@@ -32,7 +32,7 @@ words, and registers it everywhere it has to be registered.
   adapter   A port for an external service and a vendor-free adapter behind it,
             with a timeout, a parsed response, translated errors and redaction.
 
-<name> is a lower-case, kebab-case, singular noun: "invoice", "release-note".
+<name> is a lower-case, kebab-case, singular noun: "reminder", "pricing-tier".
 Give [plural] only when English needs help: \`pnpm generate feature person people\`.
 
 \`feature\` requires --shape, because how records relate to each other is a

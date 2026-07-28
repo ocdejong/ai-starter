@@ -20,7 +20,7 @@ import {
   removeFeature,
 } from "./feature.ts";
 import { pinnedExampleSlices } from "./example-slices.ts";
-import { featureNames } from "./naming.ts";
+import { featureNames, type FeatureNames } from "./naming.ts";
 import { AnchorMissingError } from "./source-edits.ts";
 
 /**
@@ -30,7 +30,7 @@ import { AnchorMissingError } from "./source-edits.ts";
  * depends on is only proven to exist if the thing being edited is the file that
  * actually ships. A refactor that moves one fails here.
  */
-function fixtureCheckout(): string {
+function copyRegistries(): string {
   const root = mkdtempSync(path.join(tmpdir(), "generate-feature-"));
 
   // Every file a generation or a removal touches, so the round trip below has
@@ -41,6 +41,61 @@ function fixtureCheckout(): string {
     writeFileSync(
       destination,
       readFileSync(path.join(repositoryRoot, file), "utf8"),
+    );
+  }
+
+  return root;
+}
+
+/**
+ * The one checkout that deliberately carries the feature it is about to
+ * generate: the pinned example slice this repository ships. Re-running the
+ * generator over it is the behaviour under test, so freshness is exactly what
+ * must not be asserted — and naming that here keeps it the stated exception
+ * rather than a thirteenth caller that quietly skipped the check.
+ */
+function checkoutOwningItsFeature(): string {
+  return copyRegistries();
+}
+
+/**
+ * A checkout for a feature it does not already have — which is why the name has
+ * to be declared rather than chosen inside each test.
+ *
+ * `copyRegistries` carries whatever features the *product* has generated, and
+ * generation is idempotent, so generating a name the checkout already owns
+ * leaves that feature's registrations and copy exactly as they were. Every
+ * assertion then reads somebody's edited, translated slice instead of the
+ * generator's output, and the failure names a catalog key while the cause is a
+ * noun. Asking for the name here makes the precondition impossible to forget,
+ * which picking a rarer noun never did: `release-note` collided inside a
+ * rehearsed product, and `chore` collided in a product that had generated a
+ * chore list of its own.
+ */
+function fixtureCheckout(names: FeatureNames): string {
+  const root = copyRegistries();
+
+  const owned = [
+    {
+      file: "packages/i18n/messages/en.json",
+      token: `"${names.camelPlural}"`,
+      what: "a catalog namespace",
+    },
+    {
+      file: "packages/api/src/context.ts",
+      token: `${names.pascal}Repository`,
+      what: "a port",
+    },
+  ].filter(({ file, token }) => read(root, file).includes(token));
+
+  if (owned.length > 0) {
+    throw new Error(
+      `This checkout already has a feature called "${names.kebab}": ` +
+        owned.map(({ what, file }) => `${what} in ${file}`).join(", ") +
+        `. Generating it again changes nothing, so the assertions would read ` +
+        `that feature instead of freshly generated output. Pick a noun this ` +
+        `repository does not ship — and if a product hit this, the fixture ` +
+        `name is the thing to change, never the product's feature.`,
     );
   }
 
@@ -58,13 +113,28 @@ const leafPaths = (value: unknown, prefix = ""): string[] =>
     : [prefix.slice(0, -1)];
 
 // A two-word name, because that is where identifier forms and copy forms part
-// company: `pressRelease` in code, "press release" in a sentence. And not a name
-// the rehearsal generates: `fixtureCheckout` copies the *product's* catalogs, and
-// the generator now defaults rather than assigns, so generating a feature the
-// checkout already has would quietly assert against that feature's namespace
-// instead of a fresh one — which is how this failed inside a rehearsed product
-// while passing here.
+// company: `pressRelease` in code, "press release" in a sentence. Freshness is
+// `fixtureCheckout`'s job now rather than this comment's.
 const names = featureNames("press-release");
+
+/**
+ * The fixture's own precondition, planted.
+ *
+ * Driven off the pin rather than a literal noun, for the same reason
+ * `golden-path.test.ts` loops: a product that ran `--remove` owns no example
+ * slice, and an empty list is a valid state rather than a missing case.
+ */
+describe("a fixture name the checkout already owns", () => {
+  for (const { name } of pinnedExampleSlices) {
+    it(`refuses ${name}, naming the collision and not a catalog key`, () => {
+      expect(() => fixtureCheckout(featureNames(name))).toThrow(
+        new RegExp(
+          `already has a feature called "${name}"[\\s\\S]*catalog namespace[\\s\\S]*port`,
+        ),
+      );
+    });
+  }
+});
 
 describe("generate feature", () => {
   let root: string;
@@ -76,7 +146,7 @@ describe("generate feature", () => {
   let englishBefore: string;
 
   beforeAll(() => {
-    root = fixtureCheckout();
+    root = fixtureCheckout(names);
     englishBefore = read(root, "packages/i18n/messages/en.json");
     const result = generateFeature(root, names, "current");
     created = result.created;
@@ -265,7 +335,7 @@ describe("generate feature --shape list", () => {
   const chores = featureNames("chore");
 
   beforeAll(() => {
-    root = fixtureCheckout();
+    root = fixtureCheckout(chores);
     const result = generateFeature(root, chores, "list");
     created = result.created;
     followUps = result.followUps;
@@ -345,8 +415,8 @@ describe("generate feature --shape list", () => {
  */
 describe("a re-run over a feature somebody has since translated", () => {
   it("leaves the translated copy alone", () => {
-    const root = fixtureCheckout();
     const invoices = featureNames("invoice");
+    const root = fixtureCheckout(invoices);
     const dutch = "packages/i18n/messages/nl.json";
 
     generateFeature(root, invoices, "current");
@@ -364,7 +434,7 @@ describe("a re-run over a feature somebody has since translated", () => {
   it.each(pinnedExampleSlices)(
     "leaves $name's hand-written Dutch alone",
     ({ name, shape }) => {
-      const root = fixtureCheckout();
+      const root = checkoutOwningItsFeature();
       const dutch = () => read(root, "packages/i18n/messages/nl.json");
       const before = dutch();
 
@@ -377,9 +447,10 @@ describe("a re-run over a feature somebody has since translated", () => {
 
 describe("generate context", () => {
   it("writes the domain half and exports it, and nothing else", () => {
-    const root = fixtureCheckout();
+    const periods = featureNames("billing-period");
+    const root = fixtureCheckout(periods);
 
-    const result = generateContext(root, featureNames("billing-period"));
+    const result = generateContext(root, periods);
 
     expect([...result.created].sort()).toEqual([
       "packages/domain/src/billing-period.test.ts",
@@ -414,8 +485,8 @@ describe.each(["current", "list"] as const)(
       "puts every registry back exactly as it found it",
       { timeout: 120_000 },
       () => {
-        const root = fixtureCheckout();
         const invoices = featureNames("invoice");
+        const root = fixtureCheckout(invoices);
         const before = featureRegistryEdits.map(({ file }) => read(root, file));
 
         const format = () => {
@@ -470,7 +541,7 @@ describe.each(["current", "list"] as const)(
     };
 
     it("takes a pinned slice off the pin", () => {
-      const root = fixtureCheckout();
+      const root = fixtureCheckout(featureNames("invoice"));
       plantPin(root, "invoice");
       generateFeature(root, featureNames("invoice"), shape);
 
@@ -481,7 +552,7 @@ describe.each(["current", "list"] as const)(
     });
 
     it("leaves a pin that never named the slice alone", () => {
-      const root = fixtureCheckout();
+      const root = fixtureCheckout(featureNames("invoice"));
       plantPin(root, "ledger-entry");
       generateFeature(root, featureNames("invoice"), shape);
 
@@ -495,8 +566,8 @@ describe.each(["current", "list"] as const)(
     // types outlive the route, so the next `pnpm typecheck` fails on a module
     // nobody wrote. The rehearsal's inverse leg reproduced it exactly.
     it("takes Next's stale route types with the route", () => {
-      const root = fixtureCheckout();
       const invoices = featureNames("invoice");
+      const root = fixtureCheckout(invoices);
       generateFeature(root, invoices, shape);
       const stale = path.join(root, "apps/web/.next/types/app/(app)/invoices");
       mkdirSync(stale, { recursive: true });
@@ -508,8 +579,8 @@ describe.each(["current", "list"] as const)(
     });
 
     it("names the drop migration as the thing it cannot do", () => {
-      const root = fixtureCheckout();
       const invoices = featureNames("invoice");
+      const root = fixtureCheckout(invoices);
       generateFeature(root, invoices, shape);
 
       const printed = removeFeature(root, invoices).followUps.join("\n");
@@ -532,8 +603,8 @@ describe.each(["current", "list"] as const)(
  */
 describe("a registration region that has drifted", () => {
   it("is reported, where re-running the generator reports nothing", () => {
-    const root = fixtureCheckout();
     const invoices = featureNames("invoice");
+    const root = fixtureCheckout(invoices);
     generateFeature(root, invoices, "current");
     const file = "packages/api/src/context.ts";
 
@@ -558,7 +629,7 @@ describe("a registration region that has drifted", () => {
 
 describe("a registry that has moved", () => {
   it("names the file and the edit instead of skipping it", () => {
-    const root = fixtureCheckout();
+    const root = fixtureCheckout(featureNames("invoice"));
     const shell = "apps/web/src/components/app-shell/app-shell.tsx";
     writeFileSync(
       path.join(root, shell),
