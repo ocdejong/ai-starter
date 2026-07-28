@@ -55,14 +55,17 @@ export type AnnouncementRecord = Readonly<{
  * The announcement reads and writes this layer needs, shaped by the use cases
  * rather than by the table behind them.
  *
- * Every operation is keyed by a group. There is no "read an announcement" call
- * that skips one, so a procedure cannot accidentally reach outside the group the
- * request was made in — `rename` answers `null` for an identifier that belongs to
- * a different group, which is the same shape `findMembership` uses to refuse.
+ * `create` supersedes the group's current announcement; `listByGroup`
+ * answers newest first, so the current one leads.
+ *
+ * Every operation is keyed by a group. There is no "read one" call that skips a
+ * group, so a procedure cannot reach outside the group the request was made in —
+ * `rename` answers `null` for an identifier that belongs to a different group,
+ * which is the same shape `findMembership` uses to refuse.
  */
 export type AnnouncementRepository = Readonly<{
   listByGroup: (groupId: string) => Promise<AnnouncementRecord[]>;
-  publish: (input: {
+  create: (input: {
     createdById: string;
     groupId: string;
     title: string;

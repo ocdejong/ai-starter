@@ -42,7 +42,7 @@ describe("PostgreSQL integrity", () => {
   }, 120_000);
 
   afterEach(async () => {
-    await client.announcement.deleteMany();
+    await client.member.deleteMany();
     await client.organization.deleteMany();
     await client.user.deleteMany();
   });
@@ -65,52 +65,65 @@ describe("PostgreSQL integrity", () => {
     await createGroup(client, "group-1");
 
     await expect(
-      client.announcement.create({
+      client.member.create({
         data: {
-          createdById: "user-1",
-          groupId: "missing-group",
-          title: "Orphan",
+          createdAt: new Date(),
+          id: "member-1",
+          organizationId: "missing-group",
+          role: "owner",
+          userId: "user-1",
         },
       }),
     ).rejects.toMatchObject({ code: "P2003" });
   });
 
   it("enforces SQL check constraints independently of Zod", async () => {
-    await createUser(client, "user-1", "check@example.com");
-    await createGroup(client, "group-1");
-
-    // The domain schema trims and refuses this, but the schema only guards the
-    // forms. A direct write has to meet the same rule, and only the database
-    // can hold that line.
+    // `groupNamePolicy` trims and refuses this, and `personalGroupName` falls
+    // back to the address rather than writing it — but both guard the
+    // application. A direct write has to meet the same rule, and only the
+    // database can hold that line.
     await expect(
-      client.announcement.create({
-        data: { createdById: "user-1", groupId: "group-1", title: "   " },
+      client.organization.create({
+        data: {
+          createdAt: new Date(),
+          id: "blank",
+          name: "   ",
+          slug: "blank",
+        },
       }),
     ).rejects.toThrow();
   });
 
   it("rolls back all writes when a transaction fails", async () => {
     await createUser(client, "user-1", "transaction@example.com");
-    await createGroup(client, "group-1");
 
     await expect(
       client.$transaction(async (transaction) => {
-        await transaction.announcement.create({
+        await createGroup(transaction, "group-1");
+        await transaction.member.create({
           data: {
-            createdById: "user-1",
-            groupId: "group-1",
-            title: "Must roll back",
+            createdAt: new Date(),
+            id: "member-1",
+            organizationId: "group-1",
+            role: "owner",
+            userId: "user-1",
           },
         });
         throw new Error("Abort transaction");
       }),
     ).rejects.toThrow("Abort transaction");
 
-    await expect(client.announcement.count()).resolves.toBe(0);
+    await expect(client.organization.count()).resolves.toBe(0);
+    await expect(client.member.count()).resolves.toBe(0);
   });
 });
 
-function createGroup(client: PrismaClient, id: string) {
+/**
+ * Takes the transaction client as well as the singleton, because the rollback
+ * case has to write *inside* a transaction — and Prisma's transactional client
+ * is a narrower type than `PrismaClient`.
+ */
+function createGroup(client: Pick<PrismaClient, "organization">, id: string) {
   return client.organization.create({
     data: { createdAt: new Date(), id, name: id, slug: id },
   });

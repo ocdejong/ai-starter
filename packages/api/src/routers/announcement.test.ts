@@ -35,7 +35,7 @@ function announcementsOfGroupA(): AnnouncementRepository {
   // typed; `vi.fn` then only adds the recording.
   const repository: AnnouncementRepository = {
     listByGroup: async (groupId) => (groupId === "group-a" ? [stored] : []),
-    publish: async ({ title }) => ({ ...stored, title }),
+    create: async ({ title }) => ({ ...stored, title }),
     rename: async ({ announcementId, groupId, title }) =>
       groupId === "group-a" && announcementId === stored.id
         ? { ...stored, title }
@@ -44,7 +44,7 @@ function announcementsOfGroupA(): AnnouncementRepository {
 
   return {
     listByGroup: vi.fn(repository.listByGroup),
-    publish: vi.fn(repository.publish),
+    create: vi.fn(repository.create),
     rename: vi.fn(repository.rename),
   };
 }
@@ -90,9 +90,9 @@ describe("announcementRouter", () => {
 
     const result = await createCaller(
       createContext(announcements, signedIn("group-a")),
-    ).announcement.publish({ title: "  A second announcement  " });
+    ).announcement.create({ title: "  A second announcement  " });
 
-    expect(announcements.publish).toHaveBeenCalledWith({
+    expect(announcements.create).toHaveBeenCalledWith({
       createdById: "user-1",
       groupId: "group-a",
       title: "A second announcement",
@@ -167,8 +167,8 @@ describe("announcementRouter", () => {
     await expect(
       createCaller(
         createContext(announcements, signedIn("group-a")),
-      ).announcement.publish({ title: "   " }),
+      ).announcement.create({ title: "   " }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    expect(announcements.publish).not.toHaveBeenCalled();
+    expect(announcements.create).not.toHaveBeenCalled();
   });
 });

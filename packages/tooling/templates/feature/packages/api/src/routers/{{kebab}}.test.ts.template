@@ -35,7 +35,7 @@ function {{camelPlural}}OfGroupA(): {{pascal}}Repository {
   // typed; `vi.fn` then only adds the recording.
   const repository: {{pascal}}Repository = {
     listByGroup: async (groupId) => (groupId === "group-a" ? [stored] : []),
-    publish: async ({ title }) => ({ ...stored, title }),
+    create: async ({ title }) => ({ ...stored, title }),
     rename: async ({ {{camel}}Id, groupId, title }) =>
       groupId === "group-a" && {{camel}}Id === stored.id
         ? { ...stored, title }
@@ -44,7 +44,7 @@ function {{camelPlural}}OfGroupA(): {{pascal}}Repository {
 
   return {
     listByGroup: vi.fn(repository.listByGroup),
-    publish: vi.fn(repository.publish),
+    create: vi.fn(repository.create),
     rename: vi.fn(repository.rename),
   };
 }
@@ -90,9 +90,9 @@ describe("{{camel}}Router", () => {
 
     const result = await createCaller(
       createContext({{camelPlural}}, signedIn("group-a")),
-    ).{{camel}}.publish({ title: "  A second {{lower}}  " });
+    ).{{camel}}.create({ title: "  A second {{lower}}  " });
 
-    expect({{camelPlural}}.publish).toHaveBeenCalledWith({
+    expect({{camelPlural}}.create).toHaveBeenCalledWith({
       createdById: "user-1",
       groupId: "group-a",
       title: "A second {{lower}}",
@@ -167,8 +167,8 @@ describe("{{camel}}Router", () => {
     await expect(
       createCaller(
         createContext({{camelPlural}}, signedIn("group-a")),
-      ).{{camel}}.publish({ title: "   " }),
+      ).{{camel}}.create({ title: "   " }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    expect({{camelPlural}}.publish).not.toHaveBeenCalled();
+    expect({{camelPlural}}.create).not.toHaveBeenCalled();
   });
 });

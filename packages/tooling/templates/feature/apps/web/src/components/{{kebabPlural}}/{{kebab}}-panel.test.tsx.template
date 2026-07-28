@@ -27,9 +27,9 @@ function renderPanel(
   const props = {
     {{camelPlural}}: [current, superseded],
     failure: null,
-    isPublishing: false,
+    isCreating: false,
     isRenaming: false,
-    onPublish: vi.fn(),
+    onCreate: vi.fn(),
     onRename: vi.fn(),
     renameSaved: false,
     ...overrides,
@@ -69,7 +69,7 @@ describe("{{pascal}}Panel", () => {
     );
     await user.click(screen.getByRole("button", { name: "Publish" }));
 
-    expect(props.onPublish).toHaveBeenCalledWith("A second {{lower}}");
+    expect(props.onCreate).toHaveBeenCalledWith("A second {{lower}}");
   });
 
   it("refuses a blank title without calling the API", async () => {
@@ -79,7 +79,7 @@ describe("{{pascal}}Panel", () => {
     await user.click(screen.getByRole("button", { name: "Publish" }));
 
     expect(await screen.findByText("Enter a title.")).toBeInTheDocument();
-    expect(props.onPublish).not.toHaveBeenCalled();
+    expect(props.onCreate).not.toHaveBeenCalled();
   });
 
   /**
@@ -100,9 +100,9 @@ describe("{{pascal}}Panel", () => {
         <{{pascal}}Panel
           {{camelPlural}}={[next, { ...current, isCurrent: false }, superseded]}
           failure={null}
-          isPublishing={false}
+          isCreating={false}
           isRenaming={false}
-          onPublish={vi.fn()}
+          onCreate={vi.fn()}
           onRename={vi.fn()}
           renameSaved={false}
         />
@@ -156,9 +156,9 @@ describe("{{pascal}}Panel", () => {
         <{{pascal}}Panel
           {{camelPlural}}={[current]}
           failure={null}
-          isPublishing={false}
+          isCreating={false}
           isRenaming={false}
-          onPublish={vi.fn()}
+          onCreate={vi.fn()}
           onRename={vi.fn()}
           renameSaved={false}
         />

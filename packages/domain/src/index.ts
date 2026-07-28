@@ -1,11 +1,11 @@
 export {
   announcementTitlePolicy,
   announcementValidationCodes,
+  createAnnouncementInputSchema,
   parseAnnouncementValidationCode,
-  publishAnnouncementInputSchema,
   renameAnnouncementInputSchema,
   type AnnouncementValidationCode,
-  type PublishAnnouncementInput,
+  type CreateAnnouncementInput,
   type RenameAnnouncementInput,
 } from "./announcement";
 export {

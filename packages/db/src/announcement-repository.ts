@@ -29,7 +29,7 @@ export const createPrismaAnnouncementRepository = (database: Database) => ({
    * index in the migration refuses the same overlap between *concurrent*
    * transactions, which ordering alone cannot.
    */
-  publish: ({
+  create: ({
     createdById,
     groupId,
     title,

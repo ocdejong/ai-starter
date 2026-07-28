@@ -1,0 +1,175 @@
+import type { RouterOutputs } from "@ai-starter/api/client";
+import { create{{pascal}}InputSchema } from "@ai-starter/domain";
+import { spacing } from "@ai-starter/tokens";
+import { useState } from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useTranslations } from "use-intl";
+
+import { useTheme } from "../../theme/theme-provider";
+import { Notice } from "../auth/notice";
+import { SubmitButton } from "../auth/submit-button";
+import { TextField } from "../auth/text-field";
+import { {{pascal}}RenameForm } from "./{{kebab}}-rename-form";
+import { use{{pascal}}FieldError } from "./use-{{kebab}}-field-error";
+
+/**
+ * The record the interface renders, derived from what the procedure returns
+ * rather than restated — a narrower projection upstream becomes a type error
+ * here instead of an empty element.
+ */
+export type {{pascal}} = RouterOutputs["{{camel}}"]["list"][number];
+
+/** The two outcomes a reader can act on differently. */
+export type {{pascal}}Failure = "network" | "unexpected";
+
+/**
+ * Everything the {{lowerPlural}} tab shows, given the data.
+ *
+ * It takes records and callbacks rather than reaching for the API itself, so the
+ * transport lives in one place above it and this stays provable without one —
+ * which matters more on native, where the API client cannot even load under the
+ * jest preset.
+ */
+export function {{pascal}}Panel({
+  {{camelPlural}},
+  failure,
+  isCreating,
+  isRenaming,
+  onCreate,
+  onRename,
+  renameSaved,
+}: {
+  {{camelPlural}}: readonly {{pascal}}[];
+  failure: {{pascal}}Failure | null;
+  isCreating: boolean;
+  isRenaming: boolean;
+  onCreate: (title: string) => void;
+  onRename: (input: { {{camel}}Id: string; title: string }) => void;
+  renameSaved: boolean;
+}) {
+  const t = useTranslations("app.{{camelPlural}}");
+  const { theme } = useTheme();
+  const [draft, setDraft] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+  // Which row the reader last submitted. One mutation serves every form, so
+  // without this each of them would report the confirmation of whichever row
+  // was saved.
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const fieldError = use{{pascal}}FieldError();
+
+  function create(): void {
+    const parsed = create{{pascal}}InputSchema.safeParse({ title: draft });
+    if (!parsed.success) {
+      setMessage(parsed.error.issues[0]?.message ?? null);
+      return;
+    }
+    setMessage(null);
+    setDraft("");
+    onCreate(parsed.data.title);
+  }
+
+  return (
+    <ScrollView contentContainerStyle={styles.content}>
+      <Text style={[styles.count, { color: theme["muted-foreground"] }]}>
+        {t("count", { count: {{camelPlural}}.length })}
+      </Text>
+
+      {failure === null ? null : (
+        <Notice message={t(`errors.${failure}`)} tone="error" />
+      )}
+
+      <Section title={t("create.title")}>
+        <Text style={[styles.body, { color: theme["muted-foreground"] }]}>
+          {t("create.description")}
+        </Text>
+        <TextField
+          error={fieldError(message)}
+          label={t("create.label")}
+          onChangeText={setDraft}
+          value={draft}
+        />
+        <SubmitButton
+          label={t("create.submit")}
+          onPress={create}
+          pending={isCreating}
+          pendingLabel={t("create.submitting")}
+        />
+      </Section>
+
+      <Section title={t("list.title")}>
+        {{{camelPlural}}.length === 0 ? (
+          <Text style={[styles.body, { color: theme["muted-foreground"] }]}>
+            {t("list.empty")}
+          </Text>
+        ) : (
+          {{camelPlural}}.map((entry) => (
+            // Keyed by the {{lower}} it is about, so a list that reorders
+            // reseeds each field instead of leaving a previous title in it.
+            <{{pascal}}RenameForm
+              isSaving={isRenaming}
+              key={entry.id}
+              onRename={(title) => {
+                setSavedId(entry.id);
+                onRename({ {{camel}}Id: entry.id, title });
+              }}
+              saved={renameSaved && savedId === entry.id}
+              title={entry.title}
+            />
+          ))
+        )}
+      </Section>
+    </ScrollView>
+  );
+}
+
+/** A titled block. Native has no page chrome, so each block names itself. */
+function Section({
+  children,
+  title,
+}: {
+  children: React.ReactNode;
+  title: string;
+}) {
+  const { theme } = useTheme();
+
+  return (
+    <View
+      style={[
+        styles.section,
+        { backgroundColor: theme.card, borderColor: theme.border },
+      ]}
+    >
+      <Text
+        accessibilityRole="header"
+        style={[styles.title, { color: theme.foreground }]}
+      >
+        {title}
+      </Text>
+      {children}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  content: {
+    gap: spacing.lg,
+    padding: spacing.lg,
+  },
+  count: {
+    fontSize: 14,
+  },
+  section: {
+    borderRadius: spacing.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
+  title: {
+    fontSize: 17,
+    fontWeight: "700",
+  },
+  body: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+});

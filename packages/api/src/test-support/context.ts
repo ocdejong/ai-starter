@@ -26,8 +26,8 @@ function absent(port: string, method: string): () => never {
  */
 const inertPorts = {
   announcements: {
+    create: absent("announcements", "create"),
     listByGroup: absent("announcements", "listByGroup"),
-    publish: absent("announcements", "publish"),
     rename: absent("announcements", "rename"),
   },
   groups: {

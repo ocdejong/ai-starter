@@ -9,8 +9,8 @@ import {
 import { auth } from "~/server/better-auth";
 
 const groups: GroupRepository = createPrismaGroupRepository(db);
-// The port is declared by the API layer and satisfied here, at the one place
-// that may know both halves. Nothing above this file names Prisma.
+// The port is declared by the API layer and satisfied here, at the one
+// place that may know both halves. Nothing above this file names Prisma.
 const announcements: AnnouncementRepository =
   createPrismaAnnouncementRepository(db);
 

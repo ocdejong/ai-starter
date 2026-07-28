@@ -37,7 +37,7 @@ English and Dutch, in light and dark:
 - A dashboard behind a session guard, hosting a streaming LLM chat.
 - Groups: a personal one per account, invitations by email, roles, and settings.
 - Account settings: profile, change email, change password, active sessions, delete account.
-- An `announcement` slice that is the feature generator's own output, kept so by a test.
+- An `announcement` slice that is the feature generator's own output, kept so by a test — and removable with one command when you want your own instead.
 
 Everything above is yours to change. Nothing in it is a demo behind a flag.
 
@@ -92,14 +92,17 @@ OAuth and Sentry are optional. Copy the relevant values from the environment exa
 ## Add a feature
 
 ```bash
-pnpm generate feature invoice        # the whole vertical slice
-pnpm generate context billing-period # the domain half alone
-pnpm generate adapter payment-gateway # a port and a vendor-free adapter
+pnpm generate feature invoice --shape list  # the whole vertical slice
+pnpm generate context billing-period        # the domain half alone
+pnpm generate adapter payment-gateway       # a port and a vendor-free adapter
+pnpm generate feature --remove invoice      # and the way back out
 ```
 
 A generated feature arrives in the product's own words and already registered everywhere it has to be: the domain export, the API port and router, the composition root, the Prisma model, both message catalogs, and the navigation on web and native. It is expected to pass `pnpm verify:changed` once you have done the follow-ups the command prints — the two things it cannot do for you: writing the migration's hand-written SQL, and translating the Dutch copy it wrote in English, which `pnpm policy` reports as untranslated until you do.
 
-The `announcement` slice in this repository is that generator's output and a test keeps it so, which makes it the worked example to read. A product that does not want it deletes those files and reverses those registrations; `pnpm generate feature announcement` puts it back.
+`--shape` is required and has no default, because how your records relate to each other is not something a generator can guess. `current` gives you one record per group with the earlier ones superseded; `list` gives you records that accumulate. You pick it once, at the command, instead of discovering later that your chore board says "Publishing supersedes the current chore".
+
+The `announcement` slice in this repository is that generator's output and a test keeps it so, which makes it the worked example to read. A product that does not want it runs `pnpm generate feature --remove announcement`, which deletes its files and takes every registration back out. `pnpm generate feature announcement --shape current` writes the slice again — as _your_ feature, not as the pinned example: the drift test only holds slices this repository guarantees it has not touched, and yours is one you are about to edit.
 
 ## Verify
 

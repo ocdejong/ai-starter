@@ -1,4 +1,4 @@
-import { publish{{pascal}}InputSchema } from "@ai-starter/domain";
+import { create{{pascal}}InputSchema } from "@ai-starter/domain";
 import { useState } from "react";
 import { useTranslations } from "use-intl";
 
@@ -7,7 +7,7 @@ import { TextField } from "../auth/text-field";
 import { use{{pascal}}FieldError } from "./use-{{kebab}}-field-error";
 
 /**
- * Renames the group's current {{lower}}.
+ * Renames one {{lower}}.
  *
  * `useState` seeds from a prop, which is the shape that goes stale: a second
  * {{lower}} arriving in the same mounted form would still show the first
@@ -26,13 +26,13 @@ export function {{pascal}}RenameForm({
   saved: boolean;
   title: string;
 }) {
-  const t = useTranslations("app.{{camelPlural}}.current");
+  const t = useTranslations("app.{{camelPlural}}.rename");
   const [value, setValue] = useState(title);
   const [message, setMessage] = useState<string | null>(null);
   const fieldError = use{{pascal}}FieldError();
 
   function submit(): void {
-    const parsed = publish{{pascal}}InputSchema.safeParse({ title: value });
+    const parsed = create{{pascal}}InputSchema.safeParse({ title: value });
     if (!parsed.success) {
       setMessage(parsed.error.issues[0]?.message ?? null);
       return;

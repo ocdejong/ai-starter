@@ -1,11 +1,12 @@
 "use client";
 
 import {
-  publish{{pascal}}InputSchema,
-  type Publish{{pascal}}Input,
+  create{{pascal}}InputSchema,
+  type Create{{pascal}}Input,
 } from "@ai-starter/domain";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
+import { useId } from "react";
 import { useForm } from "react-hook-form";
 
 import { {{pascal}}FieldError } from "~/components/{{kebabPlural}}/{{kebab}}-field-error";
@@ -14,7 +15,7 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 
 /**
- * Renames the group's current {{lower}}.
+ * Renames one {{lower}}.
  *
  * The field is seeded from a prop, which is exactly the shape that goes stale:
  * `useForm` reads `defaultValues` once, so a second {{lower}} arriving in the
@@ -33,14 +34,18 @@ export function {{pascal}}RenameForm({
   readonly saved: boolean;
   readonly title: string;
 }) {
-  const t = useTranslations("app.{{camelPlural}}.current");
+  const t = useTranslations("app.{{camelPlural}}.rename");
+  // A shape that lists several records renders one of these per record, so the
+  // field is identified per instance rather than per feature.
+  const fieldId = useId();
+  const errorId = `${fieldId}-error`;
   const {
     formState: { errors },
     handleSubmit,
     register,
-  } = useForm<Publish{{pascal}}Input>({
+  } = useForm<Create{{pascal}}Input>({
     defaultValues: { title },
-    resolver: zodResolver(publish{{pascal}}InputSchema),
+    resolver: zodResolver(create{{pascal}}InputSchema),
   });
 
   return (
@@ -53,26 +58,19 @@ export function {{pascal}}RenameForm({
     >
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-56 flex-1 space-y-1.5">
-          <Label htmlFor="{{camel}}-rename">{t("label")}</Label>
+          <Label htmlFor={fieldId}>{t("label")}</Label>
           <Input
             {...register("title")}
-            aria-describedby={
-              errors.title === undefined
-                ? undefined
-                : "{{camel}}-rename-error"
-            }
+            aria-describedby={errors.title === undefined ? undefined : errorId}
             aria-invalid={errors.title !== undefined}
-            id="{{camel}}-rename"
+            id={fieldId}
           />
         </div>
         <Button disabled={isSaving} type="submit">
           {isSaving ? t("submitting") : t("submit")}
         </Button>
       </div>
-      <{{pascal}}FieldError
-        id="{{camel}}-rename-error"
-        message={errors.title?.message}
-      />
+      <{{pascal}}FieldError id={errorId} message={errors.title?.message} />
       {saved ? (
         <p className="text-muted-foreground text-sm" role="status">
           {t("saved")}

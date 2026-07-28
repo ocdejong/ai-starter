@@ -27,9 +27,9 @@ function renderPanel(
   const props = {
     announcements: [current, superseded],
     failure: null,
-    isPublishing: false,
+    isCreating: false,
     isRenaming: false,
-    onPublish: vi.fn(),
+    onCreate: vi.fn(),
     onRename: vi.fn(),
     renameSaved: false,
     ...overrides,
@@ -69,7 +69,7 @@ describe("AnnouncementPanel", () => {
     );
     await user.click(screen.getByRole("button", { name: "Publish" }));
 
-    expect(props.onPublish).toHaveBeenCalledWith("A second announcement");
+    expect(props.onCreate).toHaveBeenCalledWith("A second announcement");
   });
 
   it("refuses a blank title without calling the API", async () => {
@@ -79,7 +79,7 @@ describe("AnnouncementPanel", () => {
     await user.click(screen.getByRole("button", { name: "Publish" }));
 
     expect(await screen.findByText("Enter a title.")).toBeInTheDocument();
-    expect(props.onPublish).not.toHaveBeenCalled();
+    expect(props.onCreate).not.toHaveBeenCalled();
   });
 
   /**
@@ -100,9 +100,9 @@ describe("AnnouncementPanel", () => {
         <AnnouncementPanel
           announcements={[next, { ...current, isCurrent: false }, superseded]}
           failure={null}
-          isPublishing={false}
+          isCreating={false}
           isRenaming={false}
-          onPublish={vi.fn()}
+          onCreate={vi.fn()}
           onRename={vi.fn()}
           renameSaved={false}
         />
@@ -156,9 +156,9 @@ describe("AnnouncementPanel", () => {
         <AnnouncementPanel
           announcements={[current]}
           failure={null}
-          isPublishing={false}
+          isCreating={false}
           isRenaming={false}
-          onPublish={vi.fn()}
+          onCreate={vi.fn()}
           onRename={vi.fn()}
           renameSaved={false}
         />

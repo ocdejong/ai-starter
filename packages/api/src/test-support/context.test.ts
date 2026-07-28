@@ -10,19 +10,26 @@ import { testContext } from "./context";
  * synchronously rather than returned as a rejected promise, so it surfaces even
  * where a caller forgets to await.
  */
+/*
+ * Asserted through `groups`, which is the one port this repository always has.
+ * A generated feature registers its own beside it and a product that removes the
+ * example takes that one away again — so a case written against the example
+ * would be a case that fails for a reason about the example rather than about
+ * this mechanism.
+ */
 describe("testContext", () => {
   it("names the port and the method a test forgot to provide", () => {
     const context = testContext();
 
-    expect(() => context.announcements.listByGroup("group-1")).toThrow(
-      "announcements.listByGroup",
+    expect(() => context.groups.listMembers("group-1")).toThrow(
+      "groups.listMembers",
     );
     expect(() =>
       context.groups.findMembership({ groupId: "group-1", userId: "user-1" }),
     ).toThrow("groups.findMembership");
   });
 
-  it("keeps a provided port and leaves the rest inert", async () => {
+  it("keeps a provided port", async () => {
     const context = testContext({
       groups: {
         findMembership: () => Promise.resolve(null),
@@ -34,7 +41,11 @@ describe("testContext", () => {
     await expect(
       context.groups.findMembership({ groupId: "group-1", userId: "user-1" }),
     ).resolves.toBeNull();
-    expect(() => context.announcements.listByGroup("group-1")).toThrow(
+    await expect(context.groups.listMembers("group-1")).resolves.toEqual([]);
+  });
+
+  it("refuses a port no test provided, rather than answering nothing", () => {
+    expect(() => testContext().groups.listMemberships("user-1")).toThrow(
       "did not provide",
     );
   });

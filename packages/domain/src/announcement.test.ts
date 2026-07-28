@@ -3,13 +3,13 @@ import { describe, expect, it } from "vitest";
 import {
   announcementTitlePolicy,
   parseAnnouncementValidationCode,
-  publishAnnouncementInputSchema,
+  createAnnouncementInputSchema,
   renameAnnouncementInputSchema,
 } from "./announcement";
 
-describe("publishAnnouncementInputSchema", () => {
+describe("createAnnouncementInputSchema", () => {
   it("trims the title before it reaches the database", () => {
-    const result = publishAnnouncementInputSchema.safeParse({
+    const result = createAnnouncementInputSchema.safeParse({
       title: "  Office closed on Friday  ",
     });
 
@@ -20,13 +20,13 @@ describe("publishAnnouncementInputSchema", () => {
   });
 
   it("reports a blank title as a stable code", () => {
-    const result = publishAnnouncementInputSchema.safeParse({ title: "   " });
+    const result = createAnnouncementInputSchema.safeParse({ title: "   " });
 
     expect(result.error?.issues[0]?.message).toBe("announcementTitleRequired");
   });
 
   it("reports a title past the column limit as a stable code", () => {
-    const result = publishAnnouncementInputSchema.safeParse({
+    const result = createAnnouncementInputSchema.safeParse({
       title: "x".repeat(announcementTitlePolicy.maxLength + 1),
     });
 

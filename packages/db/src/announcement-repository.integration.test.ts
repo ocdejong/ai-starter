@@ -55,7 +55,7 @@ describe("announcement repository against PostgreSQL", () => {
     await seedGroup(client, "group-a", "user-a");
     await seedGroup(client, "group-b", "user-b");
 
-    await announcements.publish({
+    await announcements.create({
       createdById: "user-a",
       groupId: "group-a",
       title: "The first announcement",
@@ -70,12 +70,12 @@ describe("announcement repository against PostgreSQL", () => {
   it("supersedes the previous current announcement in one transaction", async () => {
     await seedGroup(client, "group-a", "user-a");
 
-    const first = await announcements.publish({
+    const first = await announcements.create({
       createdById: "user-a",
       groupId: "group-a",
       title: "An earlier announcement",
     });
-    const second = await announcements.publish({
+    const second = await announcements.create({
       createdById: "user-a",
       groupId: "group-a",
       title: "A second announcement",
@@ -93,12 +93,12 @@ describe("announcement repository against PostgreSQL", () => {
     await seedGroup(client, "group-a", "user-a");
     await seedGroup(client, "group-b", "user-b");
 
-    await announcements.publish({
+    await announcements.create({
       createdById: "user-a",
       groupId: "group-a",
       title: "This group's announcement",
     });
-    await announcements.publish({
+    await announcements.create({
       createdById: "user-b",
       groupId: "group-b",
       title: "Another group's announcement",
@@ -114,7 +114,7 @@ describe("announcement repository against PostgreSQL", () => {
 
   it("refuses a second current announcement written around the transaction", async () => {
     await seedGroup(client, "group-a", "user-a");
-    await announcements.publish({
+    await announcements.create({
       createdById: "user-a",
       groupId: "group-a",
       title: "The first announcement",
@@ -143,7 +143,7 @@ describe("announcement repository against PostgreSQL", () => {
     await seedGroup(client, "group-a", "user-a");
 
     await expect(
-      announcements.publish({
+      announcements.create({
         createdById: "user-a",
         groupId: "group-a",
         title: "x".repeat(121),
@@ -154,7 +154,7 @@ describe("announcement repository against PostgreSQL", () => {
   it("renames only within the group that asked", async () => {
     await seedGroup(client, "group-a", "user-a");
     await seedGroup(client, "group-b", "user-b");
-    const mine = await announcements.publish({
+    const mine = await announcements.create({
       createdById: "user-a",
       groupId: "group-a",
       title: "This group's announcement",
@@ -181,7 +181,7 @@ describe("announcement repository against PostgreSQL", () => {
 
   it("loses its announcements when the group is deleted", async () => {
     await seedGroup(client, "group-a", "user-a");
-    await announcements.publish({
+    await announcements.create({
       createdById: "user-a",
       groupId: "group-a",
       title: "This group's announcement",

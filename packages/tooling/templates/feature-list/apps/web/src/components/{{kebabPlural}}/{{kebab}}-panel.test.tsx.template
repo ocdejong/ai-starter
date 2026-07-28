@@ -1,0 +1,249 @@
+import { messages } from "@ai-starter/i18n";
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
+
+import { {{camel}}Failure } from "~/components/{{kebabPlural}}/{{kebab}}-board";
+import {
+  {{pascal}}Panel,
+  type {{pascal}},
+} from "~/components/{{kebabPlural}}/{{kebab}}-panel";
+import { IntlTestProvider } from "~/test/intl";
+
+const newest: {{pascal}} = {
+  id: "{{camel}}-1",
+  title: "The first {{lower}}",
+};
+const older: {{pascal}} = {
+  id: "{{camel}}-0",
+  title: "An earlier {{lower}}",
+};
+
+function renderPanel(
+  overrides: Partial<Parameters<typeof {{pascal}}Panel>[0]> = {},
+) {
+  const props = {
+    {{camelPlural}}: [newest, older],
+    failure: null,
+    isCreating: false,
+    isRenaming: false,
+    onCreate: vi.fn(),
+    onRename: vi.fn(),
+    renameSaved: false,
+    ...overrides,
+  } satisfies Parameters<typeof {{pascal}}Panel>[0];
+
+  const view = render(
+    <IntlTestProvider>
+      <{{pascal}}Panel {...props} />
+    </IntlTestProvider>,
+  );
+
+  return { props, view };
+}
+
+/**
+ * Every row is editable, so every row carries its own form. The queries below go
+ * through `within(row)` for exactly that reason: a page-wide `getByRole` would
+ * match as many "Title" fields as there are records, which is the ambiguity a
+ * shared DOM id would turn into a silent mis-association.
+ */
+const rows = () => screen.getAllByRole("listitem");
+
+/**
+ * The title showing in each row, in order.
+ *
+ * Read through `toHaveValue` rather than the `value` *attribute*: these fields
+ * are seeded by react-hook-form, which sets the property and leaves the
+ * attribute unset — so `getAttribute("value")` answers `null` for a field that
+ * is displaying exactly the right text.
+ */
+function expectRowTitles(titles: readonly string[]): void {
+  const rendered = rows();
+  expect(rendered).toHaveLength(titles.length);
+
+  for (const [index, title] of titles.entries()) {
+    const row = rendered[index];
+    if (row === undefined) {
+      throw new Error(`The panel rendered no row at ${String(index)}.`);
+    }
+    expect(within(row).getByRole("textbox")).toHaveValue(title);
+  }
+}
+
+describe("{{pascal}}Panel", () => {
+  it("lists every {{lower}} in the order it was given", () => {
+    renderPanel();
+
+    expectRowTitles([newest.title, older.title]);
+    expect(screen.getByText("2 {{lowerPlural}}")).toBeInTheDocument();
+  });
+
+  it("adds the trimmed title", async () => {
+    const user = userEvent.setup();
+    const { props } = renderPanel();
+
+    await user.type(
+      screen.getByRole("textbox", { name: "New title" }),
+      "  A second {{lower}}  ",
+    );
+    await user.click(screen.getByRole("button", { name: "Add" }));
+
+    expect(props.onCreate).toHaveBeenCalledWith("A second {{lower}}");
+  });
+
+  it("empties the field it just added from", async () => {
+    const user = userEvent.setup();
+    renderPanel();
+    const field = screen.getByRole("textbox", { name: "New title" });
+
+    await user.type(field, "A second {{lower}}");
+    await user.click(screen.getByRole("button", { name: "Add" }));
+
+    expect(field).toHaveValue("");
+  });
+
+  it("refuses a blank title without calling the API", async () => {
+    const user = userEvent.setup();
+    const { props } = renderPanel();
+
+    await user.click(screen.getByRole("button", { name: "Add" }));
+
+    expect(await screen.findByText("Enter a title.")).toBeInTheDocument();
+    expect(props.onCreate).not.toHaveBeenCalled();
+  });
+
+  /**
+   * The regression a single render cannot see: each rename form reads its
+   * default value once, so a row that is not keyed by the {{lower}} keeps
+   * showing the title of whichever record used to occupy its position.
+   */
+  it("reseeds each field when the list changes underneath it", () => {
+    const { view } = renderPanel();
+    const added: {{pascal}} = {
+      id: "{{camel}}-2",
+      title: "A second {{lower}}",
+    };
+
+    view.rerender(
+      <IntlTestProvider>
+        <{{pascal}}Panel
+          {{camelPlural}}={[added, newest, older]}
+          failure={null}
+          isCreating={false}
+          isRenaming={false}
+          onCreate={vi.fn()}
+          onRename={vi.fn()}
+          renameSaved={false}
+        />
+      </IntlTestProvider>,
+    );
+
+    expectRowTitles([added.title, newest.title, older.title]);
+  });
+
+  it("renames the row it was submitted from", async () => {
+    const user = userEvent.setup();
+    const { props } = renderPanel();
+    const row = rows()[1];
+    if (row === undefined) {
+      throw new Error("The panel rendered no second row to rename.");
+    }
+    const field = within(row).getByRole("textbox");
+
+    await user.clear(field);
+    await user.type(field, "The renamed {{lower}}");
+    await user.click(within(row).getByRole("button", { name: "Save" }));
+
+    expect(props.onRename).toHaveBeenCalledWith({
+      {{camel}}Id: older.id,
+      title: "The renamed {{lower}}",
+    });
+  });
+
+  // One mutation serves every row, so a panel that passed `renameSaved` straight
+  // through would confirm the save on all of them at once.
+  it("confirms the save on the row it came from and no other", async () => {
+    const user = userEvent.setup();
+    const { view } = renderPanel();
+    const row = rows()[1];
+    if (row === undefined) {
+      throw new Error("The panel rendered no second row to rename.");
+    }
+
+    await user.click(within(row).getByRole("button", { name: "Save" }));
+    view.rerender(
+      <IntlTestProvider>
+        <{{pascal}}Panel
+          {{camelPlural}}={[newest, older]}
+          failure={null}
+          isCreating={false}
+          isRenaming={false}
+          onCreate={vi.fn()}
+          onRename={vi.fn()}
+          renameSaved
+        />
+      </IntlTestProvider>,
+    );
+
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+    const confirmed = rows()[1];
+    if (confirmed === undefined) {
+      throw new Error("The panel stopped rendering the row it confirmed.");
+    }
+    expect(within(confirmed).getByRole("status")).toHaveTextContent("Saved.");
+  });
+
+  it("says the group has nothing yet", () => {
+    renderPanel({ {{camelPlural}}: [] });
+
+    expect(
+      screen.getByText("This group has not added anything yet."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("No {{lowerPlural}} yet")).toBeInTheDocument();
+  });
+
+  it("reports a refused write", () => {
+    renderPanel({ failure: "unexpected" });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Something went wrong. Please try again.",
+    );
+  });
+
+  // Asserted through the catalog rather than a literal, because a generated
+  // feature's Dutch entries start out as the English ones: this proves the
+  // component resolves through the Dutch messages, and keeps proving it after
+  // someone translates them.
+  it("renders in Dutch", () => {
+    render(
+      <IntlTestProvider locale="nl">
+        <{{pascal}}Panel
+          {{camelPlural}}={[newest]}
+          failure={null}
+          isCreating={false}
+          isRenaming={false}
+          onCreate={vi.fn()}
+          onRename={vi.fn()}
+          renameSaved={false}
+        />
+      </IntlTestProvider>,
+    );
+
+    expect(
+      screen.getByRole("heading", {
+        name: messages.nl.app.{{camelPlural}}.list.title,
+      }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("{{camel}}Failure", () => {
+  it("tells a request that never arrived from one that was refused", () => {
+    expect({{camel}}Failure(null)).toBeNull();
+    expect({{camel}}Failure({ data: null })).toBe("network");
+    expect({{camel}}Failure({ data: { code: "FORBIDDEN" } })).toBe(
+      "unexpected",
+    );
+  });
+});

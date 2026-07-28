@@ -1,8 +1,8 @@
 "use client";
 
 import {
-  publishAnnouncementInputSchema,
-  type PublishAnnouncementInput,
+  createAnnouncementInputSchema,
+  type CreateAnnouncementInput,
 } from "@ai-starter/domain";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
@@ -34,17 +34,17 @@ export type AnnouncementFailure = "network" | "unexpected";
 export function AnnouncementPanel({
   announcements,
   failure,
-  isPublishing,
+  isCreating,
   isRenaming,
-  onPublish,
+  onCreate,
   onRename,
   renameSaved,
 }: {
   readonly announcements: readonly Announcement[];
   readonly failure: AnnouncementFailure | null;
-  readonly isPublishing: boolean;
+  readonly isCreating: boolean;
   readonly isRenaming: boolean;
-  readonly onPublish: (title: string) => void;
+  readonly onCreate: (title: string) => void;
   readonly onRename: (input: { announcementId: string; title: string }) => void;
   readonly renameSaved: boolean;
 }) {
@@ -53,9 +53,9 @@ export function AnnouncementPanel({
     formState: { errors },
     handleSubmit,
     register,
-  } = useForm<PublishAnnouncementInput>({
+  } = useForm<CreateAnnouncementInput>({
     defaultValues: { title: "" },
-    resolver: zodResolver(publishAnnouncementInputSchema),
+    resolver: zodResolver(createAnnouncementInputSchema),
   });
 
   const current = announcements.find((entry) => entry.isCurrent) ?? null;
@@ -99,23 +99,23 @@ export function AnnouncementPanel({
         )}
       </section>
 
-      <section aria-labelledby="announcement-publish" className="space-y-3">
-        <h2 className="text-lg font-semibold" id="announcement-publish">
-          {t("publish.title")}
+      <section aria-labelledby="announcement-create" className="space-y-3">
+        <h2 className="text-lg font-semibold" id="announcement-create">
+          {t("create.title")}
         </h2>
         <p className="text-muted-foreground text-sm">
-          {t("publish.description")}
+          {t("create.description")}
         </p>
         <form
           className="space-y-3"
           noValidate
           onSubmit={handleSubmit((input) => {
-            onPublish(input.title);
+            onCreate(input.title);
           })}
         >
           <div className="flex flex-wrap items-end gap-3">
             <div className="min-w-56 flex-1 space-y-1.5">
-              <Label htmlFor="announcement-title">{t("publish.label")}</Label>
+              <Label htmlFor="announcement-title">{t("create.label")}</Label>
               <Input
                 {...register("title")}
                 aria-describedby={
@@ -127,8 +127,8 @@ export function AnnouncementPanel({
                 id="announcement-title"
               />
             </div>
-            <Button disabled={isPublishing} type="submit">
-              {isPublishing ? t("publish.submitting") : t("publish.submit")}
+            <Button disabled={isCreating} type="submit">
+              {isCreating ? t("create.submitting") : t("create.submit")}
             </Button>
           </div>
           <AnnouncementFieldError

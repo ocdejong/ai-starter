@@ -310,20 +310,22 @@
       "description": "Announcements belong to the group you are working in. Switch groups and you are looking at another set.",
       "loading": "Loading announcements…",
       "count": "{count, plural, =0 {No announcements yet} one {# announcement} other {# announcements}}",
-      "current": {
-        "title": "Current announcement",
-        "empty": "This group has not published anything yet.",
-        "label": "Current title",
-        "submit": "Save",
-        "submitting": "Saving…",
-        "saved": "Saved."
-      },
-      "publish": {
+      "create": {
         "title": "New announcement",
         "description": "Publishing supersedes the current announcement.",
         "label": "New title",
         "submit": "Publish",
         "submitting": "Publishing…"
+      },
+      "rename": {
+        "label": "Current title",
+        "submit": "Save",
+        "submitting": "Saving…",
+        "saved": "Saved."
+      },
+      "current": {
+        "title": "Current announcement",
+        "empty": "This group has not published anything yet."
       },
       "earlier": {
         "title": "Earlier announcements",

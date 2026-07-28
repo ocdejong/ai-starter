@@ -43,11 +43,11 @@ const announcementTitleSchema = z
   });
 
 /**
- * Publishing takes a title and nothing else. The group it belongs to and the
+ * Creating one takes a title and nothing else. The group it belongs to and the
  * account that wrote it are established by the request, never sent with it — a
  * client that could name either would be choosing what it is allowed to change.
  */
-export const publishAnnouncementInputSchema = z.object({
+export const createAnnouncementInputSchema = z.object({
   title: announcementTitleSchema,
 });
 
@@ -61,8 +61,8 @@ export const renameAnnouncementInputSchema = z.object({
   title: announcementTitleSchema,
 });
 
-export type PublishAnnouncementInput = z.infer<
-  typeof publishAnnouncementInputSchema
+export type CreateAnnouncementInput = z.infer<
+  typeof createAnnouncementInputSchema
 >;
 export type RenameAnnouncementInput = z.infer<
   typeof renameAnnouncementInputSchema

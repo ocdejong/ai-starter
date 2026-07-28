@@ -1,0 +1,155 @@
+import { messages } from "@ai-starter/i18n";
+import { render, screen, userEvent } from "@testing-library/react-native";
+
+import { TestProviders } from "../../test/providers";
+import { {{pascal}}Panel, type {{pascal}} } from "./{{kebab}}-panel";
+
+const newest: {{pascal}} = {
+  id: "{{camel}}-1",
+  title: "The first {{lower}}",
+};
+const older: {{pascal}} = {
+  id: "{{camel}}-0",
+  title: "An earlier {{lower}}",
+};
+
+type PanelProps = Parameters<typeof {{pascal}}Panel>[0];
+
+function props(overrides: Partial<PanelProps> = {}): PanelProps {
+  return {
+    {{camelPlural}}: [newest, older],
+    failure: null,
+    isCreating: false,
+    isRenaming: false,
+    onCreate: jest.fn(),
+    onRename: jest.fn(),
+    renameSaved: false,
+    ...overrides,
+  };
+}
+
+async function renderPanel(overrides: Partial<PanelProps> = {}) {
+  const panelProps = props(overrides);
+  const view = await render(
+    <TestProviders>
+      <{{pascal}}Panel {...panelProps} />
+    </TestProviders>,
+  );
+
+  return { props: panelProps, user: userEvent.setup(), view };
+}
+
+/**
+ * Every row is editable, so every row carries its own field and they all share
+ * one label. Selecting by position is what the shape forces; a singular
+ * `getByLabelText` would throw the moment a group has two {{lowerPlural}}.
+ */
+function fieldAt(index: number) {
+  const fields = screen.getAllByLabelText("Title");
+  const field = fields[index];
+  if (field === undefined) {
+    throw new Error(
+      `The panel rendered ${String(fields.length)} rows, so there is none at ${String(index)}.`,
+    );
+  }
+  return field;
+}
+
+describe("{{pascal}}Panel", () => {
+  it("lists every {{lower}} in the order it was given", async () => {
+    await renderPanel();
+
+    expect(fieldAt(0)).toHaveDisplayValue(newest.title);
+    expect(fieldAt(1)).toHaveDisplayValue(older.title);
+    expect(screen.getByText("2 {{lowerPlural}}")).toBeOnTheScreen();
+  });
+
+  it("adds the trimmed title", async () => {
+    const { props: given, user } = await renderPanel();
+
+    // `fireEvent.changeText` would not have flushed before the press, so the
+    // handler would see an empty field and the assertion would pass for the
+    // wrong reason. `userEvent` awaits each step.
+    await user.type(
+      screen.getByLabelText("New title"),
+      "  A second {{lower}}  ",
+    );
+    await user.press(screen.getByRole("button", { name: "Add" }));
+
+    expect(given.onCreate).toHaveBeenCalledWith("A second {{lower}}");
+  });
+
+  it("refuses a blank title without calling the API", async () => {
+    const { props: given, user } = await renderPanel();
+
+    await user.press(screen.getByRole("button", { name: "Add" }));
+
+    expect(screen.getByText("Enter a title.")).toBeOnTheScreen();
+    expect(given.onCreate).not.toHaveBeenCalled();
+  });
+
+  /**
+   * The regression a single render cannot see: each rename field seeds from a
+   * prop once, so a row that is not keyed by the {{lower}} keeps showing the
+   * title of whichever record used to occupy its position.
+   */
+  it("reseeds each field when the list changes underneath it", async () => {
+    const { view } = await renderPanel();
+    const added: {{pascal}} = {
+      id: "{{camel}}-2",
+      title: "A second {{lower}}",
+    };
+
+    await view.rerender(
+      <TestProviders>
+        <{{pascal}}Panel {...props({ {{camelPlural}}: [added, newest, older] })} />
+      </TestProviders>,
+    );
+
+    expect(fieldAt(0)).toHaveDisplayValue(added.title);
+    expect(fieldAt(1)).toHaveDisplayValue(newest.title);
+    expect(fieldAt(2)).toHaveDisplayValue(older.title);
+  });
+
+  it("renames the row it was submitted from", async () => {
+    const { props: given, user } = await renderPanel();
+
+    await user.clear(fieldAt(1));
+    await user.type(fieldAt(1), "The renamed {{lower}}");
+    const buttons = screen.getAllByRole("button", { name: "Save" });
+    const save = buttons[1];
+    if (save === undefined) {
+      throw new Error("The panel rendered no second row to rename.");
+    }
+    await user.press(save);
+
+    expect(given.onRename).toHaveBeenCalledWith({
+      {{camel}}Id: older.id,
+      title: "The renamed {{lower}}",
+    });
+  });
+
+  it("says the group has nothing yet", async () => {
+    await renderPanel({ {{camelPlural}}: [] });
+
+    expect(
+      screen.getByText("This group has not added anything yet."),
+    ).toBeOnTheScreen();
+  });
+
+  // Asserted through the catalog rather than a literal, because a generated
+  // feature's Dutch entries start out as the English ones: this proves the
+  // component resolves through the Dutch messages, and keeps proving it after
+  // someone translates them.
+  it("renders in Dutch", async () => {
+    await render(
+      <TestProviders locale="nl">
+        <{{pascal}}Panel {...props()} />
+      </TestProviders>,
+    );
+
+    expect(
+      screen.getByText(messages.nl.app.{{camelPlural}}.list.title),
+    ).toBeOnTheScreen();
+  });
+});

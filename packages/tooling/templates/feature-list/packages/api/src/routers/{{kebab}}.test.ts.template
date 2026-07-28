@@ -1,0 +1,173 @@
+import { TRPCError } from "@trpc/server";
+import { describe, expect, it, vi } from "vitest";
+
+import type {
+  {{pascal}}Record,
+  {{pascal}}Repository,
+  GroupMembership,
+  GroupRepository,
+  TRPCContext,
+  TRPCSession,
+} from "../context";
+import { createCaller } from "../root";
+import { testContext } from "../test-support/context";
+
+const ownMembership: GroupMembership = {
+  groupId: "group-a",
+  name: "Group A",
+  role: "member",
+  slug: "group-a",
+};
+
+const stored: {{pascal}}Record = {
+  id: "{{camel}}-1",
+  title: "The first {{lower}}",
+};
+
+/**
+ * A repository that only ever answers for the group the caller belongs to,
+ * exactly as the database adapter's group-keyed queries do: another group's
+ * identifier matches no row.
+ */
+function {{camelPlural}}OfGroupA(): {{pascal}}Repository {
+  // Written as a plain typed object first so each callback is contextually
+  // typed; `vi.fn` then only adds the recording.
+  const repository: {{pascal}}Repository = {
+    listByGroup: async (groupId) => (groupId === "group-a" ? [stored] : []),
+    create: async ({ title }) => ({ ...stored, title }),
+    rename: async ({ {{camel}}Id, groupId, title }) =>
+      groupId === "group-a" && {{camel}}Id === stored.id
+        ? { ...stored, title }
+        : null,
+  };
+
+  return {
+    listByGroup: vi.fn(repository.listByGroup),
+    create: vi.fn(repository.create),
+    rename: vi.fn(repository.rename),
+  };
+}
+
+/** Membership in group A and nothing else, like the real adapter. */
+function groupsForMemberOfA(): GroupRepository {
+  return {
+    findMembership: vi.fn(async ({ groupId, userId }) =>
+      groupId === "group-a" && userId === "user-1" ? ownMembership : null,
+    ),
+    listMembers: vi.fn(async () => []),
+    listMemberships: vi.fn(async () => [ownMembership]),
+  };
+}
+
+// Every other port stays inert, so this test cannot pass by reading something
+// it never set up, and a port added later cannot break it.
+const createContext = (
+  {{camelPlural}}: {{pascal}}Repository,
+  session: TRPCSession,
+): TRPCContext =>
+  testContext({ {{camelPlural}}, groups: groupsForMemberOfA(), session });
+
+const signedIn = (activeGroupId: string | null): TRPCSession => ({
+  activeGroupId,
+  user: { id: "user-1" },
+});
+
+describe("{{camel}}Router", () => {
+  it("lists the active group's {{lowerPlural}} and nothing else", async () => {
+    const {{camelPlural}} = {{camelPlural}}OfGroupA();
+
+    const result = await createCaller(
+      createContext({{camelPlural}}, signedIn("group-a")),
+    ).{{camel}}.list();
+
+    expect({{camelPlural}}.listByGroup).toHaveBeenCalledWith("group-a");
+    expect(result).toEqual([stored]);
+  });
+
+  it("adds into the group the request was made in", async () => {
+    const {{camelPlural}} = {{camelPlural}}OfGroupA();
+
+    const result = await createCaller(
+      createContext({{camelPlural}}, signedIn("group-a")),
+    ).{{camel}}.create({ title: "  A second {{lower}}  " });
+
+    expect({{camelPlural}}.create).toHaveBeenCalledWith({
+      createdById: "user-1",
+      groupId: "group-a",
+      title: "A second {{lower}}",
+    });
+    expect(result.title).toBe("A second {{lower}}");
+  });
+
+  it("renames one of the active group's {{lowerPlural}}", async () => {
+    const {{camelPlural}} = {{camelPlural}}OfGroupA();
+
+    const result = await createCaller(
+      createContext({{camelPlural}}, signedIn("group-a")),
+    ).{{camel}}.rename({
+      {{camel}}Id: "{{camel}}-1",
+      title: "The renamed {{lower}}",
+    });
+
+    expect({{camelPlural}}.rename).toHaveBeenCalledWith({
+      {{camel}}Id: "{{camel}}-1",
+      groupId: "group-a",
+      title: "The renamed {{lower}}",
+    });
+    expect(result.title).toBe("The renamed {{lower}}");
+  });
+
+  it("refuses an identifier that belongs to another group", async () => {
+    const {{camelPlural}} = {{camelPlural}}OfGroupA();
+
+    await expect(
+      createCaller(
+        createContext({{camelPlural}}, signedIn("group-a")),
+      ).{{camel}}.rename({
+        {{camel}}Id: "{{camel}}-of-group-b",
+        title: "Another group's {{lower}}",
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("refuses a caller whose session names a group they are not in", async () => {
+    const {{camelPlural}} = {{camelPlural}}OfGroupA();
+
+    await expect(
+      createCaller(
+        createContext({{camelPlural}}, signedIn("group-b")),
+      ).{{camel}}.list(),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect({{camelPlural}}.listByGroup).not.toHaveBeenCalled();
+  });
+
+  it("refuses a caller with no active group", async () => {
+    const {{camelPlural}} = {{camelPlural}}OfGroupA();
+
+    await expect(
+      createCaller(
+        createContext({{camelPlural}}, signedIn(null)),
+      ).{{camel}}.list(),
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+  });
+
+  it("refuses a signed-out caller", async () => {
+    const {{camelPlural}} = {{camelPlural}}OfGroupA();
+
+    await expect(
+      createCaller(createContext({{camelPlural}}, null)).{{camel}}.list(),
+    ).rejects.toBeInstanceOf(TRPCError);
+    expect({{camelPlural}}.listByGroup).not.toHaveBeenCalled();
+  });
+
+  it("rejects a blank title before the repository is reached", async () => {
+    const {{camelPlural}} = {{camelPlural}}OfGroupA();
+
+    await expect(
+      createCaller(
+        createContext({{camelPlural}}, signedIn("group-a")),
+      ).{{camel}}.create({ title: "   " }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect({{camelPlural}}.create).not.toHaveBeenCalled();
+  });
+});

@@ -1,5 +1,5 @@
 import {
-  publishAnnouncementInputSchema,
+  createAnnouncementInputSchema,
   renameAnnouncementInputSchema,
 } from "@ai-starter/domain";
 import { TRPCError } from "@trpc/server";
@@ -25,10 +25,10 @@ export const announcementRouter = createTRPCRouter({
    * two current announcements — or none, after a half-applied change — is a
    * state the interface has no way to describe.
    */
-  publish: groupProcedure
-    .input(publishAnnouncementInputSchema)
+  create: groupProcedure
+    .input(createAnnouncementInputSchema)
     .mutation(({ ctx, input }) =>
-      ctx.announcements.publish({
+      ctx.announcements.create({
         createdById: ctx.session.user.id,
         groupId: ctx.group.groupId,
         title: input.title,

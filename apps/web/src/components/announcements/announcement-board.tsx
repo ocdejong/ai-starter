@@ -36,7 +36,7 @@ export function AnnouncementBoard() {
   const utils = api.useUtils();
   const announcements = api.announcement.list.useQuery();
 
-  const publish = api.announcement.publish.useMutation({
+  const create = api.announcement.create.useMutation({
     onSuccess: async () => {
       await utils.announcement.list.invalidate();
     },
@@ -68,12 +68,12 @@ export function AnnouncementBoard() {
     <AnnouncementPanel
       announcements={announcements.data}
       failure={
-        announcementFailure(publish.error) ?? announcementFailure(rename.error)
+        announcementFailure(create.error) ?? announcementFailure(rename.error)
       }
-      isPublishing={publish.isPending}
+      isCreating={create.isPending}
       isRenaming={rename.isPending}
-      onPublish={(title) => {
-        publish.mutate({ title });
+      onCreate={(title) => {
+        create.mutate({ title });
       }}
       onRename={(input) => {
         rename.mutate(input);
