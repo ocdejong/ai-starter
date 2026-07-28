@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   chatCheck,
   emailCheck,
+  errorReportingCheck,
   formatChecks,
   hasFailure,
   majorOf,
@@ -10,6 +11,8 @@ import {
   nodeCheck,
   pinnedVersion,
   rangeAllowsMajor,
+  rateLimitCheck,
+  socialSignInCheck,
   type Check,
 } from "./diagnostics.ts";
 
@@ -187,5 +190,95 @@ describe("LLM chat check", () => {
     const check = chatCheck("sk-ant-abc123", "claude-opus-4-8");
     expect(check.status).toBe("ok");
     expect(check.detail).toContain("claude-opus-4-8");
+  });
+});
+
+describe("social sign-in check", () => {
+  const pair = {
+    BETTER_AUTH_GOOGLE_CLIENT_ID: "id",
+    BETTER_AUTH_GOOGLE_CLIENT_SECRET: "secret",
+  };
+
+  it("passes and says the landing page offers email alone when nothing is set", () => {
+    const check = socialSignInCheck({});
+    expect(check.status).toBe("ok");
+    expect(check.detail).toContain("No OAuth credentials");
+    expect(check.fix).toBeUndefined();
+  });
+
+  it("names the provider a deployment offers", () => {
+    const check = socialSignInCheck(pair);
+    expect(check.status).toBe("ok");
+    expect(check.detail).toContain("Google");
+  });
+
+  it("warns when only half a pair is set, which configures nothing", () => {
+    const check = socialSignInCheck({ BETTER_AUTH_GITHUB_CLIENT_ID: "id" });
+    expect(check.status).toBe("warning");
+    expect(check.fix).toContain("BETTER_AUTH_GITHUB_CLIENT_SECRET");
+  });
+
+  it("names both when both are configured, and which one wins", () => {
+    const check = socialSignInCheck({
+      ...pair,
+      BETTER_AUTH_GITHUB_CLIENT_ID: "id",
+      BETTER_AUTH_GITHUB_CLIENT_SECRET: "secret",
+    });
+    expect(check.detail).toContain("Google and GitHub");
+    expect(check.detail).toContain("offers Google");
+  });
+});
+
+describe("error reporting check", () => {
+  const sourceMaps = {
+    SENTRY_AUTH_TOKEN: "token",
+    SENTRY_ORG: "org",
+    SENTRY_PROJECT: "project",
+  };
+
+  it("passes and says Sentry is disabled without a DSN", () => {
+    const check = errorReportingCheck(undefined, sourceMaps);
+    expect(check.status).toBe("ok");
+    expect(check.detail).toContain("disabled");
+    expect(check.fix).toBeUndefined();
+  });
+
+  it("passes without source maps when none of the trio is set", () => {
+    const check = errorReportingCheck("https://key@sentry.io/1", {});
+    expect(check.status).toBe("ok");
+    expect(check.detail).toContain("without uploaded source maps");
+  });
+
+  it("warns when the source-map trio is half configured", () => {
+    const check = errorReportingCheck("https://key@sentry.io/1", {
+      SENTRY_ORG: "org",
+    });
+    expect(check.status).toBe("warning");
+    expect(check.fix).toContain("SENTRY_PROJECT");
+  });
+
+  it("passes when the DSN and the whole trio are set", () => {
+    const check = errorReportingCheck("https://key@sentry.io/1", sourceMaps);
+    expect(check.status).toBe("ok");
+    expect(check.detail).toContain("upload source maps");
+  });
+});
+
+describe("auth rate limit check", () => {
+  it("passes when the guard is left alone", () => {
+    const check = rateLimitCheck(undefined);
+    expect(check.status).toBe("ok");
+    expect(check.fix).toBeUndefined();
+  });
+
+  it("fails when a checkout has turned the guard off", () => {
+    const check = rateLimitCheck("true");
+    expect(check.status).toBe("failure");
+    expect(check.fix).toContain("BETTER_AUTH_RATE_LIMIT_DISABLED");
+  });
+
+  it("treats any other value as the guard being on", () => {
+    expect(rateLimitCheck("false").status).toBe("ok");
+    expect(rateLimitCheck("").status).toBe("ok");
   });
 });

@@ -591,6 +591,38 @@ function checkCodeowners(root: string): PolicyViolation[] {
     }));
 }
 
+const sensorDocument = "docs/testing.md";
+
+/**
+ * A scheduled workflow is also named where the sensors are explained.
+ *
+ * `checkScheduledSensorsReport` gives a sensor's red a destination; this gives
+ * the sensor itself a reader. The two are the same failure a step apart — a
+ * signal nobody meets — and the document had already fallen behind: CodeQL grew
+ * a weekly run and the section listing what runs on a schedule never learned.
+ */
+function checkScheduledSensorsDocumented(
+  root: string,
+  workflows: readonly Workflow[],
+): PolicyViolation[] {
+  const document = readText(root, sensorDocument);
+  if (document === undefined) {
+    return [];
+  }
+
+  return workflows
+    .filter(
+      (workflow) =>
+        workflow.triggers.some((trigger) => trigger.name === "schedule") &&
+        !document.includes(workflow.file),
+    )
+    .map((workflow) => ({
+      file: sensorDocument,
+      fix: `Describe \`${workflow.file}\` in the sensors section: what question it answers that a pull request cannot.`,
+      problem: `${workflow.file} runs on a schedule and ${sensorDocument} does not mention it, so nothing tells a reader it exists.`,
+    }));
+}
+
 /** Every way the repository host and the supply chain can be loosened. */
 export function checkWorkflowPolicy(root: string): PolicyViolation[] {
   const workflows = readWorkflows(root);
@@ -601,6 +633,7 @@ export function checkWorkflowPolicy(root: string): PolicyViolation[] {
     ...checkWorkflowPermissions(workflows),
     ...checkVerifiedDownloads(workflows),
     ...checkScheduledSensorsReport(workflows),
+    ...checkScheduledSensorsDocumented(root, workflows),
     ...checkRulesetPayload(rulesets),
     ...checkRequiredChecksReport(rulesets, workflows),
     ...checkPnpmSupplyChain(root),

@@ -1,33 +1,19 @@
-import { chatRequestSchema } from "@ai-starter/domain";
 import { expect, test } from "@playwright/test";
 
+import { fakeAnthropicAnswer } from "../src/test/fake-anthropic";
 import { registerVerifiedAccount } from "./support/account";
 
 /**
- * One UI message stream, hand-written.
+ * Nothing here is stubbed.
  *
- * The chunk names and the `x-vercel-ai-ui-message-stream` header are the wire
- * contract `useChat` reads (`ai`'s `UIMessageChunk` union and
- * `UI_MESSAGE_STREAM_HEADERS`); stubbing at the network boundary is what lets the
- * journey prove the composer, the transport and the transcript without spending a
- * provider token or making the assertion depend on what a model happens to say.
+ * The composer posts to the real `/api/chat`, which resolves the real session,
+ * parses with the shared wire contract, spends the real limiter and streams
+ * through the real provider adapter — `playwright.config.ts` only moves the
+ * provider's own endpoint to a fake one, so the answer is fixed and no token is
+ * spent. A stub at the network boundary would have proved the composer and the
+ * transcript and left the route itself unexecuted, which is what it did until
+ * this stage.
  */
-function uiMessageStream(text: string): string {
-  const chunks = [
-    { type: "start" },
-    { type: "start-step" },
-    { id: "0", type: "text-start" },
-    { delta: text, id: "0", type: "text-delta" },
-    { id: "0", type: "text-end" },
-    { type: "finish-step" },
-    { type: "finish" },
-  ];
-
-  return `${chunks.map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`).join("")}data: [DONE]\n\n`;
-}
-
-const stubbedAnswer = "A stubbed answer.";
-
 test("signs in, chats on the dashboard and opens settings", async ({
   page,
 }) => {
@@ -57,30 +43,20 @@ test("signs in, chats on the dashboard and opens settings", async ({
   });
 
   await test.step("send a message and read the answer", async () => {
-    await page.route("**/api/chat", async (route) => {
-      // The stub answers instead of the handler, so this is the only place the
-      // body the transport really builds meets the envelope the server really
-      // parses. Without this assertion nothing proves the two agree, and the
-      // first request against a configured deployment would be the test.
-      expect(
-        chatRequestSchema.safeParse(route.request().postDataJSON()),
-      ).toMatchObject({ success: true });
-
-      await route.fulfill({
-        body: uiMessageStream(stubbedAnswer),
-        headers: {
-          "content-type": "text/event-stream",
-          "x-vercel-ai-ui-message-stream": "v1",
-        },
-        status: 200,
-      });
-    });
+    const answered = page.waitForResponse(
+      (response) =>
+        response.url().endsWith("/api/chat") && response.status() === 200,
+    );
 
     await page.getByLabel("Type a message…").fill("Are you there?");
     await page.getByRole("button", { name: "Send" }).click();
 
+    // The route answering at all is half the assertion: the body the transport
+    // builds has to be one the server's own schema accepts, or this is a 400.
+    await answered;
+
     await expect(page.getByText("Are you there?")).toBeVisible();
-    await expect(page.getByText(stubbedAnswer)).toBeVisible();
+    await expect(page.getByText(fakeAnthropicAnswer)).toBeVisible();
   });
 
   await test.step("open settings", async () => {

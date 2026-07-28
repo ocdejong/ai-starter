@@ -19,6 +19,14 @@ test("tells a visitor what this is and how to get in", async ({ page }) => {
     "/sign-in",
   );
 
+  // No OAuth credentials are configured here or in CI, so this is the branch a
+  // browser can reach; `social-sign-in.test.tsx` asserts the other one.
+  await expect(
+    ways.getByText(
+      "Add Google or GitHub OAuth credentials to offer social sign-in as well.",
+    ),
+  ).toBeVisible();
+
   await expect(
     page.getByRole("heading", { name: "Ask the assistant" }),
   ).toBeVisible();

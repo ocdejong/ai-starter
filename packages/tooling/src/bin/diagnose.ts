@@ -5,7 +5,10 @@ import { repositoryRoot } from "../repository.ts";
 const usage = `Usage: pnpm diagnose [--json]
 
 Reports whether this machine and checkout can build, migrate and test the
-repository, and names the exact command that resolves each problem.`;
+repository, and names the exact command that resolves each problem.
+
+It reads every variable apps/web/src/env.js declares except NODE_ENV, which is
+not a value anybody sets in an env file: the framework decides it per command.`;
 
 async function main(): Promise<number> {
   let parsed;
