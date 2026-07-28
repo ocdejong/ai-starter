@@ -33,7 +33,7 @@ ESLint encodes many of these boundaries per file; `pnpm arch` (dependency-cruise
 - `packages/config`: shared compiler, lint, and test configuration.
 - `packages/i18n`: shared EN/NL ICU message catalogs, the `Locale` schema, and locale negotiation. Platform-neutral; consumed by both apps.
 - `packages/tokens`: plain cross-platform design values.
-- `packages/tooling`: repository commands (`bootstrap`, `db:lint`, `diagnose`, `generate`, `instructions`, `links:check`, `policy`, `rehearse:template`, `repo:host`, `test:e2e:mobile`, `verify`, `verify:changed`, `starter:init`). Node built-ins only: `diagnose` must inspect a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency. Editing it also requires `packages/tooling/AGENTS.md`.
+- `packages/tooling`: repository commands (`bootstrap`, `db:lint`, `deps:backlog`, `diagnose`, `generate`, `instructions`, `links:check`, `policy`, `rehearse:template`, `repo:host`, `test:e2e:mobile`, `verify`, `verify:changed`, `starter:init`). Node built-ins only: `diagnose` must inspect a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency. Editing it also requires `packages/tooling/AGENTS.md`.
 
 ## Getting a checkout running
 
@@ -92,6 +92,7 @@ pnpm test:integration
 - Sentry is disabled without a DSN and must keep `sendDefaultPii: false` unless a documented privacy decision changes it.
 - Never log credentials, authorization headers, full provider payloads, or sensitive user content.
 - A workflow that runs on a schedule must file an issue when it fails, through `.github/actions/report-failure`; `pnpm policy` rejects one that does not. A red that only ever appears in the Actions tab is a signal nobody receives.
+- A dependency proposal ends merged, repaired and merged, or closed with the reason written in the pull request — before the weekly run that supersedes it. `pnpm deps:backlog` fails when one has not, because a red on a branch is invisible to every gate a pull request runs. `docs/dependency-updates.md` carries the recipe per class of failure.
 - The repository host is configuration, not folklore: `.github/rulesets/main.json` and `.github/CODEOWNERS` are checked in, `pnpm repo:host` applies them, and `pnpm policy` fails when a workflow, an action pin, or a pnpm setting drifts from what `docs/repository-host.md` describes.
 
 ## Completion criteria
