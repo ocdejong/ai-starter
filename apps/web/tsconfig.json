@@ -2,7 +2,6 @@
   "extends": "@ai-starter/config/typescript/nextjs.json",
   "compilerOptions": {
     "allowImportingTsExtensions": true,
-    "baseUrl": ".",
     "paths": {
       "~/*": ["./src/*"]
     }
