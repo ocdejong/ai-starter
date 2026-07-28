@@ -70,7 +70,12 @@ export function addFeatureNamespace(
   const root = object(parsed, "the catalog");
   const app = object(root.app, "app");
 
-  object(app.nav, "app.nav")[names.camelPlural] = names.titlePlural;
+  // Both writes leave an existing value alone. The namespace always did; the
+  // navigation label did not, so `pnpm generate feature <existing>` — the
+  // command `README.md` names for putting a deleted slice back — replaced a
+  // translated label with the English one. Nothing failed, because the
+  // idempotency test's fixture is untranslated and a rewrite there is a no-op.
+  object(app.nav, "app.nav")[names.camelPlural] ??= names.titlePlural;
   app[names.camelPlural] ??= featureCatalogNamespace(names);
 
   return `${JSON.stringify(root, null, 2)}\n`;
