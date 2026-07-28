@@ -23,6 +23,7 @@ describe("command entry points", () => {
       "db-lint.ts",
       "db-push-prototype.ts",
       "db-seed.ts",
+      "deps-backlog.ts",
       "diagnose.ts",
       "generate.ts",
       "instructions.ts",

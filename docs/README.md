@@ -6,6 +6,7 @@
 - `architecture.md`: dependency direction, domain boundaries, state, data, authentication, UI, and integration patterns.
 - `testing.md`: verification levels, commands, and evidence expectations.
 - `repository-host.md`: the GitHub branch ruleset, how a downstream product replays it, and the supply-chain guards around actions, downloads, and pnpm.
+- `dependency-updates.md`: the three endings a Dependabot proposal is allowed to have, who receives a red one, and the recipe per class of failure.
 - `agent-engineering-research.md`: research basis and the ten source articles behind the golden principles; background reading, not task instructions.
 
 Update a document in the same change when its contract changes. Prefer one canonical explanation plus links over duplicated guidance.

@@ -139,10 +139,38 @@ jobs:
       - name: Audit the resolved dependency tree
         run: pnpm audit --audit-level high
 
+  backlog:
+    name: The Dependabot backlog
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
+      # Node built-ins only, like the link sensor: this asks the host a question
+      # about pull requests, so it must keep working when the dependency graph
+      # is the very thing a proposal has broken.
+      - name: Age every open proposal
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node packages/tooling/src/bin/deps-backlog.ts
+
   report:
     name: Report a scheduled failure
     if: ${{ failure() }}
-    needs: [suite, links, advisories]
+    needs: [suite, links, advisories, backlog]
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -179,6 +207,19 @@ jobs:
           summary: >-
             One of the documentation links died on somebody else's schedule.
             Point each reported link at what replaced it, or remove it.
+          token: ${{ github.token }}
+
+      - name: The dependency-update loop stopped completing
+        if: ${{ needs.backlog.result == 'failure' }}
+        uses: ./.github/actions/report-failure
+        with:
+          label: sensor:dependencies
+          title: Dependabot proposals are older than the run that made them
+          summary: >-
+            A bump has outlived the weekly cadence without an ending. Each one
+            listed in the run log is merged, repaired and merged, or closed with
+            the reason written in the pull request — the recipe for each is in
+            `docs/dependency-updates.md`.
           token: ${{ github.token }}
 
       - name: A dependency has a published advisory

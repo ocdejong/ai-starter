@@ -18,8 +18,51 @@ updates:
       semver-major-days: 30
       semver-minor-days: 7
       semver-patch-days: 3
+    # A package whose major cannot land without a sibling's major, proven by a
+    # pull request that failed for exactly that reason. Dependabot proposes one
+    # package at a time unless told otherwise, and a proposal that is red the
+    # moment it opens is a proposal nobody can act on:
+    #
+    #   eslint 10 + eslint-config-next 15  ->  "Failed to patch ESLint" (#3)
+    #   eslint 9  + eslint-config-next 16  ->  "Converting circular structure"  (#5)
+    #   @prisma/client 7 + prisma 6        ->  `prisma generate` ENOENT (#11)
+    #   jest 30 + jest-expo 57             ->  clearMocksOnScope is not a function (#4)
+    #
+    # Each group therefore covers every update type, majors included: pairing
+    # them only for minors would leave the case that actually broke unpaired.
+    # `compatible-updates` excludes the same patterns so a family cannot be
+    # split across two pull requests by whichever group Dependabot matches first.
     groups:
+      eslint:
+        patterns:
+          - eslint
+          - eslint-config-*
+          - eslint-plugin-*
+          - "@eslint/*"
+          - typescript-eslint
+      prisma:
+        patterns:
+          - prisma
+          - "@prisma/*"
+      jest:
+        patterns:
+          - jest
+          - jest-*
+          - "@types/jest"
+          - babel-jest
       compatible-updates:
+        exclude-patterns:
+          - eslint
+          - eslint-config-*
+          - eslint-plugin-*
+          - "@eslint/*"
+          - typescript-eslint
+          - prisma
+          - "@prisma/*"
+          - jest
+          - jest-*
+          - "@types/jest"
+          - babel-jest
         update-types:
           - minor
           - patch
