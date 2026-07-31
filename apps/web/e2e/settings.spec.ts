@@ -72,7 +72,10 @@ test("lists the account's sessions and ends the one that is chosen", async ({
 
   await test.step("the caller is still signed in", async () => {
     await page.reload();
-    await expect(page).toHaveURL(/\/settings\/account/);
+    // A reload re-runs the page on the server, session list and all. The first
+    // assertion after a navigation carries that whole wait, so it gets the same
+    // budget as the assertions above it rather than the 5s default.
+    await expect(page).toHaveURL(/\/settings\/account/, { timeout: 30_000 });
   });
 
   await other.context().close();
@@ -111,12 +114,14 @@ test("changes the password, ending the other devices but not this one", async ({
     // Revoking the others ends *every* session and sets a replacement cookie;
     // the browser follows it, which is why the reader stays where they are.
     await page.reload();
-    await expect(page).toHaveURL(/\/settings\/account/);
+    // Same shape as the step above: both of these wait on the reloaded page,
+    // and the URL commits before the session list it renders has arrived.
+    await expect(page).toHaveURL(/\/settings\/account/, { timeout: 30_000 });
     await expect(
       page
         .getByRole("region", { name: "Active sessions" })
         .getByText("This device"),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 30_000 });
   });
 
   await other.context().close();
@@ -142,14 +147,25 @@ test("changes the email address across both of its links", async ({ page }) => {
     // Message 0 was the registration confirmation, so this is message 1.
     await page.goto(actionUrl(await emailTo(account.email, 1)));
 
-    await expect(page).toHaveURL(/\/settings\/account\?emailChange=confirmed/);
-    await expect(page.getByText(account.email)).toBeVisible();
+    // The URL commits as soon as the redirect lands, so it says nothing about
+    // the page behind it — and the address is the whole answer this step is
+    // about, because the notice cannot say which of the two links was opened.
+    // Under parallel load that render outlives the 5s default while every
+    // neighbouring assertion, on 30s, sails through.
+    await expect(page).toHaveURL(/\/settings\/account\?emailChange=confirmed/, {
+      timeout: 30_000,
+    });
+    await expect(page.getByText(account.email)).toBeVisible({
+      timeout: 30_000,
+    });
   });
 
   await test.step("the second link, in the new inbox, is what moves the account", async () => {
     await page.goto(actionUrl(await emailTo(newEmail, 0)));
 
-    await expect(page).toHaveURL(/\/settings\/account\?emailChange=confirmed/);
+    await expect(page).toHaveURL(/\/settings\/account\?emailChange=confirmed/, {
+      timeout: 30_000,
+    });
     await expect(page.getByText(newEmail)).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText(account.email)).toHaveCount(0);
   });
@@ -184,7 +200,9 @@ test("deletes the account only after the emailed link is opened", async ({
     );
 
     await page.reload();
-    await expect(page).toHaveURL(/\/settings\/account/);
+    // The account surviving is what this asserts, and the reload it waits on is
+    // a fresh server render of the page.
+    await expect(page).toHaveURL(/\/settings\/account/, { timeout: 30_000 });
   });
 
   await test.step("opening the link deletes the account and ends the session", async () => {

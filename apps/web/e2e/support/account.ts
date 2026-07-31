@@ -47,7 +47,12 @@ export async function registerVerifiedAccount(
 
   // Confirming signs the account in, so the auth layout sends it to the
   // application rather than back to a form it no longer needs.
-  await expect(page).toHaveURL("/dashboard");
+  //
+  // The link redirects through the auth server and then through `/verify-email`,
+  // and against the development server each of those compiles on first request.
+  // Every journey in this suite starts here, so the default five seconds is the
+  // one budget that decides whether any of them are flaky.
+  await expect(page).toHaveURL("/dashboard", { timeout: 30_000 });
 
   return account;
 }

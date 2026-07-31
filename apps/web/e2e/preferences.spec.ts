@@ -2,6 +2,12 @@ import { expect, test } from "@playwright/test";
 
 import { registerVerifiedAccount } from "./support/account";
 
+// Both halves register through the mailbox and reload a route that compiles on
+// first request, which is the same journey every other spec here gives itself
+// room for. Without this the per-test default is 30 seconds, so a single
+// assertion allowed 30 could never actually spend it.
+test.setTimeout(180_000);
+
 /**
  * Language and theme, driven the way a person drives them.
  *
@@ -20,8 +26,13 @@ test.describe("language and theme", () => {
   test("switches to Dutch and keeps it across a reload", async ({ page }) => {
     await registerVerifiedAccount(page);
 
-    await expect(page.locator("html")).toHaveAttribute("lang", "en");
-    await expect(page.getByRole("link", { name: "Settings" })).toBeVisible();
+    // The first assertions after the emailed link landed on the dashboard.
+    await expect(page.locator("html")).toHaveAttribute("lang", "en", {
+      timeout: 30_000,
+    });
+    await expect(page.getByRole("link", { name: "Settings" })).toBeVisible({
+      timeout: 30_000,
+    });
 
     await page
       .getByRole("group", { name: "Language" })
@@ -41,7 +52,10 @@ test.describe("language and theme", () => {
 
     await page.reload();
 
-    await expect(page.locator("html")).toHaveAttribute("lang", "nl");
+    // The reload is a fresh server render against the cookie the action wrote.
+    await expect(page.locator("html")).toHaveAttribute("lang", "nl", {
+      timeout: 30_000,
+    });
     await expect(
       page.getByRole("link", { name: "Instellingen" }),
     ).toBeVisible();
@@ -52,6 +66,12 @@ test.describe("language and theme", () => {
   }) => {
     await registerVerifiedAccount(page);
 
+    // A positive assertion first: `not.toHaveClass` would also be satisfied by a
+    // page that has not rendered yet, which is no starting point for the two
+    // assertions below.
+    await expect(page.getByRole("group", { name: "Theme" })).toBeVisible({
+      timeout: 30_000,
+    });
     await expect(page.locator("html")).not.toHaveClass(/dark/);
 
     await page
@@ -66,10 +86,13 @@ test.describe("language and theme", () => {
     // next-themes persists the choice and re-applies it before paint, so a
     // reload that came back light would mean the stored preference never
     // reached the document.
-    await expect(page.locator("html")).toHaveClass(/dark/);
+    await expect(page.locator("html")).toHaveClass(/dark/, { timeout: 30_000 });
+    // The class arrives from a blocking script; this one needs the control to
+    // have hydrated, which is a later moment on a loaded dev server.
     await expect(page.getByRole("button", { name: "Dark" })).toHaveAttribute(
       "aria-pressed",
       "true",
+      { timeout: 30_000 },
     );
   });
 });
