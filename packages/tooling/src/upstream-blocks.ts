@@ -70,16 +70,6 @@ export const upstreamBlocks: readonly UpstreamBlock[] = [
       "jest 30 — `jest-expo` is Expo-SDK-pinned and still depends on the Jest 29 runtime, so the mobile suite dies on `clearMocksOnScope`",
     wanted: 30,
   },
-  {
-    dependency: "@hono/node-server",
-    field: "dependencies",
-    issue: 23,
-    pkg: "@modelcontextprotocol/sdk",
-    recorded: "^1.19.9",
-    summary:
-      "the `@hono/node-server` advisory (GHSA-frvp-7c67-39w9, patched in 2.0.5) — the SDK caps it inside 1.x, and it reaches this repository through `shadcn`",
-    wanted: 2,
-  },
 ];
 
 /**
