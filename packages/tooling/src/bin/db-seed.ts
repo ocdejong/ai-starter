@@ -22,10 +22,16 @@ if (process.argv.includes("--help")) {
     );
     process.exitCode = 1;
   } else {
+    // The runtime half refuses without this, so skipping this wrapper no
+    // longer skips the check above. `packages/auth/src/demo-seed-plan.ts` owns
+    // both names.
     process.exitCode = runInherit(
       "pnpm",
       ["--filter", "@ai-starter/auth", "db:seed"],
-      { cwd: repositoryRoot },
+      {
+        cwd: repositoryRoot,
+        env: { AI_STARTER_SEED_LOCAL_CHECKED: "confirmed-local" },
+      },
     );
   }
 }
