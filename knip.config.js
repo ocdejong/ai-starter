@@ -28,6 +28,12 @@ const config = {
     // packages/db/generated/, which is gitignored and so invisible to a graph
     // built from the checkout.
     "@prisma/client",
+    // The same, one level down, and it has to be declared rather than merely
+    // installed: Prisma 7's generated runtime imports it, and that output sits
+    // outside `node_modules`, so pnpm's isolated layout only resolves it when
+    // `packages/db` names it a direct dependency. Without the declaration Next
+    // fails to build with `Can't resolve '@prisma/client-runtime-utils'`.
+    "@prisma/client-runtime-utils",
     // Injected into compiled output by the Expo/Metro Babel transform.
     "@babel/runtime",
     // Reached through `compat.extends("next/core-web-vitals")`, a string.

@@ -1,5 +1,5 @@
 import { initAuth } from "@ai-starter/auth";
-import { db } from "@ai-starter/db";
+import { getDatabase } from "@ai-starter/db";
 import { nextCookies } from "better-auth/next-js";
 
 import { env } from "~/env";
@@ -50,7 +50,7 @@ export const auth = initAuth({
   ...(env.BETTER_AUTH_RATE_LIMIT_DISABLED
     ? { rateLimit: { enabled: false } }
     : {}),
-  database: db,
+  database: getDatabase(),
   email: createAuthEmailDispatchers(emailSender, {
     appUrl: env.BETTER_AUTH_URL,
   }),

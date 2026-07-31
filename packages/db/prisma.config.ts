@@ -23,7 +23,21 @@ import { defineConfig } from "prisma/config";
  * that leaned on the implicit behaviour would lose `DATABASE_URL` the moment
  * this file appeared, with no error naming the cause.
  */
+/**
+ * Prisma 7 removed `url` from the schema's `datasource`, so the connection
+ * string for Migrate arrives here instead. It is spread in only when it is
+ * set, and that is load-bearing rather than defensive: `db:generate` runs
+ * inside `postinstall`, with no `dotenv` wrapper and often no database at all,
+ * and a config that demanded `DATABASE_URL` at module load would fail
+ * `pnpm install` on a clone that has not been bootstrapped yet. Reading it
+ * this way keeps `generate` and `validate` working without a connection while
+ * `migrate`, `studio` and `db push` — each of which does pass `dotenv` — get
+ * the URL they need.
+ */
+const url = process.env.DATABASE_URL;
+
 export default defineConfig({
+  ...(url === undefined ? {} : { datasource: { url } }),
   migrations: {
     seed: "node ../tooling/src/bin/db-seed.ts",
   },

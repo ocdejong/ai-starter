@@ -8,7 +8,8 @@ import {
 } from "@testcontainers/postgresql";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
-import { PrismaClient } from "../generated/prisma";
+import type { PrismaClient } from "../generated/prisma";
+import { createDatabaseClient } from "./client";
 import { createPrismaAnnouncementRepository } from "./announcement-repository";
 
 const execFileAsync = promisify(execFile);
@@ -35,7 +36,7 @@ describe("announcement repository against PostgreSQL", () => {
       },
     );
 
-    client = new PrismaClient({ datasourceUrl: databaseUrl });
+    client = createDatabaseClient(databaseUrl);
     announcements = createPrismaAnnouncementRepository(client);
   }, 120_000);
 

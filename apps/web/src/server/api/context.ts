@@ -3,16 +3,17 @@ import type { AnnouncementRepository, GroupRepository } from "@ai-starter/api";
 import {
   createPrismaAnnouncementRepository,
   createPrismaGroupRepository,
-  db,
+  getDatabase,
 } from "@ai-starter/db";
 
 import { auth } from "~/server/better-auth";
 
-const groups: GroupRepository = createPrismaGroupRepository(db);
+const database = getDatabase();
+const groups: GroupRepository = createPrismaGroupRepository(database);
 // The port is declared by the API layer and satisfied here, at the one
 // place that may know both halves. Nothing above this file names Prisma.
 const announcements: AnnouncementRepository =
-  createPrismaAnnouncementRepository(db);
+  createPrismaAnnouncementRepository(database);
 
 export const createTRPCContext = async (options: { headers: Headers }) => {
   // `disableCookieCache` costs a query and buys the *current* active group: a

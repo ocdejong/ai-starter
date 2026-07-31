@@ -192,7 +192,7 @@ describe("generate feature", () => {
       "pressReleases: PressReleaseRepository;",
     );
     expect(read(root, "apps/web/src/server/api/context.ts")).toContain(
-      "createPrismaPressReleaseRepository(db)",
+      "createPrismaPressReleaseRepository(database)",
     );
     // A Prisma `///` comment documents the block below it, so a model inserted
     // between an existing comment and its model would quietly steal it.

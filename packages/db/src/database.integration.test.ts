@@ -8,7 +8,8 @@ import {
 } from "@testcontainers/postgresql";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
-import { PrismaClient } from "../generated/prisma";
+import type { PrismaClient } from "../generated/prisma";
+import { createDatabaseClient } from "./client";
 
 const execFileAsync = promisify(execFile);
 const packageDirectory = fileURLToPath(new URL("../", import.meta.url));
@@ -38,7 +39,7 @@ describe("PostgreSQL integrity", () => {
       },
     );
 
-    client = new PrismaClient({ datasourceUrl: databaseUrl });
+    client = createDatabaseClient(databaseUrl);
   }, 120_000);
 
   afterEach(async () => {

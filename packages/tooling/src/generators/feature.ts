@@ -107,7 +107,7 @@ function compositionRootWiring(names: FeatureNames): string {
     "// The port is declared by the API layer and satisfied here, at the one",
     "// place that may know both halves. Nothing above this file names Prisma.",
     `const ${names.camelPlural}: ${names.pascal}Repository =`,
-    `  createPrisma${names.pascal}Repository(db);`,
+    `  createPrisma${names.pascal}Repository(database);`,
     "",
   ].join("\n");
 }
