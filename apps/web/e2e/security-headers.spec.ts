@@ -25,9 +25,7 @@ test("serves the security headers on a page response", async ({ request }) => {
   expect(response.headers()["referrer-policy"]).toBe(
     "strict-origin-when-cross-origin",
   );
-  expect(response.headers()["strict-transport-security"]).toContain(
-    "max-age=",
-  );
+  expect(response.headers()["strict-transport-security"]).toContain("max-age=");
   expect(response.headers()["permissions-policy"]).toContain("camera=()");
 
   // The framework's version is a free hint to anyone matching known advisories
