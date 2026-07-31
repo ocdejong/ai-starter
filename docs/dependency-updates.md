@@ -48,6 +48,14 @@ Pushing to a Dependabot branch makes Dependabot stop managing it, so do this whe
 
 **The red is a migration.** A deprecation to remove, an API that moved, a peer that has not caught up. Close it, write what the migration requires in the pull request, and open an issue for the work. `@dependabot ignore this major version` stops the same major being re-proposed weekly while leaving the next one to arrive normally — use it only alongside that issue, because an ignore with nothing tracking it is how a deliberate deferral becomes an accidental pin.
 
+**The red is upstream, and nothing here can clear it.** A peer that caps below the proposed major, a package the SDK pins, a transitive nothing in this repository declares. Close it with the reason — and **record the block in `packages/tooling/src/upstream-blocks.ts`**, because this is the one class of decline with no local trigger: the group re-proposes weekly, fails identically, and the day upstream ships the fix nothing notices. `pnpm deps:upstream` reads those manifests and fails when one stops saying what is recorded, which happens exactly when the block clears:
+
+```bash
+pnpm deps:upstream
+```
+
+Its red means the recorded list is stale rather than something being broken, which is the same question the other sensors ask — _is something wrong that nobody has noticed_ — pointed at somebody else's release schedule. A block that clears is deleted from that file in the same change that takes the bump; the list is the backlog, not a log.
+
 **The bump is declined on purpose.** Say what the pin protects. `@types/node` tracks the `engines.node` major this repository supports rather than the newest release, because typing against a newer runtime lets code compile that the supported one cannot run — that is a pin, not neglect, and the pull request says so.
 
 ## What the loop cannot decide for you

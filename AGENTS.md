@@ -33,7 +33,7 @@ ESLint encodes many of these boundaries per file; `pnpm arch` (dependency-cruise
 - `packages/config`: shared compiler, lint, and test configuration.
 - `packages/i18n`: shared EN/NL ICU message catalogs, the `Locale` schema, and locale negotiation. Platform-neutral; consumed by both apps.
 - `packages/tokens`: plain cross-platform design values.
-- `packages/tooling`: repository commands (`bootstrap`, `db:lint`, `db:push:prototype`, `db:seed`, `deps:backlog`, `diagnose`, `generate`, `instructions`, `links:check`, `policy`, `rehearse:template`, `repo:host`, `test:e2e:mobile`, `verify`, `verify:changed`, `starter:init`). `pnpm instructions` fails when a command here is missing from that list. Node built-ins only: `diagnose` must inspect a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency. Editing it also requires `packages/tooling/AGENTS.md`.
+- `packages/tooling`: repository commands (`bootstrap`, `db:lint`, `db:push:prototype`, `db:seed`, `deps:backlog`, `deps:upstream`, `diagnose`, `generate`, `instructions`, `links:check`, `policy`, `rehearse:template`, `repo:host`, `test:e2e:mobile`, `verify`, `verify:changed`, `starter:init`). `pnpm instructions` fails when a command here is missing from that list. Node built-ins only: `diagnose` must inspect a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency. Editing it also requires `packages/tooling/AGENTS.md`.
 
 ## Getting a checkout running
 
