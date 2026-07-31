@@ -2,7 +2,11 @@ import { simulateReadableStream } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { describe, expect, it, vi } from "vitest";
 
-import { handleChatRequest, type ChatDependencies } from "./handler";
+import {
+  handleChatRequest,
+  maxOutputTokens,
+  type ChatDependencies,
+} from "./handler";
 
 function stubModel() {
   return new MockLanguageModelV4({
@@ -89,6 +93,25 @@ describe("handleChatRequest", () => {
     const prompt = model.doStreamCalls[0]?.prompt;
     expect(prompt?.map((message) => message.role)).toEqual(["system", "user"]);
     expect(prompt?.[1]?.content).toEqual([{ text: "Hello", type: "text" }]);
+  });
+
+  it("caps how much the model may produce in one turn", async () => {
+    // Without a cap, one accepted request can stream the model's maximum
+    // output. The envelope bounds what a caller may send, not what a reply
+    // costs, and the limiter bounds requests, not tokens.
+    const model = stubModel();
+
+    const response = await handleChatRequest(
+      chatRequest(validBody),
+      dependencies({ model }),
+    );
+    await response.text();
+
+    // Asserted against a real number first: comparing the call to the constant
+    // alone passes while both are undefined, which is the state this test
+    // exists to reject.
+    expect(maxOutputTokens).toBeGreaterThan(0);
+    expect(model.doStreamCalls[0]?.maxOutputTokens).toBe(maxOutputTokens);
   });
 
   it("rejects an anonymous caller with 401", async () => {

@@ -26,6 +26,17 @@ const chatSystemPrompt =
   "You are the assistant built into this application. Answer clearly and concisely, and say so plainly when you do not know something.";
 
 /**
+ * The ceiling on a single reply.
+ *
+ * The wire contract bounds what a caller may send and the limiter bounds how
+ * often they may send it; neither bounds what an answer costs, and a model left
+ * uncapped will spend its own maximum on one accepted request. Generous enough
+ * that no ordinary answer meets it — a product with longer answers raises it
+ * deliberately.
+ */
+export const maxOutputTokens = 4096;
+
+/**
  * The chat turn, as a function of an HTTP request and its dependencies, so the
  * guards are testable without a server, a session or a live provider.
  *
@@ -76,6 +87,7 @@ export async function handleChatRequest(
   }
 
   const result = streamText({
+    maxOutputTokens,
     messages: await convertToModelMessages(messages.data),
     model,
     system: chatSystemPrompt,
