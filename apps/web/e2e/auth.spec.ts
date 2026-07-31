@@ -15,7 +15,12 @@ test("registers, confirms by email, resets the password and signs in again", asy
   const secondPassword = "the second correct password";
 
   await test.step("the confirmation left the visitor signed in", async () => {
-    await expect(page.getByRole("button", { name })).toBeVisible();
+    // The first assertion after the emailed link landed on the dashboard, so it
+    // waits on that page rather than merely on the URL the helper already
+    // checked — the same reason every step below carries a budget.
+    await expect(page.getByRole("button", { name })).toBeVisible({
+      timeout: 30_000,
+    });
   });
 
   await test.step("sign out", async () => {
@@ -23,11 +28,12 @@ test("registers, confirms by email, resets the password and signs in again", asy
     await page.getByRole("button", { name: "Sign out" }).click();
 
     await expect(page).toHaveURL("/", { timeout: 30_000 });
+    // The URL commits before the landing page it names has rendered.
     await expect(
       page
         .getByRole("navigation", { name: "Get started" })
         .getByRole("link", { name: "Create an account" }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 30_000 });
   });
 
   await test.step("ask for a password reset", async () => {
@@ -35,17 +41,22 @@ test("registers, confirms by email, resets the password and signs in again", asy
     await page.getByLabel("Email address", { exact: true }).fill(email);
     await page.getByRole("button", { name: "Send reset link" }).click();
 
+    // The click is a round trip that renders and writes an email before it
+    // answers, and this is the first assertion behind it.
     await expect(
       page.getByRole("heading", { name: "Check your email" }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 30_000 });
   });
 
   await test.step("follow the reset link and choose a new password", async () => {
     await page.goto(actionUrl(await emailTo(email, 1)));
 
     // The emailed link is the auth server's endpoint; it checks the token and
-    // redirects here with it in the query.
-    await expect(page).toHaveURL(/\/reset-password\?token=.+/);
+    // redirects here with it in the query — onto a route that compiles on first
+    // request against the development server.
+    await expect(page).toHaveURL(/\/reset-password\?token=.+/, {
+      timeout: 30_000,
+    });
 
     await page.getByLabel("New password", { exact: true }).fill(secondPassword);
     await page
@@ -53,9 +64,11 @@ test("registers, confirms by email, resets the password and signs in again", asy
       .fill(secondPassword);
     await page.getByRole("button", { name: "Save new password" }).click();
 
+    // Another round trip: the password is rewritten and every session revoked
+    // before this panel replaces the form.
     await expect(
       page.getByRole("heading", { name: "Password updated" }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 30_000 });
   });
 
   await test.step("sign in with the new password", async () => {
@@ -67,6 +80,8 @@ test("registers, confirms by email, resets the password and signs in again", asy
     await page.getByRole("button", { name: "Sign in" }).click();
 
     await expect(page).toHaveURL("/dashboard", { timeout: 30_000 });
-    await expect(page.getByRole("button", { name })).toBeVisible();
+    await expect(page.getByRole("button", { name })).toBeVisible({
+      timeout: 30_000,
+    });
   });
 });

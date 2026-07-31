@@ -38,8 +38,12 @@ test("an owner invites, promotes and removes a member", async ({ browser }) => {
   await expect(owner.getByLabel("Group name")).toHaveValue("Book Club", {
     timeout: 30_000,
   });
+  // The switcher's list refetches separately from the name field above, so that
+  // wait says nothing about this one — until it arrives the select still holds
+  // its placeholder option.
   await expect(owner.locator("#group-switcher option:checked")).toHaveText(
     "Book Club",
+    { timeout: 30_000 },
   );
 
   const memberContext = await browser.newContext();
@@ -61,18 +65,25 @@ test("an owner invites, promotes and removes a member", async ({ browser }) => {
   await member.getByRole("button", { name: "Accept invitation" }).click();
   // Accepting joins the group and switches the session to it.
   await expect(member).toHaveURL("/dashboard", { timeout: 30_000 });
+  // The URL commits as soon as the dashboard navigation starts; the switcher is
+  // only right once the group behind the new session has been fetched. On the
+  // 5s default this is the assertion that fails under parallel load, resolving
+  // to the placeholder `<option value="">Active group</option>`.
   await expect(member.locator("#group-switcher option:checked")).toHaveText(
     "Book Club",
+    { timeout: 30_000 },
   );
 
   await owner.reload();
   const memberRow = owner.getByRole("row", { name: /Alan Turing/ });
   await expect(memberRow).toBeVisible({ timeout: 30_000 });
   await expect(owner.getByLabel("Role of Alan Turing")).toHaveValue("member");
-  // The invitation has been answered, so it no longer waits for one.
-  await expect(
-    owner.getByText("Nobody is waiting for an answer."),
-  ).toBeVisible();
+  // The invitation has been answered, so it no longer waits for one. The
+  // invitations panel is its own query, so the members wait above is not this
+  // one's margin either.
+  await expect(owner.getByText("Nobody is waiting for an answer.")).toBeVisible(
+    { timeout: 30_000 },
+  );
 
   await owner.getByLabel("Role of Alan Turing").selectOption("admin");
   // The select stays disabled while the role change is in flight, and under
@@ -101,7 +112,10 @@ test("an owner invites, promotes and removes a member", async ({ browser }) => {
   await expect(owner.getByLabel("Group name")).toHaveValue("Book Club", {
     timeout: 30_000,
   });
-  await expect(owner.getByRole("row", { name: /Alan Turing/ })).toBeVisible();
+  // The positive twin of the assertion above: same two stores, same margin.
+  await expect(owner.getByRole("row", { name: /Alan Turing/ })).toBeVisible({
+    timeout: 30_000,
+  });
 
   await owner.getByRole("button", { name: "Remove" }).click();
   await owner.getByRole("button", { name: "Yes, remove" }).click();
@@ -208,9 +222,9 @@ test("a plain member is refused the group's owner actions", async ({
   await expect(owner.getByLabel("Group name")).toHaveValue("Guarded", {
     timeout: 30_000,
   });
-  await expect(
-    owner.getByText("Nobody is waiting for an answer."),
-  ).toBeVisible();
+  await expect(owner.getByText("Nobody is waiting for an answer.")).toBeVisible(
+    { timeout: 30_000 },
+  );
 
   // What a member may do is leave. That clears the session's active group, so
   // the page has to put them back in the one group they still have.
@@ -219,8 +233,11 @@ test("a plain member is refused the group's owner actions", async ({
   await expect(
     member.getByText("Only an owner or an admin can rename this group."),
   ).toHaveCount(0, { timeout: 30_000 });
+  // The wait above is a row leaving; this is the personal group arriving in its
+  // place, which the page only knows once the switch has been written.
   await expect(member.getByLabel("Group name")).toHaveValue(
     "Katherine Johnson",
+    { timeout: 30_000 },
   );
   await owner.reload();
   await expect(

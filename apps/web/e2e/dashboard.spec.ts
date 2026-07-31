@@ -32,9 +32,11 @@ test("signs in, chats on the dashboard and opens settings", async ({
       registerVerifiedAccount(page));
 
   await test.step("the shell names the account and the sections", async () => {
+    // The first assertion after the emailed link landed here waits on the
+    // dashboard itself; the two below it read the same render.
     await expect(
       page.getByRole("heading", { level: 1, name: "Dashboard" }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole("link", { name: "Dashboard" })).toHaveAttribute(
       "aria-current",
       "page",
@@ -56,7 +58,11 @@ test("signs in, chats on the dashboard and opens settings", async ({
     await answered;
 
     await expect(page.getByText("Are you there?")).toBeVisible();
-    await expect(page.getByText(fakeAnthropicAnswer)).toBeVisible();
+    // `answered` resolves on the response's first byte; the answer below still
+    // has to stream through the adapter and be appended to the transcript.
+    await expect(page.getByText(fakeAnthropicAnswer)).toBeVisible({
+      timeout: 30_000,
+    });
   });
 
   await test.step("open settings", async () => {
@@ -64,9 +70,12 @@ test("signs in, chats on the dashboard and opens settings", async ({
 
     // `/settings` is a navigation target that opens its first section.
     await expect(page).toHaveURL("/settings/account", { timeout: 30_000 });
+    // Both settings routes compile on first request here, and the URL commits
+    // before the page it names has rendered — so the first heading behind each
+    // navigation waits on that, not the 5s default.
     await expect(
       page.getByRole("heading", { level: 1, name: "Settings" }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 30_000 });
     await expect(
       page.getByRole("heading", { level: 2, name: "Account" }),
     ).toBeVisible();
@@ -76,7 +85,7 @@ test("signs in, chats on the dashboard and opens settings", async ({
     await expect(page).toHaveURL("/settings/group", { timeout: 30_000 });
     await expect(
       page.getByRole("heading", { level: 2, name: "Group" }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 30_000 });
   });
 
   await test.step("sign out from the account menu", async () => {
@@ -88,6 +97,6 @@ test("signs in, chats on the dashboard and opens settings", async ({
       page
         .getByRole("navigation", { name: "Get started" })
         .getByRole("link", { name: "Create an account" }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 30_000 });
   });
 });
