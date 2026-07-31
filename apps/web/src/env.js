@@ -9,9 +9,14 @@ export const env = createEnv({
   server: {
     AI_CHAT_MODEL: z.string().min(1).default("claude-sonnet-5"),
     ANTHROPIC_API_KEY: z.string().startsWith("sk-ant-").optional(),
+    /**
+     * The session-signing key. 32 characters is what `pnpm bootstrap`
+     * generates and what a deployment is expected to carry; without a floor a
+     * one-character secret passes validation and signs every session cookie.
+     */
     BETTER_AUTH_SECRET:
       process.env.NODE_ENV === "production"
-        ? z.string()
+        ? z.string().min(32)
         : z.string().optional(),
     BETTER_AUTH_URL: z.string().url(),
     /**
