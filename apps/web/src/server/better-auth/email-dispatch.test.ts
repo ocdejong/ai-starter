@@ -111,6 +111,30 @@ describe("createAuthEmailDispatchers", () => {
     ).toBe(true);
   });
 
+  it("reports a send the port refused, naming neither the recipient nor the link", async () => {
+    // The port models a failed send as a value, so nothing throws and the
+    // `catch` below never runs. Without this the only signal that a deployment
+    // is sending no mail at all is a user who never receives any.
+    const sender: EmailSender = {
+      send: vi.fn(async () => ({ error: "no mailer configured", ok: false })),
+    } as const;
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const dispatchers = createAuthEmailDispatchers(sender, { appUrl });
+
+    dispatchers.sendVerification({ to: "person@example.com", url });
+
+    await vi.waitFor(() => expect(consoleError).toHaveBeenCalledTimes(1));
+    const logged = String(consoleError.mock.calls[0]?.[0]);
+    expect(logged).toContain("Verify your email address");
+    expect(logged).toContain("no mailer configured");
+    expect(logged).not.toContain("person@example.com");
+    expect(logged).not.toContain(url);
+
+    consoleError.mockRestore();
+  });
+
   it("does not throw out of the request path when a render fails", async () => {
     const { sender } = fakeSender();
     const consoleError = vi
