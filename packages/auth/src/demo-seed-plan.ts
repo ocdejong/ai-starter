@@ -2,8 +2,13 @@
  * The token `pnpm db:seed` passes once it has proven the target database is on
  * this machine. Its value is arbitrary; what matters is that only the wrapper
  * that ran the check sends it.
+ *
+ * Not exported: `packages/tooling` may import nothing installed, so the wrapper
+ * writes the same two literals rather than importing them. What keeps the two
+ * halves in step is `packages/tooling/src/demo-seed-handshake.test.ts`, which
+ * reads this file and fails when the wrapper stops sending what it requires.
  */
-export const localSeedAcknowledgement = "confirmed-local";
+const localSeedAcknowledgement = "confirmed-local";
 
 /** The variable the wrapper carries it in. */
 export const localSeedAcknowledgementVariable = "AI_STARTER_SEED_LOCAL_CHECKED";

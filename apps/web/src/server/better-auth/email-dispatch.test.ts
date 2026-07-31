@@ -116,7 +116,9 @@ describe("createAuthEmailDispatchers", () => {
     // `catch` below never runs. Without this the only signal that a deployment
     // is sending no mail at all is a user who never receives any.
     const sender: EmailSender = {
-      send: vi.fn(async () => ({ error: "no mailer configured", ok: false })),
+      send: vi.fn(
+        async () => ({ error: "no mailer configured", ok: false }) as const,
+      ),
     } as const;
     const consoleError = vi
       .spyOn(console, "error")

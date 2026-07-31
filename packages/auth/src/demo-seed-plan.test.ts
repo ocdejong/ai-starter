@@ -1,9 +1,17 @@
 import { describe, expect, it } from "vitest";
 
-import { planDemoSeed } from "./demo-seed-plan";
+import { planDemoSeed, type DemoSeedPlan } from "./demo-seed-plan";
 
 const databaseUrl = "postgresql://user:pw@localhost:5440/app";
 const acknowledgement = "confirmed-local";
+
+/** Asserts the plan refused and hands back the reason it gave. */
+function refusal(plan: DemoSeedPlan): string {
+  if (plan.run) {
+    throw new Error("expected the seed to be refused, but it was allowed");
+  }
+  return plan.message;
+}
 
 describe("planDemoSeed", () => {
   it("runs when the wrapper has confirmed the target is local", () => {
@@ -19,8 +27,7 @@ describe("planDemoSeed", () => {
     // tunnel to production is spelled `localhost` too.
     const plan = planDemoSeed({ acknowledgement: undefined, databaseUrl });
 
-    expect(plan.run).toBe(false);
-    expect(plan.message).toContain("pnpm db:seed");
+    expect(refusal(plan)).toContain("pnpm db:seed");
   });
 
   it("refuses an acknowledgement that is not the one the wrapper sends", () => {
@@ -32,7 +39,6 @@ describe("planDemoSeed", () => {
   it("refuses when no database is configured at all", () => {
     const plan = planDemoSeed({ acknowledgement, databaseUrl: undefined });
 
-    expect(plan.run).toBe(false);
-    expect(plan.message).toContain("DATABASE_URL");
+    expect(refusal(plan)).toContain("DATABASE_URL");
   });
 });
