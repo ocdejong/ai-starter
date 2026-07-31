@@ -15,6 +15,7 @@
         "BETTER_AUTH_SECRET",
         "BETTER_AUTH_URL",
         "DATABASE_URL",
+        "EMAIL_DEV_MAILBOX_ENABLED",
         "EMAIL_FROM",
         "EXPO_PUBLIC_*",
         "NEXT_PUBLIC_*",
