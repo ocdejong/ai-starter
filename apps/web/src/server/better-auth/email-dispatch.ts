@@ -50,7 +50,15 @@ export function createAuthEmailDispatchers(
       void (async () => {
         try {
           const { html, text } = await render({ url });
-          await sender.send({ html, subject, text, to });
+          const result = await sender.send({ html, subject, text, to });
+          if (!result.ok) {
+            // The port models a refusal as a value, so this is the only place
+            // it can surface. A deployment whose mailer rejects every message
+            // otherwise looks identical to one that is working.
+            console.error(
+              `Failed to send the "${subject}" email: ${result.error}`,
+            );
+          }
         } catch {
           console.error(`Failed to dispatch the "${subject}" email.`);
         }
