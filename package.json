@@ -17,6 +17,7 @@
     "db:studio": "dotenv -e apps/web/.env -- pnpm --filter @ai-starter/db db:studio",
     "db:validate": "dotenv -e apps/web/.env -- pnpm --filter @ai-starter/db db:validate",
     "deps:backlog": "node packages/tooling/src/bin/deps-backlog.ts",
+    "deps:upstream": "node packages/tooling/src/bin/deps-upstream.ts",
     "dev": "turbo run dev --filter=@ai-starter/web",
     "dev:all": "turbo run dev",
     "dev:mobile": "turbo run dev --filter=@ai-starter/mobile",
