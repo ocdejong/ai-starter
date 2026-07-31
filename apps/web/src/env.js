@@ -23,6 +23,17 @@ export const env = createEnv({
       .enum(["true", "false"])
       .optional()
       .transform((value) => value === "true"),
+    /**
+     * Lets the on-disk dev mailbox serve a production build. The browser suite
+     * sets it, because CI serves `next start` and its journeys read the mail
+     * they trigger; a deployment must not, since the mailbox puts every action
+     * link — a bearer token — on disk and in the log. `pnpm diagnose` reports
+     * it as a failure whenever it is set.
+     */
+    EMAIL_DEV_MAILBOX_ENABLED: z
+      .enum(["true", "false"])
+      .optional()
+      .transform((value) => value === "true"),
     BETTER_AUTH_GITHUB_CLIENT_ID: z.string().optional(),
     BETTER_AUTH_GITHUB_CLIENT_SECRET: z.string().optional(),
     BETTER_AUTH_GOOGLE_CLIENT_ID: z.string().optional(),
@@ -64,6 +75,7 @@ export const env = createEnv({
     BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
     BETTER_AUTH_RATE_LIMIT_DISABLED:
       process.env.BETTER_AUTH_RATE_LIMIT_DISABLED,
+    EMAIL_DEV_MAILBOX_ENABLED: process.env.EMAIL_DEV_MAILBOX_ENABLED,
     BETTER_AUTH_GITHUB_CLIENT_ID: process.env.BETTER_AUTH_GITHUB_CLIENT_ID,
     BETTER_AUTH_GITHUB_CLIENT_SECRET:
       process.env.BETTER_AUTH_GITHUB_CLIENT_SECRET,

@@ -121,6 +121,7 @@ export async function runDiagnostics(root: string): Promise<Check[]> {
   checks.push(environment.check);
   checks.push(checkMobileEnvironment(root));
   checks.push(checkEmail(root));
+  checks.push(checkDevMailbox(root));
   checks.push(checkChat(root));
   checks.push(checkSocialSignIn(root));
   checks.push(checkRateLimit(root));
@@ -571,6 +572,36 @@ export function rateLimitCheck(disabled: string | undefined): Check {
 function checkRateLimit(root: string): Check {
   const values = webEnvValues(root);
   return rateLimitCheck(values?.get("BETTER_AUTH_RATE_LIMIT_DISABLED"));
+}
+
+/**
+ * The dev mailbox writes every message to `.mail/` and logs its text, which
+ * carries the verification and password-reset URLs. It is confined to
+ * non-production for that reason, and this variable is the one way back in — so
+ * a checkout carrying it is a checkout that would leak tokens the moment it
+ * served a production build. A failure rather than a warning, for the same
+ * reason as the rate-limit hatch: nothing else would ever mention it.
+ */
+export function devMailboxCheck(enabled: string | undefined): Check {
+  return enabled === "true"
+    ? {
+        detail:
+          "EMAIL_DEV_MAILBOX_ENABLED is true, so a production build would still write action links to .mail/ and the log.",
+        fix: "Clear EMAIL_DEV_MAILBOX_ENABLED in apps/web/.env. Only the browser suite's own servers may set it, and playwright.config.ts does that per process.",
+        name: "Dev mailbox",
+        status: "failure",
+      }
+    : {
+        detail:
+          "The dev mailbox is limited to development, where no real address receives mail.",
+        name: "Dev mailbox",
+        status: "ok",
+      };
+}
+
+function checkDevMailbox(root: string): Check {
+  const values = webEnvValues(root);
+  return devMailboxCheck(values?.get("EMAIL_DEV_MAILBOX_ENABLED"));
 }
 
 function checkSocialSignIn(root: string): Check {

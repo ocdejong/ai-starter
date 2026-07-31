@@ -223,6 +223,10 @@ export default defineConfig({
         // production, which is what CI serves — counts that as one attacker.
         // `packages/auth`'s integration suite keeps the guard covered.
         BETTER_AUTH_RATE_LIMIT_DISABLED: "true",
+        // The journeys read the mail they trigger, and the dev mailbox is
+        // confined to development because it puts action links on disk. CI
+        // serves a production build, so the suite has to ask for it back.
+        EMAIL_DEV_MAILBOX_ENABLED: "true",
       },
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
@@ -236,6 +240,7 @@ export default defineConfig({
         // environment carries.
         ANTHROPIC_API_KEY: "",
         BETTER_AUTH_RATE_LIMIT_DISABLED: "true",
+        EMAIL_DEV_MAILBOX_ENABLED: "true",
         // Its own origin, so nothing it renders or sets a cookie for belongs to
         // the keyed server. Both servers share this checkout's `.next` and its
         // database; only the chat configuration differs.

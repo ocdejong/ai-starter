@@ -11,6 +11,7 @@ import {
   nodeCheck,
   pinnedVersion,
   rangeAllowsMajor,
+  devMailboxCheck,
   rateLimitCheck,
   socialSignInCheck,
   type Check,
@@ -275,6 +276,21 @@ describe("auth rate limit check", () => {
     const check = rateLimitCheck("true");
     expect(check.status).toBe("failure");
     expect(check.fix).toContain("BETTER_AUTH_RATE_LIMIT_DISABLED");
+  });
+
+  it("fails when a checkout has forced the dev mailbox on", () => {
+    // Same shape as the rate-limit escape hatch: only the browser suite's own
+    // servers may set it, and a checkout that carries it would write action
+    // tokens to disk from a production build.
+    const check = devMailboxCheck("true");
+    expect(check.status).toBe("failure");
+    expect(check.fix).toContain("EMAIL_DEV_MAILBOX_ENABLED");
+  });
+
+  it("is satisfied when the dev mailbox is left to the environment", () => {
+    expect(devMailboxCheck(undefined).status).toBe("ok");
+    expect(devMailboxCheck("false").status).toBe("ok");
+    expect(devMailboxCheck("").status).toBe("ok");
   });
 
   it("treats any other value as the guard being on", () => {
