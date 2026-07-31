@@ -3,5 +3,10 @@
   "compilerOptions": {
     "lib": ["ES2022"]
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "vitest.integration.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "prisma.config.ts",
+    "vitest.integration.config.ts"
+  ]
 }
