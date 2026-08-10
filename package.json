@@ -48,10 +48,10 @@
     "verify:changed": "node packages/tooling/src/bin/verify-changed.ts"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.0",
-    "dependency-cruiser": "^18.1.0",
+    "@playwright/test": "^1.62.1",
+    "dependency-cruiser": "^18.1.1",
     "dotenv-cli": "^11.0.0",
-    "knip": "^6.29.0",
+    "knip": "^6.31.0",
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "squawk-cli": "^2.61.0",
