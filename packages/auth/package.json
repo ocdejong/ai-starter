@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@ai-starter/db": "workspace:*",
-    "@better-auth/expo": "1.6.25",
+    "@better-auth/expo": "1.6.30",
     "better-auth": "^1.6"
   },
   "devDependencies": {
@@ -24,8 +24,8 @@
     "@testcontainers/postgresql": "^12.0.4",
     "@types/node": "^24",
     "eslint": "^9.23.0",
-    "tsx": "^4.23.1",
+    "tsx": "^4.23.12",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   }
 }
