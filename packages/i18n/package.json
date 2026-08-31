@@ -20,7 +20,7 @@
     "@types/node": "^24",
     "eslint": "^9.23.0",
     "typescript": "^6.0.3",
-    "use-intl": "^4.13.4",
-    "vitest": "^4.1.10"
+    "use-intl": "^4.13.7",
+    "vitest": "^4.1.11"
   }
 }
