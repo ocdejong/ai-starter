@@ -44,7 +44,7 @@ jobs:
           persist-credentials: false
 
       - name: Install pnpm
-        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
         with:
           version: 10.32.1
 
@@ -61,7 +61,7 @@ jobs:
       - name: Restore Metro transforms
         if: ${{ matrix.lane == 'native' }}
         id: metro-cache
-        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/metro-cache
           key: ${{ runner.os }}-${{ runner.arch }}-node24-metro-v1-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', 'package.json', 'turbo.json', '.github/workflows/ci.yml', 'packages/*/package.json', 'packages/config/typescript/*.json', 'apps/mobile/package.json', 'apps/mobile/metro.config.cjs', 'apps/mobile/babel.config.cjs', 'apps/mobile/app.json', 'apps/mobile/tsconfig.json') }}-${{ github.sha }}
@@ -78,7 +78,7 @@ jobs:
 
       - name: Save Metro transforms
         if: ${{ success() && matrix.lane == 'native' && github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.metro-cache.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/metro-cache
           key: ${{ steps.metro-cache.outputs.cache-primary-key }}
@@ -111,7 +111,7 @@ jobs:
           persist-credentials: false
 
       - name: Install pnpm
-        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
         with:
           version: 10.32.1
 
@@ -131,7 +131,7 @@ jobs:
       # invalidates changed source modules. Only trusted main pushes save.
       - name: Restore Next compiler cache
         id: next-cache
-        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: apps/web/.next/cache/webpack
           key: ${{ runner.os }}-${{ runner.arch }}-node24-next-webpack-v1-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', 'package.json', 'turbo.json', '.github/workflows/ci.yml', 'packages/*/package.json', 'packages/config/typescript/*.json', 'apps/web/package.json', 'apps/web/next.config.js', 'apps/web/postcss.config.js', 'apps/web/tsconfig.json') }}-${{ github.sha }}
@@ -147,7 +147,7 @@ jobs:
 
       - name: Save Next compiler cache
         if: ${{ success() && github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.next-cache.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: apps/web/.next/cache/webpack
           key: ${{ steps.next-cache.outputs.cache-primary-key }}

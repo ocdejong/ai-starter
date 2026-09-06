@@ -63,7 +63,7 @@ jobs:
       # because code scanning ingest needs GitHub Advanced Security on a private
       # repository; the job fails on findings instead, which needs no plan.
       - name: Audit workflows
-        uses: zizmorcore/zizmor-action@6fc4b006235f201fdab3722e17240ab420d580e5 # v0.6.1
+        uses: zizmorcore/zizmor-action@70fb788f84895a7701f5643d103d587e460b5c99 # v0.6.3
         with:
           version: ${{ env.ZIZMOR_VERSION }}
           advanced-security: false
