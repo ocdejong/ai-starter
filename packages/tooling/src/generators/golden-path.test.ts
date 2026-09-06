@@ -33,7 +33,7 @@ describe("the committed example slices are generator output", () => {
         ...featureTree(names, slice.shape),
       ]);
 
-      expect(rendered.size).toBe(19);
+      expect(rendered.size).toBe(18);
 
       for (const [relative, contents] of rendered) {
         const absolute = path.join(repositoryRoot, relative);

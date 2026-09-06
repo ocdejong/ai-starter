@@ -4,48 +4,68 @@ export type VerificationStep = {
   readonly name: string;
   readonly command: string;
   readonly args: readonly string[];
+  readonly env?: Readonly<Record<string, string>>;
   /** The exact command that repairs this step's failure, when one exists. */
   readonly fix?: string;
 };
 
-function script(name: string): VerificationStep {
-  return { args: ["run", name], command: "pnpm", name };
+export const verificationLanes = [
+  "checks",
+  "units",
+  "integration",
+  "web",
+  "native",
+] as const;
+type VerificationLane = (typeof verificationLanes)[number];
+type OwnedVerificationStep = VerificationStep & {
+  readonly lane: VerificationLane;
+};
+
+function script(name: string, lane: VerificationLane): OwnedVerificationStep {
+  return { args: ["run", name], command: "pnpm", name, lane };
 }
 
 /**
- * The authoritative verification suite, in the order CI runs it: cheap
- * deterministic feedback first, then integration, build and browser evidence.
- * The generated Prisma client is an input to every step that compiles
- * TypeScript, so `db:generate` runs before `lint` and `typecheck` — a checkout
- * whose client predates a pulled schema change would otherwise fail typecheck
- * with property errors that never name `pnpm db:generate` as the fix.
- * `test:e2e:mobile` is last because it is the only step that cannot run
- * everywhere; it skips with a reason rather than failing when no simulator is
- * present, and `pnpm policy` checks the flow file whether or not it runs.
- * `pnpm verify`, the CI workflow and `docs/testing.md` all read this one list.
+ * The authoritative local suite and CI lane ownership. CI repeats the schema
+ * validation and generated-client prerequisites in each isolated checkout.
+ * Local verification stays ordered and runs each step once. The native journey
+ * remains last and reports why it cannot run when no simulator is available.
  */
-export const verificationSteps: readonly VerificationStep[] = [
-  // Prettier's failure output says "Run Prettier with --write to fix"
-  // without naming the script that does it.
-  { ...script("format:check"), fix: "pnpm format" },
-  script("instructions"),
-  script("policy"),
-  script("arch"),
-  script("db:validate"),
-  script("db:lint"),
-  script("db:generate"),
-  // After `db:generate` for the same reason the compiling steps are: Knip
-  // resolves the import graph, and `packages/db` imports the generated client.
-  script("knip"),
-  script("lint"),
-  script("typecheck"),
-  script("test:unit"),
-  script("test:integration"),
-  script("build"),
-  script("db:migrate"),
-  script("test:e2e"),
-  script("test:e2e:mobile"),
+export const verificationSteps: readonly OwnedVerificationStep[] = [
+  { ...script("format:check", "checks"), fix: "pnpm format" },
+  script("instructions", "checks"),
+  script("policy", "checks"),
+  script("arch", "checks"),
+  script("db:validate", "checks"),
+  script("db:lint", "checks"),
+  script("db:generate", "checks"),
+  script("knip", "checks"),
+  script("lint", "checks"),
+  script("typecheck", "checks"),
+  script("test:unit", "units"),
+  script("test:integration", "integration"),
+  script("build:web", "web"),
+  script("build:native", "native"),
+  script("db:migrate", "web"),
+  { ...script("test:e2e", "web"), env: { E2E_USE_BUILD: "true" } },
+  script("test:e2e:mobile", "native"),
 ];
+
+export function selectVerificationLane(
+  lane: string,
+): readonly VerificationStep[] {
+  if (!verificationLanes.some((candidate) => candidate === lane)) {
+    throw new Error(
+      `Unknown verification lane "${lane}". Choose ${verificationLanes.join(", ")}.`,
+    );
+  }
+  return verificationSteps.filter(
+    (step) =>
+      step.lane === lane ||
+      step.name === "db:validate" ||
+      step.name === "db:generate",
+  );
+}
 
 const stepsByName = new Map(verificationSteps.map((step) => [step.name, step]));
 
@@ -70,7 +90,10 @@ export function runVerification(
 ): VerificationOutcome {
   for (const [index, step] of steps.entries()) {
     console.log(`\nverify [${index + 1}/${steps.length}] ${step.name}`);
-    const code = runInherit(step.command, step.args, { cwd: root });
+    const code = runInherit(step.command, step.args, {
+      cwd: root,
+      env: step.env,
+    });
     if (code !== 0) {
       return { code, failedStep: step.name, fix: step.fix };
     }

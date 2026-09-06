@@ -1,19 +1,37 @@
+import { parseArguments } from "../argv.ts";
 import { repositoryRoot } from "../repository.ts";
-import { runVerification, verificationSteps } from "../verification.ts";
+import {
+  runVerification,
+  selectVerificationLane,
+  verificationLanes,
+  verificationSteps,
+} from "../verification.ts";
 
-const usage = `Usage: pnpm verify
+const usage = `Usage: pnpm verify [--lane <name>]
 
-Runs the complete authoritative verification suite, in the same order as CI:
+Runs the complete authoritative suite locally, or one CI lane.
+Lanes: ${verificationLanes.join(", ")}
+
+Full suite:
 ${verificationSteps.map((step) => `  ${step.name}`).join("\n")}`;
 
-if (process.argv.includes("--help")) {
-  console.log(usage);
-} else {
-  const outcome = runVerification(repositoryRoot, verificationSteps);
+function main(): number {
+  const parsed = parseArguments(process.argv.slice(2), {
+    flags: ["lane"],
+    switches: ["help"],
+  });
+  if (parsed.switches.has("help")) {
+    console.log(usage);
+    return 0;
+  }
+  const lane = parsed.flags.get("lane");
+  const steps =
+    lane === undefined ? verificationSteps : selectVerificationLane(lane);
+  const outcome = runVerification(repositoryRoot, steps);
 
   if (outcome.failedStep === undefined) {
     console.log(
-      `\nverify: all ${verificationSteps.length} checks passed: ${verificationSteps
+      `\nverify: all ${steps.length} checks passed: ${steps
         .map((step) => step.name)
         .join(", ")}`,
     );
@@ -27,5 +45,12 @@ if (process.argv.includes("--help")) {
     );
   }
 
-  process.exitCode = outcome.code;
+  return outcome.code;
+}
+
+try {
+  process.exitCode = main();
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exitCode = 1;
 }

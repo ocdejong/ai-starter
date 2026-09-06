@@ -28,7 +28,8 @@ words, and registers it everywhere it has to be registered.
             stable validation codes an interface translates.
   feature   The whole vertical slice — the context, a consumer-owned port, a
             Prisma adapter, a group-scoped tRPC router, web and native screens,
-            and tests at every layer.
+            and unit, component and database integration tests. Add browser
+            coverage only for a critical journey the lower levels cannot prove.
   adapter   A port for an external service and a vendor-free adapter behind it,
             with a timeout, a parsed response, translated errors and redaction.
 

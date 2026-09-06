@@ -61,11 +61,11 @@ forever. Three rules follow, and `pnpm policy` enforces all three:
   nothing in the filter would never report.
 - The context name is the job's `name:`, or its id when it has none.
 
-`Verify`, `Workflows` and `Secrets` are required. `Analyze JavaScript and
-TypeScript` and `Dependencies` are not, because code scanning and the dependency
-graph need a public repository or GitHub Advanced Security — on a private
-repository without either, those jobs fail no matter what the code says. Once one
-of those holds, `pnpm repo:host --code-scanning` adds them.
+`Verify`, `Workflows` and `Secrets` remain required. `Verify` aggregates five parallel jobs and fails if any fails, is cancelled or is skipped. Each job runs `pnpm verify --lane <name>` from the same definition used by local verification. Only the web job starts a service database and installs Chromium. The database integration job provisions its own isolated Testcontainers databases.
+
+CodeQL and dependency review are disabled by default. A public repository or an eligible private repository can opt in with repository Actions variables `ENABLE_CODEQL=true` and `ENABLE_DEPENDENCY_REVIEW=true`. Once both jobs report successfully, `pnpm repo:host --code-scanning` adds their required checks. That command changes the ruleset; it does not set the opt-in variables or buy a license. GitHub documents the private-repository requirements for [code scanning](https://docs.github.com/en/code-security/reference/code-scanning/troubleshoot-analysis-errors/private-repository-enablement) and [dependency review](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependency-review).
+
+The free actionlint, zizmor and Gitleaks checks remain enabled, as do Dependabot updates and the scheduled advisory audit. They do not require Code Security.
 
 ## Review, and why the approval count is zero
 
@@ -115,9 +115,7 @@ so that any weakening lives in the command that caused it.
 
 ## What runs where
 
-`pnpm verify` stays the one functional check list, and CI runs that exact
-command. The scanners are additive jobs beside it, the way CodeQL already was:
+`pnpm verify` stays the one functional check list; CI partitions it into lanes. The scanners are additive jobs beside it:
 `.github/workflows/supply-chain.yml` runs actionlint and zizmor over the
-workflows, gitleaks over the tree, and dependency review over a pull request's
-dependency changes. What those tools catch on the server, `pnpm policy` catches
+workflows, gitleaks over the tree, and opt-in dependency review over a pull request's dependency changes. What those tools catch on the server, `pnpm policy` catches
 in the working copy, so an agent does not have to push to learn it broke a rule.

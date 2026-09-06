@@ -7,7 +7,7 @@ import { runVerification } from "../verification.ts";
 const usage = `Usage: pnpm verify:changed [--base <revision>]
 
 Runs only the checks the current changes can affect. \`pnpm verify\` remains the
-authoritative suite and is what CI runs.`;
+authoritative suite; CI partitions it with \`--lane\`.`;
 
 function main(): number {
   let parsed;

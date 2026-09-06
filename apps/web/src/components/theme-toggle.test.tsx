@@ -32,6 +32,20 @@ describe("ThemeToggle", () => {
     expect(localStorage.getItem("theme")).toBe("dark");
   });
 
+  it("restores a persisted light choice when the provider mounts again", async () => {
+    const user = userEvent.setup();
+    const first = renderToggle();
+    await user.click(screen.getByRole("button", { name: "Light" }));
+    first.unmount();
+    document.documentElement.className = "dark";
+    renderToggle();
+    expect(document.documentElement).toHaveClass("light");
+    expect(screen.getByRole("button", { name: "Light" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
   it("marks the selected option as pressed", async () => {
     const user = userEvent.setup();
     renderToggle();

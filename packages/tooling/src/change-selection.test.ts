@@ -102,6 +102,13 @@ describe("selectChecks", () => {
     expect(names(["packages/api/src/root.ts"])).toContain("test:e2e");
   });
 
+  it("uses development mode when the selection has not built web", () => {
+    const selected = selectChecks(["apps/web/src/app/page.tsx"], base);
+    expect(
+      selected.steps.find((step) => step.name === "test:e2e")?.env,
+    ).toEqual({ E2E_USE_BUILD: "false" });
+  });
+
   it("does not run the browser journey for native-only changes", () => {
     expect(names(["apps/mobile/src/app/index.tsx"])).not.toContain("test:e2e");
   });

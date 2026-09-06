@@ -14,7 +14,11 @@ export function IntlTestProvider({
   locale?: Locale;
 }) {
   return (
-    <NextIntlClientProvider locale={locale} messages={messages[locale]}>
+    <NextIntlClientProvider
+      locale={locale}
+      messages={messages[locale]}
+      timeZone="UTC"
+    >
       {children}
     </NextIntlClientProvider>
   );

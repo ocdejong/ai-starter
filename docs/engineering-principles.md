@@ -101,7 +101,7 @@ Apply dependency inversion selectively: contracts around real boundaries improve
 - TypeScript strictness and type-aware ESLint reject unsafe shortcuts and enforce major import boundaries.
 - Zod validates runtime inputs; tRPC carries contracts to clients; Prisma migrations and PostgreSQL enforce persisted integrity.
 - Unit, component, real-database integration, Playwright, and Maestro suites provide layered evidence.
-- CI repeats format, lint, typecheck, schema, test, build, migration, and end-to-end gates; CodeQL and Dependabot add security and dependency feedback.
+- CI repeats format, lint, typecheck, schema, test, build, migration, and end-to-end gates; opt-in CodeQL and Dependabot add security and dependency feedback.
 - Git history provides reversible checkpoints; `AGENTS.md` defines the required completion workflow.
 
 Rules that cannot yet be enforced mechanically remain binding. When a violation repeats, improve the harness.

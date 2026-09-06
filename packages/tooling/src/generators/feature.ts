@@ -625,7 +625,7 @@ export function generateAdapter(
  *
  * The overlay carries only the files a shape genuinely changes — the repository
  * and its integration test, the router and its test, both panels and their
- * tests, and the browser journey. The boards, the screens, the field-error
+ * tests. The boards, the screens, the field-error
  * helpers and the rename forms are one file serving both, which is the point: a
  * shape is a difference in what the records mean to each other, not a second
  * slice. Later entries win, so an overlay file replaces the base file at the
@@ -710,6 +710,12 @@ export function removeFeature(
     ...renderTree("context", names).keys(),
     ...featureTree(names, "current").keys(),
   ];
+
+  // Earlier generator versions emitted a browser journey for every CRUD slice.
+  const legacyJourney = `apps/web/e2e/${names.kebabPlural}.spec.ts`;
+  if (existsSync(path.join(root, legacyJourney))) {
+    paths.push(legacyJourney);
+  }
 
   for (const relative of paths) {
     const absolute = path.join(root, relative);

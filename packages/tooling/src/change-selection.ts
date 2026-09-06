@@ -169,7 +169,9 @@ export function selectChecks(
   }
 
   if (touches(changedPaths, webBehaviourPaths)) {
-    steps.push(requireStep("test:e2e"));
+    // This selection has not built web. A focused journey compiles the current
+    // source in development mode instead of reading a stale production build.
+    steps.push({ ...requireStep("test:e2e"), env: { E2E_USE_BUILD: "false" } });
     reasons.push(
       "Web-observable behaviour changed; running the browser journey.",
     );
