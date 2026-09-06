@@ -107,7 +107,7 @@ jobs:
     name: Dependencies
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ vars.ENABLE_DEPENDENCY_REVIEW == 'true' && github.event_name == 'pull_request' }}
 
     permissions:
       contents: read

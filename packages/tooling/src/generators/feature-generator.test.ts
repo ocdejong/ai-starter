@@ -165,8 +165,8 @@ describe("generate feature", () => {
     expect(created).toContain(
       "apps/mobile/src/components/press-releases/press-release-panel.tsx",
     );
-    expect(created).toContain("apps/web/e2e/press-releases.spec.ts");
-    expect(created).toHaveLength(19);
+    expect(created).not.toContain("apps/web/e2e/press-releases.spec.ts");
+    expect(created).toHaveLength(18);
   });
 
   it("keeps identifiers and copy in their own forms", () => {
@@ -307,7 +307,7 @@ describe("generate feature", () => {
 
     expect(second.created).toEqual([]);
     expect(second.edited).toEqual([]);
-    expect(second.skipped).toHaveLength(19);
+    expect(second.skipped).toHaveLength(18);
     expect(second.unchanged).toHaveLength(featureRegistryEdits.length);
     expect(featureRegistryEdits.map(({ file }) => read(root, file))).toEqual(
       before,
@@ -342,7 +342,7 @@ describe("generate feature --shape list", () => {
   });
 
   it("writes the same slice, with no record singled out as current", () => {
-    expect(created).toHaveLength(19);
+    expect(created).toHaveLength(18);
     expect(created.map((file) => read(root, file)).join("\n")).not.toContain(
       "isCurrent",
     );
@@ -481,6 +481,23 @@ describe("generate context", () => {
 describe.each(["current", "list"] as const)(
   "generate feature --remove, after --shape %s",
   (shape) => {
+    it("removes browser tests left by an earlier generator version", () => {
+      const names = featureNames("legacy-note");
+      const root = fixtureCheckout(names);
+      const generated = generateFeature(root, names, shape);
+      expect(
+        generated.created.some((file) => file.startsWith("apps/web/e2e/")),
+      ).toBe(false);
+      const journey = "apps/web/e2e/legacy-notes.spec.ts";
+      mkdirSync(path.dirname(path.join(root, journey)), { recursive: true });
+      writeFileSync(
+        path.join(root, journey),
+        "// Earlier generated browser test.\n",
+      );
+      expect(removeFeature(root, names).removed).toContain(journey);
+      expect(existsSync(path.join(root, journey))).toBe(false);
+    });
+
     it(
       "puts every registry back exactly as it found it",
       { timeout: 120_000 },
@@ -515,7 +532,7 @@ describe.each(["current", "list"] as const)(
         // trip are compared in the shape Prettier leaves them.
         format();
 
-        expect(result.removed).toHaveLength(19);
+        expect(result.removed).toHaveLength(18);
         expect(result.absent).toEqual([]);
         expect(
           featureRegistryEdits.map(({ file }) => read(root, file)),

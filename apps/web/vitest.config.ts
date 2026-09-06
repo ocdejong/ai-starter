@@ -19,9 +19,25 @@ export default mergeConfig(
       },
     },
     test: {
-      environment: "jsdom",
-      include: ["src/**/*.test.{ts,tsx}"],
-      setupFiles: ["./src/test/setup.ts"],
+      projects: [
+        {
+          extends: true,
+          test: {
+            name: "server",
+            environment: "node",
+            include: ["src/**/*.test.ts"],
+          },
+        },
+        {
+          extends: true,
+          test: {
+            name: "components",
+            environment: "jsdom",
+            include: ["src/**/*.test.tsx"],
+            setupFiles: ["./src/test/setup.ts"],
+          },
+        },
+      ],
     },
   }),
 );

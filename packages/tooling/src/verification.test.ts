@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -5,6 +6,8 @@ import { describe, expect, it } from "vitest";
 import { repositoryRoot } from "./repository.ts";
 import {
   requireStep,
+  selectVerificationLane,
+  verificationLanes,
   runVerification,
   verificationSteps,
 } from "./verification.ts";
@@ -75,6 +78,29 @@ describe("verificationSteps", () => {
 });
 
 describe("runVerification", () => {
+  it("passes a step's environment only to that command", () => {
+    const outcome = runVerification(repositoryRoot, [
+      {
+        args: [
+          "-e",
+          "process.exit(process.env.VERIFY_TEST_MODE === 'built' ? 0 : 1)",
+        ],
+        command: process.execPath,
+        env: { VERIFY_TEST_MODE: "built" },
+        name: "with environment",
+      },
+      {
+        args: [
+          "-e",
+          "process.exit(process.env.VERIFY_TEST_MODE === undefined ? 0 : 1)",
+        ],
+        command: process.execPath,
+        name: "without environment",
+      },
+    ]);
+    expect(outcome.code).toBe(0);
+  });
+
   it("reports the failed step and its fix command", () => {
     const outcome = runVerification(repositoryRoot, [
       {
@@ -99,4 +125,126 @@ describe("runVerification", () => {
 
     expect(outcome).toEqual({ code: 0, failedStep: undefined, fix: undefined });
   });
+});
+
+describe("verification lanes", () => {
+  const prerequisites = ["db:validate", "db:generate"];
+
+  it.each(["success", "failure", "cancelled", "skipped"])(
+    "accepts the aggregate result only when every job succeeds (%s)",
+    (result) => {
+      const workflow = readFileSync(
+        path.join(repositoryRoot, ".github/workflows/ci.yml"),
+        "utf8",
+      );
+      const aggregate = workflow.split("\n  verify:\n")[1];
+      expect(aggregate).toContain("needs: [lanes, web]");
+      expect(aggregate).toContain("if: ${{ always() }}");
+      const command = aggregate?.split("run: |\n")[1];
+      if (command === undefined) throw new Error("Missing aggregate check");
+      for (const failedJob of ["LANES_RESULT", "WEB_RESULT"]) {
+        const outcome = spawnSync("sh", ["-c", command], {
+          encoding: "utf8",
+          env: {
+            ...process.env,
+            LANES_RESULT: "success",
+            WEB_RESULT: "success",
+            [failedJob]: result,
+          },
+        });
+        expect(outcome.status).toBe(result === "success" ? 0 : 1);
+      }
+    },
+  );
+
+  it("schedules every defined lane in CI", () => {
+    const workflow = readFileSync(
+      path.join(repositoryRoot, ".github/workflows/ci.yml"),
+      "utf8",
+    );
+    const matrix = /lane: \[([^\]]+)\]/.exec(workflow)?.[1];
+    const matrixLanes = matrix?.split(",").map((lane) => lane.trim()) ?? [];
+    const dedicatedLanes = [
+      ...workflow.matchAll(/run: pnpm verify --lane (\w+)/g),
+    ].map((match) => match[1]);
+    expect([...matrixLanes, ...dedicatedLanes].sort()).toEqual(
+      [...verificationLanes].sort(),
+    );
+  });
+
+  it("partitions every mandatory check exactly once except shared prerequisites", () => {
+    const partition = verificationLanes.flatMap((lane) =>
+      selectVerificationLane(lane).map((step) => step.name),
+    );
+    expect([...new Set(partition)].sort()).toEqual(
+      verificationSteps.map((step) => step.name).sort(),
+    );
+    for (const step of verificationSteps) {
+      expect(partition.filter((name) => name === step.name)).toHaveLength(
+        prerequisites.includes(step.name) ? verificationLanes.length : 1,
+      );
+    }
+  });
+
+  it.each(verificationLanes)(
+    "%s validates and generates its own client first",
+    (lane) => {
+      const names = selectVerificationLane(lane).map((step) => step.name);
+      const generate = names.indexOf("db:generate");
+      expect(generate).toBeGreaterThan(names.indexOf("db:validate"));
+      for (const name of [
+        "knip",
+        "lint",
+        "typecheck",
+        "test:unit",
+        "test:integration",
+        "build:web",
+        "build:native",
+      ]) {
+        if (names.includes(name)) {
+          expect(generate).toBeLessThan(names.indexOf(name));
+        }
+      }
+    },
+  );
+
+  it("builds and migrates web before the browser and keeps native separate", () => {
+    expect(requireStep("test:e2e").env).toEqual({ E2E_USE_BUILD: "true" });
+    expect(selectVerificationLane("web").map((step) => step.name)).toEqual([
+      ...prerequisites,
+      "build:web",
+      "db:migrate",
+      "test:e2e",
+    ]);
+    expect(selectVerificationLane("native").map((step) => step.name)).toEqual([
+      ...prerequisites,
+      "build:native",
+      "test:e2e:mobile",
+    ]);
+  });
+
+  it("rejects an unknown lane rather than silently verifying nothing", () => {
+    expect(() => selectVerificationLane("typo")).toThrow(
+      /Unknown verification lane/,
+    );
+  });
+});
+
+describe("verify CLI", () => {
+  it.each([["--lane", "typo"], ["--lane"], ["--unknown"], ["units"]])(
+    "rejects invalid arguments %j before running checks",
+    (...args) => {
+      const result = spawnSync(
+        process.execPath,
+        [
+          path.join(repositoryRoot, "packages/tooling/src/bin/verify.ts"),
+          ...args,
+        ],
+        { encoding: "utf8" },
+      );
+      expect(result.status).toBe(1);
+      expect(result.stderr).toMatch(/lane|argument|option/i);
+      expect(result.stdout).not.toContain("verify [");
+    },
+  );
 });

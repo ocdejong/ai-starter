@@ -18,7 +18,7 @@ export function TestProviders({
 }) {
   return (
     <ThemeProvider>
-      <IntlProvider locale={locale} messages={messages[locale]}>
+      <IntlProvider locale={locale} messages={messages[locale]} timeZone="UTC">
         {children}
       </IntlProvider>
     </ThemeProvider>

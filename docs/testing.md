@@ -4,7 +4,7 @@
 
 | Command                 | Purpose                                                          | Prerequisite                                     |
 | ----------------------- | ---------------------------------------------------------------- | ------------------------------------------------ |
-| `pnpm verify`           | The complete authoritative suite, in CI's order                  | A bootstrapped environment                       |
+| `pnpm verify`           | The complete authoritative suite, cheap checks first             | A bootstrapped environment                       |
 | `pnpm verify:changed`   | Only the checks the current diff can affect                      | A git checkout with a resolvable base revision   |
 | `pnpm test:unit`        | Domain, web component, and native component suites               | Dependencies installed                           |
 | `pnpm test:integration` | Prisma migrations and integrity against PostgreSQL               | Docker/Podman running                            |
@@ -18,6 +18,16 @@
 | `pnpm knip`             | Files, exports and dependencies nothing in the graph reaches     | Dependencies installed                           |
 
 `packages/tooling/src/verification.ts` holds the one ordered definition of the authoritative suite. `pnpm verify`, `pnpm verify:changed` and the CI workflow all read it, so the required checks cannot drift apart. Adding a check means adding it there.
+
+## Parallel CI and fast local feedback
+
+CI runs `pnpm verify --lane checks`, `units`, `integration`, `web` and `native` independently. `packages/tooling/src/verification.ts` owns both the full local order and each step's lane. Each isolated job validates the schema and generates its own Prisma client. The final required `Verify` job accepts only success from every lane; a skipped or cancelled job cannot produce a green result. The partition, prerequisites, CLI arguments and aggregate failure behavior have unit tests in `packages/tooling/src/verification.test.ts`.
+
+Web and native build independently. Native exports only iOS and Android, the platforms the app ships. Database packages run in parallel against separate Testcontainers databases. Web server units use Node; only component tests load jsdom and Testing Library setup. Playwright uses two CI workers and one retry for failure diagnostics.
+
+CI caches pnpm downloads, Next's Webpack compiler intermediates and Metro transforms. It does not restore test verdicts, complete builds or fetched application data. Compiler keys include dependencies and configuration, and only successful main pushes save compiler caches. Parallel jobs shorten elapsed time but repeat dependency installation; reducing browser work also reduces runner work. Measure both wall time and total job minutes after changing this split. Superseded runs are cancelled.
+
+Use a focused unit test while editing, then `pnpm verify:changed`; run `pnpm verify` for handoff. The full local command stays ordered so a cheap failure stops expensive work. Weekly mutation and template rehearsal stay outside the per-push checks.
 
 `pnpm verify:changed` always runs `pnpm arch`, `pnpm policy` and `pnpm knip` alongside formatting, because any change can shift the dependency graph or the repository structure — and deleting the last caller of an export orphans it in a package the diff never named. On top of that it selects work from Turborepo's affected graph — `--filter=...[base]` reaches every dependent, so a change to `packages/domain` typechecks and unit-tests the API, both apps and the email package — plus the rules the graph cannot infer from imports:
 
@@ -36,13 +46,27 @@ Run `pnpm bootstrap` before the integration and browser levels; run `pnpm diagno
 
 Integration tests use Testcontainers and do not touch the development database. They start PostgreSQL, apply every committed migration with `prisma migrate deploy`, run tests, and destroy the container.
 
-Playwright starts the Next.js development server locally. Under `CI=true`, it starts the existing production build. Install its browser once with `pnpm exec playwright install chromium`.
+Direct `pnpm test:e2e` and focused `pnpm verify:changed` selections start the Next.js development server locally. Full verification and the web CI lane set `E2E_USE_BUILD=true` for the browser step, reusing the production build they just produced. Under `CI=true`, Playwright also uses the production build. Built-server runs refuse to reuse a process already on the port, preventing a different app or stale dev server from satisfying the suite. Install its browser once with `pnpm exec playwright install chromium`.
 
 It serves and drives the origin `.env`'s own `BETTER_AUTH_URL` names — `pnpm bootstrap` derives a distinct one for every git worktree, and `pnpm dev` binds the same port — falling back to `http://localhost:3000` when neither is set. That derivation is what lets sibling checkouts run the browser level at once instead of one reusing — and silently asserting against — the other's dev server. `E2E_BASE_URL` still overrides the origin and the port the started server listens on; override it together with `BETTER_AUTH_URL`: the auth server builds emailed action links from that variable, and a session cookie set on one origin is invisible to another, so the journey that follows a confirmation link only works when the two agree.
 
 A worktree that has not derived an origin — because its `.env` predates the derivation, or because `pnpm bootstrap` never ran there — still names the `http://localhost:3000` every checkout starts from, and `reuseExistingServer` would attach it to whichever sibling's dev server reached that port first. Both halves of that are closed: `pnpm bootstrap` now settles the origin on every run instead of only when it creates `.env`, so re-running it repairs such a worktree, and the browser suite refuses to start there until it does rather than reporting a sibling's application as this one's failures. A primary checkout owns `http://localhost:3000` and is unaffected.
 
-Journeys share `apps/web/e2e/support/`: `apps/web/e2e/support/mailbox.ts` reads the dev mailbox the way a person reads their inbox, and `apps/web/e2e/support/account.ts` registers an account and confirms it, which is how a spec that is about something else arrives signed in. The dashboard journey stubs `POST /api/chat` in the browser with a hand-written UI message stream, so it proves the composer, the transport and the transcript without spending a provider token or depending on what a model happens to say. Because the stub answers instead of the handler, the route callback also parses the intercepted body with the shared `chatRequestSchema` — otherwise nothing would prove that what the transport builds is what the server accepts, and the first request against a configured deployment would be the test. The model factory still needs a key at process start, which `apps/web/playwright.config.ts` supplies. Never point a journey at a real provider — the assertion would be probabilistic and the run would cost money.
+Journeys share `apps/web/e2e/support/`: the mailbox helper reads rendered email links, and the account helper registers and confirms through the real auth server. The dashboard test calls the real `/api/chat` handler, session resolver, limiter and provider adapter. Only the Anthropic endpoint is replaced with the local deterministic provider in `apps/web/playwright.config.ts`; no browser request is intercepted and no paid provider is called.
+
+### Browser coverage budget
+
+The default suite has four tests: registration and password recovery, authenticated chat and navigation, language/theme persistence across a real reload, and response security headers. Preferences run on the public homepage without creating accounts. Only one Next server is needed. Review a new browser test against the cheaper coverage below before adding it.
+
+| Behavior                                                               | Primary evidence                                                                                     |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Account settings, password/email changes, session revocation, deletion | Settings component tests and `packages/auth/src/init-auth.integration.test.ts`                       |
+| Group invitations, roles, membership and isolation                     | Group component tests and `packages/auth/src/group-flows.integration.test.ts`                        |
+| Announcement CRUD, superseding and group isolation                     | Domain/router/component tests and `packages/db/src/announcement-repository.integration.test.ts`      |
+| Landing-page copy and unconfigured chat                                | `apps/web/src/app/page.test.tsx`, chat component tests, model factory and handler units              |
+| Locale save/refresh ordering and stored theme                          | Locale-switcher and theme-toggle component tests, locale cookie units, plus the browser reload smoke |
+
+Feature generators emit unit, component and real-database tests without adding a browser journey per CRUD slice. Their removal command still removes journeys emitted by older versions. `pnpm rehearse:template` verifies both generator shapes and removal with the full suite; run it after changing the generator or templates.
 
 ## Native evidence
 
@@ -54,7 +78,7 @@ Beyond that, the suite carries three levels of native evidence:
 
 - `test:unit` runs the Jest/RNTL component suites. A screen file under `apps/mobile/src/app/` cannot hold its own test — expo-router would register the test as a route — so the testable component lives in `src/components/` and the route file only wires it up. ESM-only dependencies need their package added to the `transformIgnorePatterns` allowlist in `apps/mobile/package.json`; pnpm's nested `node_modules` segment re-triggers the pattern, and a `.mjs` entry point cannot be transformed at all, in which case mock the module boundary instead.
 - `typecheck` covers the Expo app against the same shared API and domain contracts as web.
-- `build` runs `expo export --platform all`, so a bundle that no longer resolves or compiles fails the authoritative suite.
+- `build:native` runs `expo export --platform ios --platform android`, so a bundle that no longer resolves or compiles fails the authoritative suite.
 
 What is still missing is the on-device run itself. Install Maestro and boot a simulator to get it locally, and add an EAS Workflow once the product is connected to an Expo project with credentials — then set `NATIVE_JOURNEY=required` there so that lane cannot go quiet. Do not substitute a browser run of React Native Web for it: that exercises a renderer the product does not ship, so it would report confidence the native build has not earned.
 
@@ -96,6 +120,6 @@ Six questions cannot be answered by a pull request, because nothing about the ch
 - **`.github/workflows/template-rehearsal.yml`** runs `pnpm rehearse:template` weekly, and `pnpm rehearse:template` is the one check that judges what this repository _produces_ rather than what it contains. It instantiates the checkout the way a template instantiation ships it — tracked files, no history, no install, no `.env` — renames it with `pnpm starter:init`, bootstraps it from nothing including its own database container, runs all three generators, applies the SQL the feature generator prints, translates the Dutch it wrote in English, and runs the whole authoritative suite over the result. It executes both printed follow-ups rather than reading them, and both come from one source: the migration SQL from the same function the command prints, the Dutch from `finishDutchCopy`, which refuses to run when the keys it knows are no longer the keys the generator writes. It is the only thing that compiles what `pnpm generate adapter` emits: that output is generated, verified and removed rather than committed, so until this existed a syntax error in the adapter template failed nothing. Run it locally with `--keep` to inspect the checkout it leaves behind.
 - **`.github/workflows/sensors.yml`** runs three daily. The suite on an unchanged `main` is an environment canary: the same command CI runs, on a commit CI already passed, so what it can find is never the code — it is a runner image, a PostgreSQL tag, a browser build, or a registry. External links rot on somebody else's schedule, which is why `pnpm links:check` is here and `pnpm instructions` — which proves _internal_ references resolve — is in `pnpm verify`. Advisories re-ask the question Dependabot answers into the Security tab, somewhere a person is looking, and keep working in a downstream product that never turned Dependabot on.
 - **`.github/workflows/mutation.yml`** runs Stryker weekly. Coverage says a line ran; this says the tests would have noticed had it been wrong.
-- **`.github/workflows/codeql.yml`** analyses the repository weekly as well as on every push and pull request. The scheduled run is the one that matters here: a query CodeQL learns after a change merged is a finding no pull request could have produced, and the code it applies to is already on `main`.
+- **`.github/workflows/codeql.yml`** is opt-in through `ENABLE_CODEQL=true`; when enabled it analyses the repository weekly as well as on every push and pull request. The scheduled run is the one that matters here: a query CodeQL learns after a change merged is a finding no pull request could have produced, and the code it applies to is already on `main`.
 
 `pnpm policy` requires every scheduled workflow to be described here, and every one of them files a GitHub issue when it fails, through `.github/actions/report-failure`, and `pnpm policy` rejects a workflow that runs on a schedule without one. A weekly job whose red appears only in the Actions tab is the same shape as the flow nobody ran: one open issue per sensor, a comment on each repeat, closed when the run is green again.

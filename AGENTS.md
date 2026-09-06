@@ -60,10 +60,10 @@ Generated output is expected to pass `pnpm verify:changed` once the follow-ups t
 
 ```bash
 pnpm verify:changed   # only the checks the current diff can affect
-pnpm verify           # the complete authoritative suite, in CI's order
+pnpm verify           # the complete authoritative suite, cheap checks first
 ```
 
-`pnpm verify` owns the list of required checks; `packages/tooling/src/verification.ts` is its single definition, and CI runs the same command. Do not assemble a verification sequence from memory, and do not weaken or reorder the list to land a change.
+`pnpm verify` owns the list of required checks; `packages/tooling/src/verification.ts` is its single definition, and CI partitions that list with `pnpm verify --lane <name>`. Do not assemble a verification sequence from memory, and do not weaken or reorder the list to land a change.
 
 For a schema change:
 
@@ -84,7 +84,7 @@ pnpm test:integration
 - Domain/web units and web components: Vitest; web interaction assertions: Testing Library.
 - Native components: Jest through `jest-expo` and React Native Testing Library.
 - Database behavior: Testcontainers with actual migrations and PostgreSQL.
-- Critical web journeys: Playwright. Critical native journeys: Maestro.
+- Critical web journeys: Playwright. Critical native journeys: Maestro. Add a journey only for a critical boundary that unit, component or integration tests cannot prove; cover variations at the lowest faithful level. Feature generators emit those lower-level tests by default.
 - Test observable behavior, constraints, and failure cases. Avoid snapshots unless the serialized structure itself is the contract.
 - Never mock the database in a test intended to prove persistence integrity.
 
