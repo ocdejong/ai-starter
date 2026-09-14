@@ -19,7 +19,7 @@
   "devDependencies": {
     "@ai-starter/config": "workspace:*",
     "@stryker-mutator/core": "^9.6.1",
-    "@stryker-mutator/vitest-runner": "^9.6.1",
+    "@stryker-mutator/vitest-runner": "^10.0.0",
     "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^9.23.0",
     "typescript": "^6.0.3",
