@@ -54,7 +54,7 @@
   },
   "devDependencies": {
     "@ai-starter/config": "workspace:*",
-    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/eslintrc": "^3.3.7",
     "@tailwindcss/postcss": "^4.0.15",
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
