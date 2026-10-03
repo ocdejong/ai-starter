@@ -11,8 +11,7 @@ import { type PolicyViolation } from "./policy-violation.ts";
  * duplicates and no empty values. All four compare *structure*, so of 267 leaf
  * messages roughly two dozen are pinned by Dutch literals in component tests and
  * the rest could be the English text verbatim with every check still green —
- * including every key `pnpm generate feature` writes, which is exactly what it
- * writes, in English, into both catalogs.
+ * including a new feature's keys, copied into the Dutch catalog untranslated.
  *
  * So the values are compared too. A message identical to the reference locale's
  * is untranslated until somebody says otherwise, in the shrink-only style the

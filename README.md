@@ -37,7 +37,7 @@ English and Dutch, in light and dark:
 - A dashboard behind a session guard, hosting a streaming LLM chat.
 - Groups: a personal one per account, invitations by email, roles, and settings.
 - Account settings: profile, change email, change password, active sessions, delete account.
-- An `announcement` slice that is the feature generator's own output, kept so by a test — and removable with one command when you want your own instead.
+- An `announcement` slice from the database to both apps, kept as the worked example of how a feature is laid out; delete it when you have your own.
 
 Everything above is yours to change. Nothing in it is a demo behind a flag.
 
@@ -56,13 +56,9 @@ pnpm bootstrap
 pnpm verify
 ```
 
-Expect under five minutes from clone to a green suite on an unloaded laptop, and
-around ten on a cold CI runner. Those are the two figures `pnpm rehearse:template`
-measures, and it does strictly more than the three commands above — it also runs
-every generator and applies a migration. The clone itself is seconds,
-`starter:init` and `bootstrap` about a minute each, and `pnpm verify` is the rest.
-Measure on a quiet machine: a laptop already running other suites and database
-containers stretched the same `verify` several times over.
+The clone itself is seconds, `starter:init` and `bootstrap` about a minute each, and
+`pnpm verify` is the rest. Measure on a quiet machine: a laptop already running other
+suites and database containers stretched the same `verify` several times over.
 
 `starter:init` runs once in a fresh clone. It replaces every starter identifier — the workspace package scope, the repository, database and container names, the Expo name, slug and scheme, the iOS bundle identifier, the Android package, and the visible starter text — and then fails if any starter identity survives, including in a file name. It also hands this README over: the title becomes the product's, and this section goes, because a product's front door should not tell its owner to create the product. It finishes by relinking the workspace and reformatting: the new identifiers have different lengths, so Prettier wraps a few files differently.
 
@@ -91,18 +87,9 @@ OAuth and Sentry are optional. Copy the relevant values from the environment exa
 
 ## Add a feature
 
-```bash
-pnpm generate feature reminder --shape list  # the whole vertical slice
-pnpm generate context pricing-tier           # the domain half alone
-pnpm generate adapter sms-sender             # a port and a vendor-free adapter
-pnpm generate feature --remove reminder      # and the way back out
-```
+Read the `announcement` slice and write yours beside it. `AGENTS.md` ("Adding a feature") lists every file a slice owns, from the Zod contract in `packages/domain` through the API port and router, the Prisma model and adapter, and the composition root, to the web and native screens and both message catalogs. `docs/architecture.md` ("The feature slice") explains why it is shaped that way.
 
-A generated feature arrives in the product's own words and already registered everywhere it has to be: the domain export, the API port and router, the composition root, the Prisma model, both message catalogs, and the navigation on web and native. It is expected to pass `pnpm verify:changed` once you have done the follow-ups the command prints — the two things it cannot do for you: writing the migration's hand-written SQL, and translating the Dutch copy it wrote in English, which `pnpm policy` reports as untranslated until you do.
-
-`--shape` is required and has no default, because how your records relate to each other is not something a generator can guess. `current` gives you one record per group with the earlier ones superseded; `list` gives you records that accumulate. You pick it once, at the command, instead of discovering later that your chore board says "Publishing supersedes the current chore".
-
-The `announcement` slice in this repository is that generator's output and a test keeps it so, which makes it the worked example to read. A product that does not want it runs `pnpm generate feature --remove announcement`, which deletes its files and takes every registration back out. `pnpm generate feature announcement --shape current` writes the slice again — as _your_ feature, not as the pinned example: the drift test only holds slices this repository guarantees it has not touched, and yours is one you are about to edit.
+Two things need a hand: the migration (create it with `--create-only` and finish its SQL, because Prisma cannot write a partial index or a CHECK constraint) and the Dutch copy, which `pnpm policy` reports as untranslated until a person has translated it. A product that does not want the example deletes the slice and adds a migration that drops its table.
 
 ## Verify
 

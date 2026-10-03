@@ -21,8 +21,8 @@ function absent(port: string, method: string): () => never {
  *
  * A feature adds a port, and without this every existing router test would stop
  * compiling — the breakage stage 09 saw when the session grew a field, once per
- * feature forever. `pnpm generate feature` adds its entry here, so a router test
- * declares only the port it is about.
+ * feature forever. A new port gets its entry here, so a router test declares
+ * only the port it is about.
  */
 const inertPorts = {
   announcements: {

@@ -113,7 +113,7 @@ module.exports = {
     exclude: {
       path:
         "(^|/)(node_modules|generated|coverage|reports|test-results|playwright-report" +
-        "|\\.next|\\.expo|\\.stryker-tmp|\\.turbo|dist)/",
+        "|\\.next|\\.expo|\\.turbo|dist)/",
     },
     tsConfig: { fileName: "tsconfig.depcruise.json" },
     enhancedResolveOptions: {
