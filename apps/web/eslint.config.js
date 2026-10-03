@@ -8,7 +8,13 @@ const compat = new FlatCompat({
 
 const config = [
   {
-    ignores: [".next/**", "next-env.d.ts"],
+    // Browser reports contain Playwright's bundled viewer, not application code.
+    ignores: [
+      ".next/**",
+      "next-env.d.ts",
+      "playwright-report/**",
+      "test-results/**",
+    ],
   },
   ...compat.extends("next/core-web-vitals"),
   ...baseConfig,

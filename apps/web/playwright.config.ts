@@ -1,14 +1,9 @@
-import { readFileSync, statSync } from "node:fs";
 import { createServer } from "node:net";
-import { fileURLToPath } from "node:url";
 
 import { defineConfig, devices } from "@playwright/test";
 
-import {
-  envFileWebOrigin,
-  resolveWebOrigin,
-  sharedWebOriginError,
-} from "./src/test/web-origin";
+import { readAppEnvFile } from "./e2e/support/env-file";
+import { resolveWebOrigin } from "./src/test/web-origin";
 
 /**
  * The origin the browser drives, and the port the server it starts listens on.
@@ -24,14 +19,24 @@ import {
  *
  * A worktree that bootstrapped before that derivation existed still names the
  * shared origin, so deriving alone cannot keep it off a sibling's server —
- * hence the refusal below, which turns that state into one message naming its
- * fix instead of a suite of failures that look like the product's.
+ * hence the refusal in `e2e/support/global-setup.ts`, which turns that state
+ * into one message naming its fix instead of a suite of failures that look like
+ * the product's. It lives there rather than here because a config that throws
+ * when it loads cannot be loaded by anything else that reads it — knip then
+ * drops the Playwright entries and reports false unused exports.
  */
 const override = process.env.E2E_BASE_URL;
-const baseURL = resolveWebOrigin(override, readEnvFile(".env"));
+const baseURL = resolveWebOrigin(override, readAppEnvFile(".env"));
 const port = new URL(baseURL).port || "3000";
 const useBuild =
   Boolean(process.env.CI) || process.env.E2E_USE_BUILD === "true";
+/**
+ * Adopting a server that already answers is a convenience for a developer with
+ * `pnpm dev` running. `pnpm verify:changed` turns it off: whatever answers on
+ * the port may be another product's dev server, and a suite that passes or fails
+ * against it says nothing about this checkout.
+ */
+const reuseServers = !useBuild && process.env.E2E_REUSE_SERVER !== "false";
 
 /** The local provider stub keeps the real chat route and stream deterministic. */
 const providerOrigin = await stableFreeOrigin(
@@ -112,57 +117,37 @@ function isFree(port: number): Promise<boolean> {
   });
 }
 
+/**
+ * Every `page.request` call goes through Playwright's one keep-alive agent, and
+ * `next start` closes an idle keep-alive socket after Node's five seconds. A
+ * request that reuses a socket as it closes reads `ECONNRESET`, on whichever
+ * journey happened to pause. A server that keeps a connection for longer than
+ * the suite runs cannot close one under a request. Twenty minutes is the web CI
+ * job's own timeout, and `playwright-config.test.ts` holds the command to it.
+ */
+const keepAliveTimeoutMilliseconds = 20 * 60_000;
+
 function webCommand(onPort: string): string {
-  return useBuild ? `pnpm start --port ${onPort}` : `pnpm dev --port ${onPort}`;
-}
-
-if (override === undefined || override === "") {
-  const conflict = sharedWebOriginError(
-    baseURL,
-    exampleOrigin(),
-    isLinkedWorktree(),
-  );
-  if (conflict !== undefined) {
-    throw new Error(conflict);
-  }
-}
-
-function readEnvFile(name: string): string | undefined {
-  try {
-    return readFileSync(fileURLToPath(new URL(name, import.meta.url)), "utf8");
-  } catch {
-    return undefined;
-  }
-}
-
-function exampleOrigin(): string | undefined {
-  const content = readEnvFile(".env.example");
-  return content === undefined ? undefined : envFileWebOrigin(content);
-}
-
-/** A linked worktree marks its root with a `.git` file; a clone has a directory. */
-function isLinkedWorktree(): boolean {
-  try {
-    return statSync(
-      fileURLToPath(new URL("../../.git", import.meta.url)),
-    ).isFile();
-  } catch {
-    return false;
-  }
+  return useBuild
+    ? `pnpm start --port ${onPort} --keepAliveTimeout ${String(keepAliveTimeoutMilliseconds)}`
+    : `pnpm dev --port ${onPort}`;
 }
 
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
-  retries: process.env.CI ? 1 : 0,
+  // A journey that needs a retry to pass is a flaky journey; it is fixed, not
+  // repeated, and the failure's trace is kept so the next run starts from it.
+  retries: 0,
+  globalSetup: "./e2e/support/global-setup.ts",
   ...(process.env.CI ? { workers: 2 } : {}),
   reporter: process.env.CI
     ? [["line"], ["github"], ["html", { open: "never" }]]
     : "list",
   use: {
     baseURL,
-    trace: "on-first-retry",
+    trace: "retain-on-failure",
   },
   projects: [
     {
@@ -173,7 +158,7 @@ export default defineConfig({
   webServer: [
     {
       command: `node scripts/fake-anthropic.ts --port ${new URL(providerOrigin).port}`,
-      reuseExistingServer: !useBuild,
+      reuseExistingServer: reuseServers,
       timeout: 30_000,
       url: providerOrigin,
     },
@@ -199,7 +184,7 @@ export default defineConfig({
         // serves a production build, so the suite has to ask for it back.
         EMAIL_DEV_MAILBOX_ENABLED: "true",
       },
-      reuseExistingServer: !useBuild,
+      reuseExistingServer: reuseServers,
       timeout: 120_000,
       url: baseURL,
     },
