@@ -36,7 +36,15 @@ packageExtensions:
 # is recorded rather than left for a reader to reverse-engineer, and it goes when
 # the upstream range moves.
 overrides:
-  # The three below answer the advisories the daily sensor filed as issue #23,
+  # One React for the whole workspace. `apps/mobile` pins `react` and
+  # `react-dom` exactly (React Native's renderer is built against one React
+  # release), and packages that only *peer* on React — `better-auth`, `prisma`,
+  # `use-intl` — would otherwise auto-install the registry's newest, which
+  # leaves a `react-dom` of one version paired with a `react` of another. Move
+  # these together with `apps/mobile`, never apart.
+  react: 19.2.8
+  react-dom: 19.2.8
+  # The three below answer the advisories the weekly sensor filed as issue #23,
   # and each is here because a version bump could not have reached it. Dependabot
   # proposes a newer *parent*; none of these parents can resolve the fix.
   #

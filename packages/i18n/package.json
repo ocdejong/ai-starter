@@ -13,14 +13,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "zod": "^4.4.3"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@ai-starter/config": "workspace:*",
     "@types/node": "^24",
     "eslint": "^9.23.0",
     "typescript": "^6.0.3",
-    "use-intl": "^4.13.4",
+    "use-intl": "^4.14.9",
     "vitest": "^4.1.10"
   }
 }
