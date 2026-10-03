@@ -17,6 +17,14 @@ export type RunOptions = {
   readonly env?: Readonly<Record<string, string>> | undefined;
 };
 
+/**
+ * spawnSync kills the child once its output passes `maxBuffer`, and the default
+ * is one megabyte — less than depcruise's JSON for a repository this size.
+ * Nothing here streams, so the ceiling only has to sit comfortably above the
+ * largest report.
+ */
+const captureBufferBytes = 64 * 1024 * 1024;
+
 export function runCapture(
   command: string,
   args: readonly string[],
@@ -26,12 +34,21 @@ export function runCapture(
     cwd: options.cwd,
     encoding: "utf8",
     env: { ...process.env, ...options.env },
+    maxBuffer: captureBufferBytes,
     shell: useShell,
   });
 
+  // A spawn error (ENOENT, ENOBUFS) arrives beside whatever the child wrote,
+  // and the child's stderr is an empty string rather than null when it ran, so
+  // the error is appended instead of used as a fallback — otherwise a killed
+  // child reports an exit code and nothing about why.
+  const stderr = [result.stderr ?? "", result.error?.message ?? ""]
+    .filter((part) => part !== "")
+    .join("\n");
+
   return {
     code: result.status ?? 1,
-    stderr: result.stderr ?? result.error?.message ?? "",
+    stderr,
     stdout: result.stdout ?? "",
   };
 }

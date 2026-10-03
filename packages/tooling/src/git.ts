@@ -41,25 +41,28 @@ function revisionExists(root: string, revision: string): boolean {
 
 /**
  * Committed changes since the base plus anything currently uncommitted, so a
- * work-in-progress edit selects the same checks as the eventual commit.
+ * work-in-progress edit selects the same checks as the eventual commit. A
+ * rename lists both paths, so a file moved out of a watched prefix still counts.
  */
 export function changedPaths(root: string, base: string): string[] {
   const committed = requireGit(
-    runCapture("git", ["diff", "--name-only", `${base}...HEAD`], { cwd: root }),
+    runCapture(
+      "git",
+      ["diff", "--name-only", "--no-renames", `${base}...HEAD`],
+      { cwd: root },
+    ),
     "git diff",
   );
   const working = requireGit(
-    runCapture("git", ["status", "--porcelain=v1"], { cwd: root }),
+    runCapture("git", ["status", "--porcelain=v1", "--no-renames"], {
+      cwd: root,
+    }),
     "git status",
   );
 
   const paths = new Set(splitLines(committed));
   for (const line of splitLines(working)) {
-    const withoutStatus = line.slice(3);
-    const renameArrow = withoutStatus.indexOf(" -> ");
-    paths.add(
-      renameArrow === -1 ? withoutStatus : withoutStatus.slice(renameArrow + 4),
-    );
+    paths.add(line.slice(3));
   }
 
   return [...paths].filter((entry) => entry !== "").sort();
