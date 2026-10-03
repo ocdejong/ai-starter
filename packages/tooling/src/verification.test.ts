@@ -68,7 +68,7 @@ describe("verificationSteps", () => {
       ),
     ) as { scripts: Record<string, string> };
 
-    expect(scripts["test"]).toContain("--exclude '**/*.process.test.ts'");
+    expect(scripts.test).toContain("--exclude '**/*.process.test.ts'");
     expect(scripts["test:process"]).toContain(".process.test.ts");
   });
 
