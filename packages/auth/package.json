@@ -16,8 +16,8 @@
   },
   "dependencies": {
     "@ai-starter/db": "workspace:*",
-    "@better-auth/expo": "1.6.25",
-    "better-auth": "^1.6"
+    "@better-auth/expo": "1.7.7",
+    "better-auth": "^1.7.7"
   },
   "devDependencies": {
     "@ai-starter/config": "workspace:*",

@@ -45,9 +45,11 @@ export type UpstreamBlock = {
 };
 
 /**
- * Recorded 2026-07-28, each against the newest published version at the time.
- * A block that clears is deleted from this list in the same change that takes
- * the bump — the list is the backlog, not a log.
+ * The first two recorded 2026-07-28, the rest 2026-10-04, each against the
+ * newest published version at the time. A block that clears is deleted from this
+ * list in the same change that takes the bump — the list is the backlog, not a
+ * log. The last three also have a `auditConfig.ignoreGhsas` entry in
+ * `pnpm-workspace.yaml`, which goes in the same change.
  */
 export const upstreamBlocks: readonly UpstreamBlock[] = [
   {
@@ -69,6 +71,46 @@ export const upstreamBlocks: readonly UpstreamBlock[] = [
     summary:
       "jest 30 — `jest-expo` is Expo-SDK-pinned and still depends on the Jest 29 runtime, so the mobile suite dies on `clearMocksOnScope`",
     wanted: 30,
+  },
+  {
+    dependency: "typescript",
+    field: "peerDependencies",
+    issue: 60,
+    pkg: "typescript-eslint",
+    recorded: ">=4.8.4 <6.1.0",
+    summary:
+      "typescript 7 — `typescript-eslint` declares a compiler range that stops below 6.1, and the same tree in Cloud OS found `dependency-cruiser` and the Next.js path-alias resolver failing under 7.0 too (#60)",
+    wanted: 7,
+  },
+  {
+    dependency: "deepmerge-ts",
+    field: "dependencies",
+    issue: 23,
+    pkg: "@prisma/config",
+    recorded: "7.1.5",
+    summary:
+      "deepmerge-ts GHSA-ggr8-5vv4-36mx is fixed in 8.0.0, but `@prisma/config` pins 7.1.5 exactly, so no override honours its range; the code runs in the Prisma CLI's config loader at development time",
+    wanted: 8,
+  },
+  {
+    dependency: "node-forge",
+    field: "dependencies",
+    issue: 23,
+    pkg: "@expo/cli",
+    recorded: "^1.3.3",
+    summary:
+      "node-forge GHSA-86w9-cpqp-85rv has no patched version (1.4.0 is the newest release); it is reached only through the Expo development server. This block clears when `@expo/cli` drops it — a fix inside 1.x would not fire it, so remove the GHSA from `auditConfig.ignoreGhsas` now and then and run `pnpm audit`",
+    wanted: 2,
+  },
+  {
+    dependency: "braces",
+    field: "dependencies",
+    issue: 23,
+    pkg: "micromatch",
+    recorded: "^3.0.3",
+    summary:
+      "braces GHSA-vfj7-8cjw-p6xm has no patched version (3.0.3 is the newest release); it is reached only through `@types/jest > expect > jest-message-util > micromatch`. This block clears when `micromatch` drops it — a fix inside 3.x would not fire it, so remove the GHSA from `auditConfig.ignoreGhsas` now and then and run `pnpm audit`",
+    wanted: 4,
   },
 ];
 
