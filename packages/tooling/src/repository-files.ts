@@ -11,7 +11,6 @@ const skippedDirectories = new Set([
   ".git",
   ".expo",
   ".next",
-  ".stryker-tmp",
   ".turbo",
   "android",
   "build",

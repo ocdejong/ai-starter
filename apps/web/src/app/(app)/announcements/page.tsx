@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { AnnouncementBoard } from "~/components/announcements/announcement-board";
 
 /**
- * The example feature slice, on the page a generated feature lands on.
+ * The example feature slice, and the page a feature of this shape lives on.
  *
  * It sits inside the `(app)` group, whose layout is the one place a web session
  * is required — so this page never checks for one itself and cannot forget to.

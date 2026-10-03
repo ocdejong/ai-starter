@@ -295,7 +295,7 @@ function checkScheduledSensorsReport(
     )
     .map((workflow) => ({
       file: workflow.file,
-      fix: `Add a job with \`if: failure()\`, \`permissions: { issues: write }\` and a step using \`${failureReportAction}\`, as .github/workflows/mutation.yml does.`,
+      fix: `Add a job with \`if: failure()\`, \`permissions: { issues: write }\` and a step using \`${failureReportAction}\`, as .github/workflows/sensors.yml does.`,
       problem: `This workflow runs on a schedule but files nothing when it fails, so its red would only ever appear in the Actions tab.`,
     }));
 }

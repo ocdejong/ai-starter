@@ -2,20 +2,19 @@
 
 ## Commands
 
-| Command                 | Purpose                                                          | Prerequisite                                     |
-| ----------------------- | ---------------------------------------------------------------- | ------------------------------------------------ |
-| `pnpm verify`           | The complete authoritative suite, cheap checks first             | A bootstrapped environment                       |
-| `pnpm verify:changed`   | Only the checks the current diff can affect                      | A git checkout with a resolvable base revision   |
-| `pnpm test:unit`        | Domain, web component, and native component suites               | Dependencies installed                           |
-| `pnpm test:integration` | Prisma migrations and integrity against PostgreSQL               | Docker/Podman running                            |
-| `pnpm test:e2e`         | Playwright Chromium web journey                                  | Local database running and migrated              |
-| `pnpm test:e2e:mobile`  | Maestro native smoke flow; skips with a reason without a device  | Maestro plus an installed simulator/device build |
-| `pnpm db:lint`          | Squawk over migration SQL a running database would have to take  | Dependencies installed                           |
-| `pnpm mutation`         | Stryker over `domain` and `api`; scheduled, not part of `verify` | Dependencies installed                           |
-| `pnpm instructions`     | Agent instruction surfaces and document references               | A git checkout                                   |
-| `pnpm arch`             | Dependency direction, cycles, and deep imports across the graph  | Dependencies installed                           |
-| `pnpm policy`           | Structural rules the module graph cannot see                     | Dependencies installed                           |
-| `pnpm knip`             | Files, exports and dependencies nothing in the graph reaches     | Dependencies installed                           |
+| Command                 | Purpose                                                         | Prerequisite                                     |
+| ----------------------- | --------------------------------------------------------------- | ------------------------------------------------ |
+| `pnpm verify`           | The complete authoritative suite, cheap checks first            | A bootstrapped environment                       |
+| `pnpm verify:changed`   | Only the checks the current diff can affect                     | A git checkout with a resolvable base revision   |
+| `pnpm test:unit`        | Domain, web component, and native component suites              | Dependencies installed                           |
+| `pnpm test:integration` | Prisma migrations and integrity against PostgreSQL              | Docker/Podman running                            |
+| `pnpm test:e2e`         | Playwright Chromium web journey                                 | Local database running and migrated              |
+| `pnpm test:e2e:mobile`  | Maestro native smoke flow; skips with a reason without a device | Maestro plus an installed simulator/device build |
+| `pnpm db:lint`          | Squawk over migration SQL a running database would have to take | Dependencies installed                           |
+| `pnpm instructions`     | Agent instruction surfaces and document references              | A git checkout                                   |
+| `pnpm arch`             | Dependency direction, cycles, and deep imports across the graph | Dependencies installed                           |
+| `pnpm policy`           | Structural rules the module graph cannot see                    | Dependencies installed                           |
+| `pnpm knip`             | Files, exports and dependencies nothing in the graph reaches    | Dependencies installed                           |
 
 `packages/tooling/src/verification.ts` holds the one ordered definition of the authoritative suite. `pnpm verify`, `pnpm verify:changed` and the CI workflow all read it, so the required checks cannot drift apart. Adding a check means adding it there.
 
@@ -27,7 +26,7 @@ Web and native build independently. Native exports only iOS and Android, the pla
 
 CI caches pnpm downloads, Next's Webpack compiler intermediates and Metro transforms. It does not restore test verdicts, complete builds or fetched application data. Compiler keys include dependencies and configuration, and only successful main pushes save compiler caches. Parallel jobs shorten elapsed time but repeat dependency installation; reducing browser work also reduces runner work. Measure both wall time and total job minutes after changing this split. Superseded runs are cancelled.
 
-Use a focused unit test while editing, then `pnpm verify:changed`; run `pnpm verify` for handoff. The full local command stays ordered so a cheap failure stops expensive work. Weekly mutation and template rehearsal stay outside the per-push checks.
+Use a focused unit test while editing, then `pnpm verify:changed`; run `pnpm verify` for handoff. The full local command stays ordered so a cheap failure stops expensive work.
 
 `pnpm verify:changed` always runs `pnpm arch`, `pnpm policy` and `pnpm knip` alongside formatting, because any change can shift the dependency graph or the repository structure — and deleting the last caller of an export orphans it in a package the diff never named. On top of that it selects work from Turborepo's affected graph — `--filter=...[base]` reaches every dependent, so a change to `packages/domain` typechecks and unit-tests the API, both apps and the email package — plus the rules the graph cannot infer from imports:
 
@@ -66,7 +65,7 @@ The default suite has four tests: registration and password recovery, authentica
 | Landing-page copy and unconfigured chat                                | `apps/web/src/app/page.test.tsx`, chat component tests, model factory and handler units              |
 | Locale save/refresh ordering and stored theme                          | Locale-switcher and theme-toggle component tests, locale cookie units, plus the browser reload smoke |
 
-Feature generators emit unit, component and real-database tests without adding a browser journey per CRUD slice. Their removal command still removes journeys emitted by older versions. `pnpm rehearse:template` verifies both generator shapes and removal with the full suite; run it after changing the generator or templates.
+A feature slice carries unit, component and real-database tests like the `announcement` slice does, without adding a browser journey per CRUD slice.
 
 ## Native evidence
 
@@ -82,13 +81,11 @@ Beyond that, the suite carries three levels of native evidence:
 
 What is still missing is the on-device run itself. Install Maestro and boot a simulator to get it locally, and add an EAS Workflow once the product is connected to an Expo project with credentials — then set `NATIVE_JOURNEY=required` there so that lane cannot go quiet. Do not substitute a browser run of React Native Web for it: that exercises a renderer the product does not ship, so it would report confidence the native build has not earned.
 
-## Coverage and mutation
+## Coverage
 
 `packages/domain` and `packages/api` run their unit tests with a coverage floor, set in `packages/domain/vitest.config.ts` and `packages/api/vitest.config.ts` through `coveredVitestConfig`. The floor is the level the package already holds — 100% for `domain`, whose rules are pure and reachable from any test — so it cannot be satisfied by code nobody exercises, and the only way to fail it is to add some. Coverage counts the whole source tree, not only the files a test happened to import: without that, an untested module counts for nothing and a package can lose coverage by growing.
 
-Coverage says a line ran. It does not say a test would have noticed had the line been wrong, and a suite can reach 100% while asserting almost nothing. `pnpm mutation` answers the second question: Stryker rewrites each statement — flipping a comparison, emptying an object, dropping a condition — and reports how many of those the tests killed. When this landed, `domain` was at 100% coverage and 89% mutation score; the 25 survivors are the honest measure of what the assertions miss.
-
-It runs weekly through `.github/workflows/mutation.yml` and on request, never per edit: a full run is minutes of work for a signal that moves slowly. `packages/domain/stryker.config.json` and `packages/api/stryker.config.json` each carry a break threshold set to the score it already earns. Raise one when a test raises the measurement; never lower one to land a change.
+Coverage says a line ran, not that a test would have noticed had the line been wrong, so read a floor as a minimum rather than as proof of strong assertions.
 
 ## Choosing a level
 
@@ -115,11 +112,9 @@ Tests must not be deleted, skipped, weakened, or rewritten merely because the im
 
 ## Sensors, and what they are for
 
-Six questions cannot be answered by a pull request, because nothing about the change decides them. They run on a schedule instead, deliberately outside `pnpm verify` and deliberately absent from `.github/rulesets/main.json` — a sensor that can block a merge turns somebody else's outage into yours.
+Four questions cannot be answered by a pull request, because nothing about the change decides them. They run on a schedule instead, deliberately outside `pnpm verify` and deliberately absent from `.github/rulesets/main.json` — a sensor that can block a merge turns somebody else's outage into yours.
 
-- **`.github/workflows/template-rehearsal.yml`** runs `pnpm rehearse:template` weekly, and `pnpm rehearse:template` is the one check that judges what this repository _produces_ rather than what it contains. It instantiates the checkout the way a template instantiation ships it — tracked files, no history, no install, no `.env` — renames it with `pnpm starter:init`, bootstraps it from nothing including its own database container, runs all three generators, applies the SQL the feature generator prints, translates the Dutch it wrote in English, and runs the whole authoritative suite over the result. It executes both printed follow-ups rather than reading them, and both come from one source: the migration SQL from the same function the command prints, the Dutch from `finishDutchCopy`, which refuses to run when the keys it knows are no longer the keys the generator writes. It is the only thing that compiles what `pnpm generate adapter` emits: that output is generated, verified and removed rather than committed, so until this existed a syntax error in the adapter template failed nothing. Run it locally with `--keep` to inspect the checkout it leaves behind.
 - **`.github/workflows/sensors.yml`** runs three daily. The suite on an unchanged `main` is an environment canary: the same command CI runs, on a commit CI already passed, so what it can find is never the code — it is a runner image, a PostgreSQL tag, a browser build, or a registry. External links rot on somebody else's schedule, which is why `pnpm links:check` is here and `pnpm instructions` — which proves _internal_ references resolve — is in `pnpm verify`. Advisories re-ask the question Dependabot answers into the Security tab, somewhere a person is looking, and keep working in a downstream product that never turned Dependabot on.
-- **`.github/workflows/mutation.yml`** runs Stryker weekly. Coverage says a line ran; this says the tests would have noticed had it been wrong.
 - **`.github/workflows/codeql.yml`** is opt-in through `ENABLE_CODEQL=true`; when enabled it analyses the repository weekly as well as on every push and pull request. The scheduled run is the one that matters here: a query CodeQL learns after a change merged is a finding no pull request could have produced, and the code it applies to is already on `main`.
 
 `pnpm policy` requires every scheduled workflow to be described here, and every one of them files a GitHub issue when it fails, through `.github/actions/report-failure`, and `pnpm policy` rejects a workflow that runs on a schedule without one. A weekly job whose red appears only in the Actions tab is the same shape as the flow nobody ran: one open issue per sensor, a comment on each repeat, closed when the run is green again.
