@@ -11,7 +11,7 @@ const usage = `Usage: pnpm deps:upstream
 Asks whether the upstream releases this repository is waiting on have landed.
 
 Some declines have no local trigger. A Dependabot group re-proposes eslint 10
-and jest 30 every week, each fails for a reason nothing here can fix, and each
+and jest 30 every month, each fails for a reason nothing here can fix, and each
 is closed again — and the day the upstream release lands, nothing in this
 repository notices. \`upstream-blocks.ts\` records each of those, and this reads
 the upstream manifests and fails when one stops saying what is recorded.

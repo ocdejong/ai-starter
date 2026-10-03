@@ -139,7 +139,7 @@ describe("verification lanes", () => {
       );
       const aggregate = workflow.split("\n  verify:\n")[1];
       expect(aggregate).toContain("needs: [lanes, web]");
-      expect(aggregate).toContain("if: ${{ always() }}");
+      expect(aggregate).toContain("if: ${{ always() && (");
       const command = aggregate?.split("run: |\n")[1];
       if (command === undefined) throw new Error("Missing aggregate check");
       for (const failedJob of ["LANES_RESULT", "WEB_RESULT"]) {
@@ -156,6 +156,29 @@ describe("verification lanes", () => {
       }
     },
   );
+
+  // CI is billed per minute and agents push often: the suite runs once per ready
+  // pull request, so a draft skips every job (the aggregate included) and a push
+  // to `main` runs nothing.
+  it("runs CI once per ready pull request", () => {
+    const workflow = readFileSync(
+      path.join(repositoryRoot, ".github/workflows/ci.yml"),
+      "utf8",
+    );
+    const trigger = workflow.split("\njobs:\n")[0] ?? "";
+    expect(trigger).toContain(
+      "types: [opened, synchronize, reopened, ready_for_review]",
+    );
+    expect(trigger).not.toMatch(/^ {2}push:/m);
+
+    const jobs = (workflow.split("\njobs:\n")[1] ?? "")
+      .split(/\n {2}(?=[a-z]+:\n)/)
+      .filter((job) => job.trim().length > 0);
+    expect(jobs.length).toBeGreaterThanOrEqual(4);
+    for (const job of jobs) {
+      expect(job).toContain("!github.event.pull_request.draft");
+    }
+  });
 
   it("schedules every defined lane in CI", () => {
     const workflow = readFileSync(

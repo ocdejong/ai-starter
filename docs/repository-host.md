@@ -61,11 +61,27 @@ forever. Three rules follow, and `pnpm policy` enforces all three:
   nothing in the filter would never report.
 - The context name is the job's `name:`, or its id when it has none.
 
-`Verify`, `Workflows` and `Secrets` remain required. `Verify` aggregates five parallel jobs and fails if any fails, is cancelled or is skipped. Each job runs `pnpm verify --lane <name>` from the same definition used by local verification. Only the web job starts a service database and installs Chromium. The database integration job provisions its own isolated Testcontainers databases.
+`Verify` is the one required check. It aggregates five parallel jobs and fails if any fails or is cancelled. The `checks`, `units`, `integration` and `native` lanes share one matrix job and the `web` lane is its own job; each runs `pnpm verify --lane <name>` from the same definition used by local verification. Only the web job starts a service database and installs Chromium. The database integration job provisions its own isolated Testcontainers databases.
 
-CodeQL and dependency review are disabled by default. A public repository or an eligible private repository can opt in with repository Actions variables `ENABLE_CODEQL=true` and `ENABLE_DEPENDENCY_REVIEW=true`. Once both jobs report successfully, `pnpm repo:host --code-scanning` adds their required checks. That command changes the ruleset; it does not set the opt-in variables or buy a license. GitHub documents the private-repository requirements for [code scanning](https://docs.github.com/en/code-security/reference/code-scanning/troubleshoot-analysis-errors/private-repository-enablement) and [dependency review](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependency-review).
+The free supply-chain scanners are steps of the `checks` lane, not jobs of their own: actionlint and zizmor over the workflows, and Gitleaks over the checkout. They need no plan and add no runner to a pull request, and a finding fails `Verify` through that lane.
 
-The free actionlint, zizmor and Gitleaks checks remain enabled, as do Dependabot updates and the scheduled advisory audit. They do not require Code Security.
+CodeQL and dependency review need a public repository or GitHub Advanced Security, so their jobs run only when `github.event.repository.private == false`; on a private repository they are skipped rather than failed. Neither is required by default, because a required check that never reports blocks every pull request. Once the repository is public and both jobs have reported, `pnpm repo:host --code-scanning` adds their required checks. GitHub documents the private-repository requirements for [code scanning](https://docs.github.com/en/code-security/reference/code-scanning/troubleshoot-analysis-errors/private-repository-enablement) and [dependency review](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependency-review).
+
+## When CI runs
+
+CI runs the full suite once per ready pull request and nowhere else, because every run is billed minutes and agents push often.
+
+- **Open the pull request as a draft.** CI triggers on `opened`, `synchronize`, `reopened` and `ready_for_review`, and every job is skipped while the pull request is a draft, `Verify` included.
+- **Iterate locally.** `pnpm verify:changed` is the loop; push as often as the work needs, and nothing runs.
+- **Mark it ready when `pnpm verify:changed` passes.** That runs the five lanes once. A later push to the ready pull request runs them again.
+- **Nothing runs on a push to `main`.** The pull request already ran that exact tree, and `.github/workflows/sensors.yml` and the weekly CodeQL run cover what a commit cannot.
+- **`workflow_dispatch`** runs the same suite by hand on any branch.
+
+A draft pull request cannot be merged, so a skipped `Verify` on a draft does not open a way past the ruleset.
+
+## Private repositories on GitHub Free
+
+Branch rulesets are enforced on a private repository only on a paid plan. On GitHub Free the checked-in ruleset can be created but is not enforced: nothing blocks a direct push to the default branch, and `Verify` is advisory — a red one does not stop a merge. Merging a pull request after `Verify` passes is then a convention the maintainer and the agents keep, not something the host guarantees. Making the repository public, or moving to a paid plan, turns enforcement on without any change to the ruleset file.
 
 ## Review, and why the approval count is zero
 
@@ -115,7 +131,8 @@ so that any weakening lives in the command that caused it.
 
 ## What runs where
 
-`pnpm verify` stays the one functional check list; CI partitions it into lanes. The scanners are additive jobs beside it:
-`.github/workflows/supply-chain.yml` runs actionlint and zizmor over the
-workflows, gitleaks over the tree, and opt-in dependency review over a pull request's dependency changes. What those tools catch on the server, `pnpm policy` catches
-in the working copy, so an agent does not have to push to learn it broke a rule.
+`pnpm verify` stays the one functional check list; CI partitions it into lanes. The scanners are additional steps of the `checks` lane in `.github/workflows/ci.yml`, plus an optional dependency-review job that runs only on a public repository. What those tools catch on the server, `pnpm policy` catches in the working copy, so an agent does not have to push to learn it broke a rule.
+
+## Scheduled workflows
+
+Scheduled workflows report a failure by filing an issue through `.github/actions/report-failure`. That action is checked out from this repository, so the reporting job needs `contents: read` as well as `issues: write`: a private repository answers a checkout without it "Repository not found", every report step is skipped, and the sensor fails without telling anyone. `pnpm policy` rejects a job that runs a local action without `contents: read`, from its own `permissions:` or the workflow's.

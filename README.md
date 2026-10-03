@@ -10,7 +10,7 @@ A strongly typed pnpm/Turborepo starter for a Next.js web app and Expo mobile ap
 - tRPC, TanStack Query, Zod, Prisma, and PostgreSQL
 - strict TypeScript; flat, type-aware ESLint; Prettier
 - Vitest/Testing Library, Jest/RNTL, Testcontainers, Playwright, and Maestro
-- GitHub Actions, Dependabot, opt-in CodeQL and dependency review, and optional Sentry
+- GitHub Actions that run once per ready pull request, monthly Dependabot, CodeQL and dependency review on public repositories, and optional Sentry
 
 ```text
 apps/
@@ -98,7 +98,7 @@ pnpm verify:changed   # only the checks the current diff can affect
 pnpm verify           # the complete authoritative suite, cheap checks first
 ```
 
-`pnpm verify` is the single source of truth for what "green" means; CI runs its five independent lanes in parallel, with one required `Verify` result. `verify:changed` uses Turborepo's affected graph, plus explicit rules for evidence the graph cannot infer: a Prisma schema or migration change adds the real-PostgreSQL tests, and web-observable behavior adds the browser journey. A change to the harness itself falls back to the full suite.
+`pnpm verify` is the single source of truth for what "green" means; CI runs its five independent lanes in parallel, once per ready pull request (open the pull request as a draft and mark it ready when `pnpm verify:changed` passes), with one required `Verify` result. `verify:changed` uses Turborepo's affected graph, plus explicit rules for evidence the graph cannot infer: a Prisma schema or migration change adds the real-PostgreSQL tests, and web-observable behavior adds the browser journey. A change to the harness itself falls back to the full suite.
 
 See `AGENTS.md` for the binding agent contract and `docs/README.md` for the repository knowledge map. The ranked hard rules live in `docs/engineering-principles.md`; architecture, verification, and their research basis stay in separate progressively loaded documents.
 

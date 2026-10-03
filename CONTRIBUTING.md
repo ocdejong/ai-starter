@@ -19,4 +19,6 @@ Use `pnpm verify:changed` while iterating. Before opening a pull request, run th
 pnpm verify
 ```
 
+Open the pull request as a draft: CI skips drafts and runs the full suite once, when you mark the pull request ready for review.
+
 Update `.env.example`, migrations, tests, and architecture documentation whenever the corresponding contract changes.
