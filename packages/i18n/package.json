@@ -18,9 +18,9 @@
   "devDependencies": {
     "@ai-starter/config": "workspace:*",
     "@types/node": "^24",
-    "eslint": "^9.23.0",
+    "eslint": "^9.39.5",
     "typescript": "^6.0.3",
     "use-intl": "^4.14.9",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   }
 }

@@ -23,9 +23,9 @@
     "@ai-starter/config": "workspace:*",
     "@testcontainers/postgresql": "^12.2.0",
     "@types/node": "^24",
-    "eslint": "^9.23.0",
+    "eslint": "^9.39.5",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   }
 }
