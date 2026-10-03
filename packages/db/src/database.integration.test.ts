@@ -1,46 +1,22 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-import { fileURLToPath } from "node:url";
-
 import {
-  PostgreSqlContainer,
-  type StartedPostgreSqlContainer,
-} from "@testcontainers/postgresql";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  inject,
+  it,
+} from "vitest";
 
 import type { PrismaClient } from "../generated/prisma";
 import { createDatabaseClient } from "./client";
 
-const execFileAsync = promisify(execFile);
-const packageDirectory = fileURLToPath(new URL("../", import.meta.url));
-const schemaPath = fileURLToPath(
-  new URL("../prisma/schema.prisma", import.meta.url),
-);
-
 describe("PostgreSQL integrity", () => {
-  let container: StartedPostgreSqlContainer;
   let client: PrismaClient;
 
   beforeAll(async () => {
-    container = await new PostgreSqlContainer("postgres:17-alpine")
-      .withDatabase("starter_test")
-      .withUsername("postgres")
-      .withPassword("postgres")
-      .start();
-
-    const databaseUrl = container.getConnectionUri();
-
-    await execFileAsync(
-      "pnpm",
-      ["exec", "prisma", "migrate", "deploy", "--schema", schemaPath],
-      {
-        cwd: packageDirectory,
-        env: { ...process.env, DATABASE_URL: databaseUrl },
-      },
-    );
-
-    client = createDatabaseClient(databaseUrl);
-  }, 120_000);
+    client = createDatabaseClient(inject("databaseUrl"));
+  });
 
   afterEach(async () => {
     await client.member.deleteMany();
@@ -50,7 +26,6 @@ describe("PostgreSQL integrity", () => {
 
   afterAll(async () => {
     await client?.$disconnect();
-    await container?.stop();
   });
 
   it("enforces unique email addresses", async () => {

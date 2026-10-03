@@ -1,5 +1,4 @@
 import type { Database } from "@ai-starter/db";
-import type { StartedPostgreSqlContainer } from "@testcontainers/postgresql";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import {
@@ -14,13 +13,12 @@ import type { Auth } from "./init-auth";
 const password = "password1234";
 
 const inbox: EmailInbox = createEmailInbox();
-let container: StartedPostgreSqlContainer;
 let client: Database;
 let auth: Auth;
 
 beforeAll(async () => {
-  ({ auth, client, container } = await startAuthHarness(inbox));
-}, 120_000);
+  ({ auth, client } = await startAuthHarness(inbox));
+});
 
 afterEach(async () => {
   inbox.clear();
@@ -35,7 +33,6 @@ afterEach(async () => {
 
 afterAll(async () => {
   await client.$disconnect();
-  await container.stop();
 });
 
 /** Registers, verifies the address, signs in, and returns the request headers. */
