@@ -36,19 +36,16 @@ const config = {
     "@prisma/client-runtime-utils",
     // Injected into compiled output by the Expo/Metro Babel transform.
     "@babel/runtime",
-    // Reached through `compat.extends("next/core-web-vitals")`, a string.
-    "eslint-config-next",
     // Run as a binary by `pnpm db:lint`, never imported.
     "squawk-cli",
     // Inferred from `react-email`; the preview CLI does not need it, and stage
     // 02 settled that it is an internal shared library rather than a package
     // this repository should depend on.
     "@react-email/ui",
-    // Both are inferred from app.json keys rather than from an import, and
-    // neither resolves today: `expo export` and the jest suite pass without
-    // them. `expo-system-ui` is the one to re-examine on the first device pass,
-    // where `userInterfaceStyle` is actually rendered.
-    "expo-updates",
+    // Inferred from an app.json key rather than from an import, and it does not
+    // resolve today: `expo export` and the jest suite pass without it. Re-examine
+    // it on the first device pass, where `userInterfaceStyle` is actually
+    // rendered.
     "expo-system-ui",
   ],
   ignoreUnresolved: [
