@@ -7,7 +7,7 @@
  * `pnpm arch` runs this over `apps packages`. Resolution reads `tsconfig.depcruise.json`
  * so the web `~/*` and mobile `@/*` path aliases follow to real files; without it the
  * intra-app graph would dead-end and cycles could hide. The same rules are re-run
- * against planted fixtures by `packages/tooling/src/dependency-cruiser.test.ts`, so a
+ * against planted fixtures by `packages/tooling/src/dependency-cruiser.process.test.ts`, so a
  * rule that silently stops matching is a failing test.
  */
 const workspace = "@ai-starter";

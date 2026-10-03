@@ -106,7 +106,16 @@ describe("selectChecks", () => {
     const selected = selectChecks(["apps/web/src/app/page.tsx"], base);
     expect(
       selected.steps.find((step) => step.name === "test:e2e")?.env,
-    ).toEqual({ E2E_USE_BUILD: "false" });
+    ).toMatchObject({ E2E_USE_BUILD: "false" });
+  });
+
+  // A dev server already on the port may belong to another checkout or another
+  // product entirely, and a journey that passes against it proves nothing.
+  it("starts its own web server rather than adopting one already on the port", () => {
+    const selected = selectChecks(["apps/web/src/app/page.tsx"], base);
+    expect(
+      selected.steps.find((step) => step.name === "test:e2e")?.env,
+    ).toMatchObject({ E2E_REUSE_SERVER: "false" });
   });
 
   it("does not run the browser journey for native-only changes", () => {
@@ -129,6 +138,37 @@ describe("selectChecks", () => {
       verificationSteps,
     );
   });
+
+  // The tests that spawn knip and depcruise take minutes, and nothing a feature
+  // diff touches can change what they prove.
+  it.each([
+    "packages/domain/src/announcement.ts",
+    "apps/web/src/app/page.tsx",
+    "packages/db/prisma/schema.prisma",
+    "AGENTS.md",
+  ])(
+    "leaves the process-spawning tooling tests out when %s changes",
+    (file) => {
+      expect(names([file])).not.toContain("test:tooling");
+    },
+  );
+
+  it.each([
+    ".dependency-cruiser.cjs",
+    "knip.config.js",
+    "tsconfig.depcruise.json",
+  ])("runs the process-spawning tooling tests when %s changes", (file) => {
+    expect(names([file])).toContain("test:tooling");
+  });
+
+  // These are harness paths, so the authoritative suite runs and it carries the
+  // tooling tests as one of its steps.
+  it.each(["packages/tooling/src/git.ts", "packages/config/eslint/rules.js"])(
+    "runs the process-spawning tooling tests when %s changes",
+    (file) => {
+      expect(names([file])).toContain("test:tooling");
+    },
+  );
 
   it("explains every selection", () => {
     expect(
