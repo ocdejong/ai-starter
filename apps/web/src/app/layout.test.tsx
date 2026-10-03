@@ -1,4 +1,9 @@
-import { Children, isValidElement, type ReactElement } from "react";
+import {
+  Children,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/font/google", () => ({ Geist: () => ({ variable: "geist" }) }));
@@ -14,7 +19,7 @@ import RootLayout from "./layout";
 
 function onlyChild(element: ReactElement): ReactElement {
   const [child] = Children.toArray(
-    (element.props as { children?: unknown }).children,
+    (element.props as { children?: ReactNode }).children,
   );
   if (!isValidElement(child)) {
     throw new Error("The layout no longer nests the element this test reads.");
