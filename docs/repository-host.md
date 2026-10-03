@@ -77,7 +77,7 @@ CI runs the full suite once per ready pull request and nowhere else, because eve
 - **Nothing runs on a push to `main`.** The pull request already ran that exact tree, and `.github/workflows/sensors.yml` and the weekly CodeQL run cover what a commit cannot.
 - **`workflow_dispatch`** runs the same suite by hand on any branch.
 
-A draft pull request cannot be merged, so a skipped `Verify` on a draft does not open a way past the ruleset.
+GitHub counts a job skipped by `if:` as passing, so a draft's `Verify` reads green until the run that `ready_for_review` starts reports. Wait for that run's `Verify` before merging; a draft itself cannot be merged.
 
 ## Private repositories on GitHub Free
 
