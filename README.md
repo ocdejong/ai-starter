@@ -94,11 +94,11 @@ Two things need a hand: the migration (create it with `--create-only` and finish
 ## Verify
 
 ```bash
-pnpm verify:changed   # only the checks the current diff can affect
-pnpm verify           # the complete authoritative suite, cheap checks first
+pnpm verify:changed   # only the checks the current diff can affect; the local gate
+pnpm verify           # the complete suite in CI's order; optional locally
 ```
 
-`pnpm verify` is the single source of truth for what "green" means; CI runs its five independent lanes in parallel, once per ready pull request (open the pull request as a draft and mark it ready when `pnpm verify:changed` passes), with one required `Verify` result. `verify:changed` uses Turborepo's affected graph, plus explicit rules for evidence the graph cannot infer: a Prisma schema or migration change adds the real-PostgreSQL tests, and web-observable behavior adds the browser journey. A change to the harness itself falls back to the full suite.
+`pnpm verify` is the single source of truth for what "green" means; CI runs its five independent lanes in parallel, with one required `Verify` result, on every ready pull request. Locally, `verify:changed` is enough to mark a draft ready; run the full `pnpm verify` for a risky change or when CI is unavailable. `verify:changed` uses Turborepo's affected graph, plus explicit rules for evidence the graph cannot infer: a Prisma schema or migration change adds the real-PostgreSQL tests, and web-observable behavior adds the browser journey. A change to the harness itself falls back to the full suite.
 
 See `AGENTS.md` for the binding agent contract and `docs/README.md` for the repository knowledge map. The ranked hard rules live in `docs/engineering-principles.md`; architecture, verification, and their research basis stay in separate progressively loaded documents.
 

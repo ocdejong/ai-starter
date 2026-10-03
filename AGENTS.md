@@ -58,29 +58,33 @@ Prisma cannot express a partial index or a CHECK constraint, so create the migra
 2. State acceptance criteria and identify the owning domain/layer. Keep the change to one narrow vertical slice.
 3. Put validation and deterministic rules in `packages/domain` first; keep side effects in adapters.
 4. For changed behavior, use red-green testing where practical: observe the focused test fail, implement, then observe it pass. Use real PostgreSQL for persistence behavior.
-5. Change Prisma through a migration. For unsupported features such as CHECK constraints, create the migration without applying it, edit its SQL, then apply it.
+5. Change Prisma through a migration written with `pnpm db:migration:new`; edit its SQL where the schema cannot express the change, then apply it.
 6. Inspect the finished diff and exercise the real user/runtime interface appropriate to the risk.
-7. Run `pnpm verify:changed` while iterating, then `pnpm verify` before handing off.
-8. Commit one coherent, verified change at a time with an imperative commit message. Leave no unrelated or half-finished state.
+7. Iterate with `pnpm verify:changed`, which runs only the checks the current diff can affect.
+8. Commit one coherent change at a time with an imperative commit message. Leave no unrelated or half-finished state.
+9. Open the pull request as a draft; CI does not run on a draft. Mark it ready for review once `pnpm verify:changed` passes. CI then runs every lane on the ready pull request, and that run is the gate.
 
 ```bash
-pnpm verify:changed   # only the checks the current diff can affect
-pnpm verify           # the complete authoritative suite, cheap checks first
+pnpm verify:changed   # only the checks the current diff can affect; the local gate
+pnpm verify           # the complete suite in CI's order; optional locally
 ```
 
-`pnpm verify` owns the list of required checks; `packages/tooling/src/verification.ts` is its single definition, and CI partitions that list with `pnpm verify --lane <name>`. Do not assemble a verification sequence from memory, and do not weaken or reorder the list to land a change.
+A full local `pnpm verify` is optional. Run it for a risky change — the harness, the schema, dependencies, anything cross-cutting — or when CI is unavailable. It is slow, and parallel worktrees on one machine contend for the same Docker, ports and CPU, so do not make it the default loop. `pnpm verify` owns the list of required checks; `packages/tooling/src/verification.ts` is its single definition, and CI partitions that list with `pnpm verify --lane <name>`. Do not assemble a verification sequence from memory, and do not weaken or reorder the list to land a change.
 
 For a schema change:
 
 ```bash
-pnpm db:migrate:dev --name descriptive_change --create-only
+# Edit packages/db/prisma/schema.prisma, then:
+pnpm db:migration:new descriptive_change
 # Inspect and, when needed, edit migration.sql.
 pnpm db:lint
-pnpm db:migrate:dev
+pnpm db:migrate
 pnpm test:integration
 ```
 
-`pnpm db:lint` runs Squawk over every migration written since the gate landed and names the exact line to add. Expect to prefix a new migration with `set lock_timeout` and `set statement_timeout`: Prisma applies the file inside a transaction, so both are transaction-local, and without them a schema change waits behind whatever is already holding the table. `.squawk.toml` records the two rules this repository excludes and why.
+`pnpm db:migration:new` writes the migration folder from `prisma migrate diff` and prepends the two timeouts `pnpm db:lint` requires. It stands in for `prisma migrate dev --create-only`, which refuses to run without a terminal; it needs `DATABASE_URL` to name a local PostgreSQL, on which it creates and drops a scratch database. For an unsupported feature such as a CHECK constraint, edit the written SQL before applying it.
+
+`pnpm db:lint` runs Squawk over every migration written since the gate landed and names the exact line to add. A migration needs `set lock_timeout` and `set statement_timeout` at the top, which `pnpm db:migration:new` writes: Prisma applies the file inside a transaction, so both are transaction-local, and without them a schema change waits behind whatever is already holding the table. `.squawk.toml` records the two rules this repository excludes and why.
 
 `pnpm db:push:prototype` is a disposable prototyping escape hatch. Never use it for a shared or deployed database; it refuses to run unless `DATABASE_URL` resolves to a local host, so change a shared database through a migration instead.
 
@@ -103,4 +107,4 @@ pnpm test:integration
 
 ## Completion criteria
 
-A task is not complete while `pnpm verify` fails. Completion MUST report concrete verification evidence and any check that could not run. Do not silently skip a gate, claim success from code inspection alone, or hand a reviewer output you have not reviewed.
+A task is complete when `pnpm verify:changed` passes locally and CI is green on the ready pull request. Completion MUST report concrete verification evidence — the commands run with their results, and the CI run — and any check that could not run. Do not silently skip a gate, claim success from code inspection alone, or hand a reviewer output you have not reviewed. A full `pnpm verify` you chose to run counts: if it fails, the task is not complete.

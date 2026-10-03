@@ -2,19 +2,21 @@
 
 ## Commands
 
-| Command                 | Purpose                                                         | Prerequisite                                     |
-| ----------------------- | --------------------------------------------------------------- | ------------------------------------------------ |
-| `pnpm verify`           | The complete authoritative suite, cheap checks first            | A bootstrapped environment                       |
-| `pnpm verify:changed`   | Only the checks the current diff can affect                     | A git checkout with a resolvable base revision   |
-| `pnpm test:unit`        | Domain, web component, and native component suites              | Dependencies installed                           |
-| `pnpm test:integration` | Prisma migrations and integrity against PostgreSQL              | Docker/Podman running                            |
-| `pnpm test:e2e`         | Playwright Chromium web journey                                 | Local database running and migrated              |
-| `pnpm test:e2e:mobile`  | Maestro native smoke flow; skips with a reason without a device | Maestro plus an installed simulator/device build |
-| `pnpm db:lint`          | Squawk over migration SQL a running database would have to take | Dependencies installed                           |
-| `pnpm instructions`     | Agent instruction surfaces and document references              | A git checkout                                   |
-| `pnpm arch`             | Dependency direction, cycles, and deep imports across the graph | Dependencies installed                           |
-| `pnpm policy`           | Structural rules the module graph cannot see                    | Dependencies installed                           |
-| `pnpm knip`             | Files, exports and dependencies nothing in the graph reaches    | Dependencies installed                           |
+| Command                 | Purpose                                                          | Prerequisite                                     |
+| ----------------------- | ---------------------------------------------------------------- | ------------------------------------------------ |
+| `pnpm verify`           | The complete authoritative suite, cheap checks first             | A bootstrapped environment                       |
+| `pnpm verify:changed`   | Only the checks the current diff can affect                      | A git checkout with a resolvable base revision   |
+| `pnpm test:unit`        | Domain, web component, and native component suites               | Dependencies installed                           |
+| `pnpm test:tooling`     | Tooling tests that spawn knip and depcruise; minutes, units lane | Dependencies installed                           |
+| `pnpm test:integration` | Prisma migrations and integrity against PostgreSQL               | Docker/Podman running                            |
+| `pnpm test:e2e`         | Playwright Chromium web journey                                  | Local database running and migrated              |
+| `pnpm test:e2e:mobile`  | Maestro native smoke flow; skips with a reason without a device  | Maestro plus an installed simulator/device build |
+| `pnpm db:migration:new` | Writes a migration from the schema diff, timeouts included       | `DATABASE_URL` naming a local PostgreSQL         |
+| `pnpm db:lint`          | Squawk over migration SQL a running database would have to take  | Dependencies installed                           |
+| `pnpm instructions`     | Agent instruction surfaces and document references               | A git checkout                                   |
+| `pnpm arch`             | Dependency direction, cycles, and deep imports across the graph  | Dependencies installed                           |
+| `pnpm policy`           | Structural rules the module graph cannot see                     | Dependencies installed                           |
+| `pnpm knip`             | Files, exports and dependencies nothing in the graph reaches     | Dependencies installed                           |
 
 `packages/tooling/src/verification.ts` holds the one ordered definition of the authoritative suite. `pnpm verify`, `pnpm verify:changed` and the CI workflow all read it, so the required checks cannot drift apart. Adding a check means adding it there.
 
@@ -22,11 +24,13 @@
 
 CI runs `pnpm verify --lane checks`, `units`, `integration`, `web` and `native` independently. `packages/tooling/src/verification.ts` owns both the full local order and each step's lane. Each isolated job validates the schema and generates its own Prisma client. The final required `Verify` job accepts only success from every lane; a skipped or cancelled job cannot produce a green result. The partition, prerequisites, CLI arguments and aggregate failure behavior have unit tests in `packages/tooling/src/verification.test.ts`.
 
-Web and native build independently. Native exports only iOS and Android, the platforms the app ships. Database packages run in parallel against separate Testcontainers databases. Web server units use Node; only component tests load jsdom and Testing Library setup. Playwright uses two CI workers and one retry for failure diagnostics.
+Web and native build independently. Native exports only iOS and Android, the platforms the app ships. `packages/db` and `packages/auth` run in parallel, each against its own PostgreSQL. Web server units use Node; only component tests load jsdom and Testing Library setup. Playwright uses two CI workers and never retries: a journey that needs a second attempt is fixed, and `trace: "retain-on-failure"` keeps what the first attempt did. The CI web server starts with `--keepAliveTimeout` set to the job's timeout, because Node's five-second default closes an idle socket under a Playwright request that reuses it, which reads as `ECONNRESET`.
 
 CI caches pnpm downloads, Next's Webpack compiler intermediates and Metro transforms. It does not restore test verdicts, complete builds or fetched application data. Compiler keys include dependencies and configuration, and only successful main pushes save compiler caches. Parallel jobs shorten elapsed time but repeat dependency installation; reducing browser work also reduces runner work. Measure both wall time and total job minutes after changing this split. Superseded runs are cancelled.
 
-Use a focused unit test while editing, then `pnpm verify:changed`; run `pnpm verify` for handoff. The full local command stays ordered so a cheap failure stops expensive work.
+Use a focused unit test while editing, then `pnpm verify:changed`. Open the pull request as a draft and mark it ready once `pnpm verify:changed` passes: the CI run on the ready pull request, every lane, is the gate. A full local `pnpm verify` is optional — for a risky change, or when CI is unavailable — and stays ordered so a cheap failure stops expensive work. The scheduled sensors below stay outside the checks a pull request runs.
+
+Two files in `packages/tooling` spawn knip and depcruise against planted fixtures and take minutes: `packages/tooling/src/knip.process.test.ts` and `packages/tooling/src/dependency-cruiser.process.test.ts`. Their `process` file suffix keeps them out of `pnpm test:unit` and into `pnpm test:tooling`, which `packages/tooling/src/verification.ts` still places in the units lane, so CI runs them. `verify:changed` adds `test:tooling` only when `knip.config.js`, `.dependency-cruiser.cjs` or `tsconfig.depcruise.json` changes; a change to `packages/tooling` or `packages/config` is a harness change and runs the whole suite, that step included.
 
 `pnpm verify:changed` always runs `pnpm arch`, `pnpm policy` and `pnpm knip` alongside formatting, because any change can shift the dependency graph or the repository structure — and deleting the last caller of an export orphans it in a package the diff never named. On top of that it selects work from Turborepo's affected graph — `--filter=...[base]` reaches every dependent, so a change to `packages/domain` typechecks and unit-tests the API, both apps and the email package — plus the rules the graph cannot infer from imports:
 
@@ -34,36 +38,38 @@ Use a focused unit test while editing, then `pnpm verify:changed`; run `pnpm ver
 - a change under `packages/auth/` or `packages/db/` adds the real-PostgreSQL tests on its own;
 - a change under `apps/web/`, `packages/api/`, `packages/auth/`, `packages/db/`, `packages/domain/`, `packages/email/` or `packages/i18n/` adds the browser journey — the journeys sign up through the real auth server, click a link an email template rendered, and assert copy a catalog supplies, so each of those can break one while every unit suite stays green;
 - a change under `apps/mobile/` or `packages/i18n/` adds the native journey;
+- a change to the knip or dependency-cruiser configuration adds `test:tooling`;
 - a change to an instruction surface or a documentation file rechecks the instruction policy;
 - a change to the harness itself (`turbo.json`, the root manifest, the lockfile, `packages/config`, `packages/tooling`, or a workflow) falls back to the full suite.
 
-`packages/tokens/` is deliberately absent from the journey rules: it reaches the browser as colours no journey asserts, and the generated stylesheet is kept honest by a unit test. `verify:changed` is a fast local filter, never the handoff gate.
+`packages/tokens/` is deliberately absent from the journey rules: it reaches the browser as colours no journey asserts, and the generated stylesheet is kept honest by a unit test. `verify:changed` is the fast local filter; the CI run on the ready pull request is the gate.
 
 `packages/tooling/src/change-selection.test.ts` pins one representative diff per class — migration, web page, native screen, native flow, domain schema, email template, i18n catalog, auth flow, design tokens — asserting the whole selection rather than only what it contains, because an over-selection is the reason someone stops running the command at all.
 
 Run `pnpm bootstrap` before the integration and browser levels; run `pnpm diagnose` when one of them fails for an environmental reason.
 
-Integration tests use Testcontainers and do not touch the development database. They start PostgreSQL, apply every committed migration with `prisma migrate deploy`, run tests, and destroy the container.
+Integration tests use Testcontainers and do not touch the development database. Each package's Vitest `globalSetup` (`packages/db/test/integration-global-setup.ts`, `packages/auth/test/integration-global-setup.ts`) starts one PostgreSQL, applies every committed migration with `prisma migrate deploy`, provides its URL to the test files through `inject("databaseUrl")`, and destroys the container at the end. A setup file truncates every table before each file, so a file starts empty whichever file ran before it; a file that needs isolation between its own tests still cleans up in `afterEach`.
 
-Direct `pnpm test:e2e` and focused `pnpm verify:changed` selections start the Next.js development server locally. Full verification and the web CI lane set `E2E_USE_BUILD=true` for the browser step, reusing the production build they just produced. Under `CI=true`, Playwright also uses the production build. Built-server runs refuse to reuse a process already on the port, preventing a different app or stale dev server from satisfying the suite. Install its browser once with `pnpm exec playwright install chromium`.
+Direct `pnpm test:e2e` and focused `pnpm verify:changed` selections start the Next.js development server locally. A direct run adopts a dev server that already answers on the port; `verify:changed` sets `E2E_REUSE_SERVER=false` so the run fails on an occupied port instead of asserting against another checkout's or another product's server. Full verification and the web CI lane set `E2E_USE_BUILD=true` for the browser step, reusing the production build they just produced. Under `CI=true`, Playwright also uses the production build. Built-server runs refuse to reuse a process already on the port, preventing a different app or stale dev server from satisfying the suite. Install its browser once with `pnpm exec playwright install chromium`.
 
 It serves and drives the origin `.env`'s own `BETTER_AUTH_URL` names — `pnpm bootstrap` derives a distinct one for every git worktree, and `pnpm dev` binds the same port — falling back to `http://localhost:3000` when neither is set. That derivation is what lets sibling checkouts run the browser level at once instead of one reusing — and silently asserting against — the other's dev server. `E2E_BASE_URL` still overrides the origin and the port the started server listens on; override it together with `BETTER_AUTH_URL`: the auth server builds emailed action links from that variable, and a session cookie set on one origin is invisible to another, so the journey that follows a confirmation link only works when the two agree.
 
-A worktree that has not derived an origin — because its `.env` predates the derivation, or because `pnpm bootstrap` never ran there — still names the `http://localhost:3000` every checkout starts from, and `reuseExistingServer` would attach it to whichever sibling's dev server reached that port first. Both halves of that are closed: `pnpm bootstrap` now settles the origin on every run instead of only when it creates `.env`, so re-running it repairs such a worktree, and the browser suite refuses to start there until it does rather than reporting a sibling's application as this one's failures. A primary checkout owns `http://localhost:3000` and is unaffected.
+A worktree that has not derived an origin — because its `.env` predates the derivation, or because `pnpm bootstrap` never ran there — still names the `http://localhost:3000` every checkout starts from, and `reuseExistingServer` would attach it to whichever sibling's dev server reached that port first. Both halves of that are closed: `pnpm bootstrap` now settles the origin on every run instead of only when it creates `.env`, so re-running it repairs such a worktree, and the browser suite refuses to start there until it does rather than reporting a sibling's application as this one's failures. The refusal runs in Playwright's `globalSetup` (`apps/web/e2e/support/global-setup.ts`), not while `apps/web/playwright.config.ts` loads: a config that throws on load cannot be read by knip, which then drops the Playwright and Vitest entries and reports false unused exports in every fresh worktree. A primary checkout owns `http://localhost:3000` and is unaffected.
 
 Journeys share `apps/web/e2e/support/`: the mailbox helper reads rendered email links, and the account helper registers and confirms through the real auth server. The dashboard test calls the real `/api/chat` handler, session resolver, limiter and provider adapter. Only the Anthropic endpoint is replaced with the local deterministic provider in `apps/web/playwright.config.ts`; no browser request is intercepted and no paid provider is called.
 
 ### Browser coverage budget
 
-The default suite has four tests: registration and password recovery, authenticated chat and navigation, language/theme persistence across a real reload, and response security headers. Preferences run on the public homepage without creating accounts. Only one Next server is needed. Review a new browser test against the cheaper coverage below before adding it.
+The default suite has two journeys: registration and password recovery, and authenticated chat and navigation. Only one Next server is needed. Review a new browser test against the cheaper coverage below before adding it.
 
-| Behavior                                                               | Primary evidence                                                                                     |
-| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Account settings, password/email changes, session revocation, deletion | Settings component tests and `packages/auth/src/init-auth.integration.test.ts`                       |
-| Group invitations, roles, membership and isolation                     | Group component tests and `packages/auth/src/group-flows.integration.test.ts`                        |
-| Announcement CRUD, superseding and group isolation                     | Domain/router/component tests and `packages/db/src/announcement-repository.integration.test.ts`      |
-| Landing-page copy and unconfigured chat                                | `apps/web/src/app/page.test.tsx`, chat component tests, model factory and handler units              |
-| Locale save/refresh ordering and stored theme                          | Locale-switcher and theme-toggle component tests, locale cookie units, plus the browser reload smoke |
+| Behavior                                                               | Primary evidence                                                                                |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Account settings, password/email changes, session revocation, deletion | Settings component tests and `packages/auth/src/init-auth.integration.test.ts`                  |
+| Group invitations, roles, membership and isolation                     | Group component tests and `packages/auth/src/group-flows.integration.test.ts`                   |
+| Announcement CRUD, superseding and group isolation                     | Domain/router/component tests and `packages/db/src/announcement-repository.integration.test.ts` |
+| Landing-page copy and unconfigured chat                                | `apps/web/src/app/page.test.tsx`, chat component tests, model factory and handler units         |
+| Locale save/refresh ordering, stored theme, document language          | Locale-switcher, theme-toggle and root-layout tests, `setLocale` and locale-resolution units    |
+| Response security headers                                              | `apps/web/src/test/next-config.test.ts` reads the exported Next configuration                   |
 
 A feature slice carries unit, component and real-database tests like the `announcement` slice does, without adding a browser journey per CRUD slice.
 
