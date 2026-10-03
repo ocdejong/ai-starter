@@ -1,9 +1,10 @@
 name: Sensors
 
 # The questions a pull request cannot answer, because nothing about the code
-# decides them. `main` was green when it merged; whether it is green *today*
-# depends on a runner image, a PostgreSQL tag, a browser build and somebody
-# else's website — all of which move without a commit here.
+# decides them. `main` was green when it merged; whether the world around it is
+# still fine *today* depends on somebody else's website, an advisory database and
+# an upstream release schedule — all of which move without a commit here. They
+# run weekly: what they find stays true for days, so a daily run only re-asks.
 #
 # Deliberately not required checks and deliberately absent from
 # `.github/rulesets/main.json`: a sensor that can block a merge is a sensor that
@@ -11,9 +12,9 @@ name: Sensors
 # instead, which is the whole point of running it at all.
 on:
   schedule:
-    # 04:00 UTC daily, ahead of the mutation run and of a working morning in
-    # Europe, so a broken environment is known before anyone depends on it.
-    - cron: "0 4 * * *"
+    # 04:00 UTC every Monday, ahead of a working morning in Europe, so a rotted
+    # link or a fresh advisory is known before anyone depends on it.
+    - cron: "0 4 * * 1"
   workflow_dispatch:
 
 concurrency:
@@ -23,66 +24,6 @@ concurrency:
 permissions: {}
 
 jobs:
-  suite:
-    name: Suite on an unchanged main
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    permissions:
-      contents: read
-
-    services:
-      postgres:
-        image: postgres:17-alpine
-        env:
-          POSTGRES_DB: starter_ci
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_USER: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d starter_ci"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    env:
-      BETTER_AUTH_SECRET: ci-only-secret-at-least-thirty-two-characters-long
-      BETTER_AUTH_URL: http://localhost:3000
-      CI: true
-      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/starter_ci
-      EXPO_PUBLIC_API_URL: http://127.0.0.1:3000
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
-        with:
-          version: 10.32.1
-
-      - name: Set up Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 24
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Install Playwright browser
-        run: pnpm exec playwright install --with-deps chromium
-
-      # The same command CI runs, on a commit CI already passed. What this can
-      # find is therefore never the code: it is the runner image, the PostgreSQL
-      # tag, the browser build, or a registry that stopped answering.
-      - name: Verify
-        run: pnpm verify
-
   links:
     name: External links
     runs-on: ubuntu-latest
@@ -139,39 +80,6 @@ jobs:
       - name: Audit the resolved dependency tree
         run: pnpm audit --audit-level high
 
-  backlog:
-    name: The Dependabot backlog
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    # `checks: read` is load-bearing and fails quietly without: the check-runs
-    # endpoint answers 403, every proposal reports "no checks reported", and the
-    # distinction between a green one nobody merged and a red one nobody triaged
-    # — the whole point of reading them — disappears without an error.
-    permissions:
-      checks: read
-      contents: read
-      pull-requests: read
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Set up Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 24
-
-      # Node built-ins only, like the link sensor: this asks the host a question
-      # about pull requests, so it must keep working when the dependency graph
-      # is the very thing a proposal has broken.
-      - name: Age every open proposal
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: node packages/tooling/src/bin/deps-backlog.ts
-
   upstream:
     name: The upstream releases this repository waits on
     runs-on: ubuntu-latest
@@ -200,14 +108,17 @@ jobs:
   report:
     name: Report a scheduled failure
     if: ${{ failure() }}
-    needs: [suite, links, advisories, backlog, upstream]
+    needs: [links, advisories, upstream]
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
     # The sensors themselves run with `contents: read` and nothing else. Only
     # this job holds a token that can write, and all it runs is the checked-in
-    # composite action.
+    # composite action. `contents: read` is load-bearing here too: the checkout
+    # that fetches that action fails on a private repository without it, and
+    # every report step is then skipped without a word.
     permissions:
+      contents: read
       issues: write
 
     steps:
@@ -215,18 +126,6 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-
-      - name: The suite stopped passing on an unchanged main
-        if: ${{ needs.suite.result == 'failure' }}
-        uses: ./.github/actions/report-failure
-        with:
-          label: sensor:suite
-          title: The suite fails on a main nobody changed
-          summary: >-
-            `pnpm verify` failed on a commit it already passed on, so the cause
-            is the environment rather than the code: a runner image, the
-            PostgreSQL or Playwright build, or a registry.
-          token: ${{ github.token }}
 
       - name: A link this repository points at is gone
         if: ${{ needs.links.result == 'failure' }}
@@ -237,19 +136,6 @@ jobs:
           summary: >-
             One of the documentation links died on somebody else's schedule.
             Point each reported link at what replaced it, or remove it.
-          token: ${{ github.token }}
-
-      - name: The dependency-update loop stopped completing
-        if: ${{ needs.backlog.result == 'failure' }}
-        uses: ./.github/actions/report-failure
-        with:
-          label: sensor:dependencies
-          title: Dependabot proposals are older than the run that made them
-          summary: >-
-            A bump has outlived the weekly cadence without an ending. Each one
-            listed in the run log is merged, repaired and merged, or closed with
-            the reason written in the pull request — the recipe for each is in
-            `docs/dependency-updates.md`.
           token: ${{ github.token }}
 
       - name: An upstream release this repository was waiting on has landed

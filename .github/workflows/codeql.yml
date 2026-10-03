@@ -1,10 +1,15 @@
 name: CodeQL
 
+# Code scanning needs a public repository or paid GitHub Advanced Security. On a
+# private repository without it the analysis fails on every run and nothing can
+# pass it, so the analysis job runs only where the repository is public. It runs
+# on ready pull requests, never drafts, and weekly; a merge to `main` is not
+# analysed again, because the pull request already analysed that tree and the
+# weekly run covers queries CodeQL learns later.
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
   schedule:
     - cron: "23 5 * * 1"
   workflow_dispatch:
@@ -15,7 +20,7 @@ permissions: {}
 jobs:
   analyze:
     name: Analyze JavaScript and TypeScript
-    if: ${{ vars.ENABLE_CODEQL == 'true' }}
+    if: ${{ github.event.repository.private == false && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -44,8 +49,8 @@ jobs:
         with:
           category: /language:javascript-typescript
 
-  # CodeQL also runs on every push and pull request, where a failure is already
-  # in front of somebody. Only the weekly run needs a destination of its own —
+  # CodeQL also runs on every ready pull request, where a failure is already in
+  # front of somebody. Only the weekly run needs a destination of its own —
   # nobody is waiting on it, and its finding is the kind that stays true.
   report:
     name: Report a scheduled failure
@@ -54,7 +59,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
+    # `contents: read` is load-bearing: the job checks out the local action it
+    # reports through, and a private repository answers a token without it
+    # "Repository not found" — every step is then skipped and the failure goes
+    # unreported.
     permissions:
+      contents: read
       issues: write
 
     steps:

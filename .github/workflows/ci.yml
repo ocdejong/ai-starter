@@ -1,9 +1,19 @@
 name: CI
 
+# The full suite runs once per ready pull request, and nowhere else. Agents open
+# a pull request as a draft, iterate with `pnpm verify:changed` locally, and mark
+# it ready once that passes; `ready_for_review` starts the run, and a push to a
+# ready pull request re-runs it. A draft skips every job, `main` is not re-tested
+# after a merge (the pull request already ran this exact tree), and the scheduled
+# sensors in `sensors.yml` cover what a commit cannot. `workflow_dispatch` is the
+# manual escape hatch for a branch without a pull request.
+#
+# Every job carries the same draft gate. `github.event.pull_request` does not
+# exist on a manual dispatch, so the gate names the event rather than comparing
+# an absent field to `false`.
 on:
-  push:
-    branches: [main]
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 concurrency:
@@ -22,10 +32,21 @@ env:
   CI: true
   DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/starter_ci
   EXPO_PUBLIC_API_URL: http://127.0.0.1:3000
+  # Pinned tool releases. `pnpm policy` fails when a release download has no
+  # checksum verification, because an unverified download is an unpinned
+  # dependency wearing a version number. Dependabot does not maintain these —
+  # bump the version and the checksum together, from the release's own checksums
+  # file.
+  ACTIONLINT_VERSION: 1.7.12
+  ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+  GITLEAKS_VERSION: 8.30.1
+  GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+  ZIZMOR_VERSION: 1.28.0
 
 jobs:
   lanes:
     name: Verify ${{ matrix.lane }}
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -43,6 +64,62 @@ jobs:
         with:
           persist-credentials: false
 
+      # The supply-chain scanners are steps of the checks lane rather than jobs
+      # of their own, so a pull request pays for one runner instead of three.
+      # They run before the install on purpose: Gitleaks scans the checkout, and
+      # a populated `node_modules` is not something anyone committed. The tools
+      # live in the runner's temp directory, out of the tree they scan.
+      - name: Install actionlint
+        if: ${{ matrix.lane == 'checks' }}
+        run: |
+          set -euo pipefail
+          cd "${RUNNER_TEMP}"
+          archive="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl --fail --silent --show-error --location --retry 3 --output "${archive}" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${archive}"
+          echo "${ACTIONLINT_SHA256}  ${archive}" | sha256sum --check --strict
+          tar --extract --file "${archive}" actionlint
+          rm "${archive}"
+
+      - name: Lint workflows
+        if: ${{ matrix.lane == 'checks' }}
+        run: |
+          "${RUNNER_TEMP}/actionlint" -color
+
+      # Static analysis for the workflows themselves: unpinned actions, excessive
+      # permissions, template injection, artifact poisoning. SARIF upload is off
+      # because code scanning ingest needs GitHub Advanced Security on a private
+      # repository; the step fails on findings instead, which needs no plan.
+      - name: Audit workflows
+        if: ${{ matrix.lane == 'checks' }}
+        uses: zizmorcore/zizmor-action@6fc4b006235f201fdab3722e17240ab420d580e5 # v0.6.1
+        with:
+          version: ${{ env.ZIZMOR_VERSION }}
+          advanced-security: false
+          annotations: true
+          persona: regular
+
+      # The official Gitleaks action requires a licence key for organization
+      # repositories, which is the wrong default for a template. The release
+      # binary is free, and a pinned checksum is a stronger guarantee than a
+      # floating action tag would be.
+      - name: Install Gitleaks
+        if: ${{ matrix.lane == 'checks' }}
+        run: |
+          set -euo pipefail
+          cd "${RUNNER_TEMP}"
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl --fail --silent --show-error --location --retry 3 --output "${archive}" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
+          echo "${GITLEAKS_SHA256}  ${archive}" | sha256sum --check --strict
+          tar --extract --file "${archive}" gitleaks
+          rm "${archive}"
+
+      - name: Scan for committed secrets
+        if: ${{ matrix.lane == 'checks' }}
+        run: |
+          "${RUNNER_TEMP}/gitleaks" dir . --no-banner --redact --exit-code 1
+
       - name: Install pnpm
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
         with:
@@ -58,16 +135,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Restore Metro transforms
-        if: ${{ matrix.lane == 'native' }}
-        id: metro-cache
-        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
-        with:
-          path: ${{ runner.temp }}/metro-cache
-          key: ${{ runner.os }}-${{ runner.arch }}-node24-metro-v1-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', 'package.json', 'turbo.json', '.github/workflows/ci.yml', 'packages/*/package.json', 'packages/config/typescript/*.json', 'apps/mobile/package.json', 'apps/mobile/metro.config.cjs', 'apps/mobile/babel.config.cjs', 'apps/mobile/app.json', 'apps/mobile/tsconfig.json') }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-node24-metro-v1-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', 'package.json', 'turbo.json', '.github/workflows/ci.yml', 'packages/*/package.json', 'packages/config/typescript/*.json', 'apps/mobile/package.json', 'apps/mobile/metro.config.cjs', 'apps/mobile/babel.config.cjs', 'apps/mobile/app.json', 'apps/mobile/tsconfig.json') }}-
-
       # Lane ownership and prerequisites come from verification.ts, just as the
       # full local suite does. No check verdict or complete build is restored.
       - name: Verify lane
@@ -76,15 +143,9 @@ jobs:
           TMPDIR: ${{ runner.temp }}
         run: pnpm verify --lane "$VERIFY_LANE"
 
-      - name: Save Metro transforms
-        if: ${{ success() && matrix.lane == 'native' && github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.metro-cache.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
-        with:
-          path: ${{ runner.temp }}/metro-cache
-          key: ${{ steps.metro-cache.outputs.cache-primary-key }}
-
   web:
     name: Verify web
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -125,32 +186,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Compiler intermediates only: exclude fetch responses, complete .next
-      # builds, .turbo verdicts and deploy artifacts. The key binds dependency,
-      # compiler configuration and CI's public fixture environment; Webpack
-      # invalidates changed source modules. Only trusted main pushes save.
-      - name: Restore Next compiler cache
-        id: next-cache
-        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
-        with:
-          path: apps/web/.next/cache/webpack
-          key: ${{ runner.os }}-${{ runner.arch }}-node24-next-webpack-v1-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', 'package.json', 'turbo.json', '.github/workflows/ci.yml', 'packages/*/package.json', 'packages/config/typescript/*.json', 'apps/web/package.json', 'apps/web/next.config.js', 'apps/web/postcss.config.js', 'apps/web/tsconfig.json') }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-node24-next-webpack-v1-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', 'package.json', 'turbo.json', '.github/workflows/ci.yml', 'packages/*/package.json', 'packages/config/typescript/*.json', 'apps/web/package.json', 'apps/web/next.config.js', 'apps/web/postcss.config.js', 'apps/web/tsconfig.json') }}-
-
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
 
       # This lane builds web, migrates its database, then runs the browser suite.
       - name: Verify lane
         run: pnpm verify --lane web
-
-      - name: Save Next compiler cache
-        if: ${{ success() && github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.next-cache.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
-        with:
-          path: apps/web/.next/cache/webpack
-          key: ${{ steps.next-cache.outputs.cache-primary-key }}
 
       - name: Upload Playwright report
         if: ${{ !cancelled() }}
@@ -161,10 +202,39 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  # Reads the dependency graph, which needs a public repository or GitHub
+  # Advanced Security, so it runs only where the graph exists. A private
+  # repository without a paid plan would fail the job on every pull request.
+  # Deliberately outside the `Verify` aggregate: it answers a question about the
+  # host, and a check no commit can turn green must not be able to block one.
+  dependencies:
+    name: Dependencies
+    if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft && github.event.repository.private == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: moderate
+          comment-summary-in-pr: never
+
+  # Reports on every ready pull request and every manual dispatch, and not on a
+  # draft: `always()` alone would run it after skipped lanes and fail a draft
+  # that was never meant to be tested. A draft cannot be merged, so the skipped
+  # required check does not open a way past the ruleset.
   verify:
     name: Verify
     needs: [lanes, web]
-    if: ${{ always() }}
+    if: ${{ always() && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
     runs-on: ubuntu-latest
     timeout-minutes: 1
     permissions: {}

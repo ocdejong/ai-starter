@@ -12,7 +12,7 @@ import { rulesetDirectory } from "./repository-host.ts";
  * and one lifecycle-script allowlist rather than two.
  *
  * These are line predicates, deliberately, not a YAML parser. `actionlint` in
- * `.github/workflows/supply-chain.yml` is what proves the files parse at all;
+ * `.github/workflows/ci.yml` is what proves the files parse at all;
  * this module only has to recognise the shapes a reviewer would look for, and a
  * checker that cannot be fooled by valid-but-unusual YAML is worth less than one
  * that never blocks a change for the wrong reason.
@@ -298,6 +298,92 @@ function checkScheduledSensorsReport(
       fix: `Add a job with \`if: failure()\`, \`permissions: { issues: write }\` and a step using \`${failureReportAction}\`, as .github/workflows/sensors.yml does.`,
       problem: `This workflow runs on a schedule but files nothing when it fails, so its red would only ever appear in the Actions tab.`,
     }));
+}
+
+const localAction = /^\s*(?:-\s+)?uses\s*:\s*\.\//;
+
+/** What a `permissions:` block at `indent` says about reading the repository. */
+type ContentsGrant = "granted" | "withheld" | "undeclared";
+
+function contentsGrant(
+  lines: readonly string[],
+  indent: number,
+): ContentsGrant {
+  const block = new RegExp(`^ {${String(indent)}}permissions\\s*:(.*)$`);
+  const sibling = new RegExp(`^ {${String(indent)}}\\S`);
+  const entry = new RegExp(
+    `^ {${String(indent + 2)}}contents\\s*:\\s*(read|write)\\b`,
+  );
+  let inside = false;
+
+  for (const raw of lines) {
+    const line = withoutComment(raw);
+    if (line.trim().length === 0) {
+      continue;
+    }
+    const opened = block.exec(line);
+    if (opened !== null) {
+      const inline = (opened[1] ?? "").trim();
+      if (inline === "read-all" || inline === "write-all") {
+        return "granted";
+      }
+      if (inline.length > 0) {
+        return "withheld";
+      }
+      inside = true;
+      continue;
+    }
+    if (sibling.test(line)) {
+      if (inside) {
+        return "withheld";
+      }
+      continue;
+    }
+    if (inside && entry.test(line)) {
+      return "granted";
+    }
+  }
+
+  return inside ? "withheld" : "undeclared";
+}
+
+/**
+ * A job that runs an action from `./.github/actions/` has to check the
+ * repository out first, and on a private repository that checkout needs
+ * `contents: read` — a token without it is answered "Repository not found".
+ *
+ * The reporting jobs had `issues: write` and nothing else, so the checkout
+ * failed, every reporting step was skipped, and for a week each sensor's
+ * failure landed exactly where `checkScheduledSensorsReport` exists to keep it
+ * from landing: in the Actions tab alone. A workflow can name the action and
+ * still never run it; this is the half of that rule the first half cannot see.
+ */
+function checkLocalActionsCanCheckOut(
+  workflows: readonly Workflow[],
+): PolicyViolation[] {
+  const violations: PolicyViolation[] = [];
+
+  for (const workflow of workflows) {
+    const topLevel = contentsGrant(workflow.lines, 0);
+    for (const job of workflow.jobs) {
+      if (!job.lines.some((line) => localAction.test(withoutComment(line)))) {
+        continue;
+      }
+      const own = contentsGrant(job.lines, 4);
+      const granted =
+        own === "granted" || (own === "undeclared" && topLevel === "granted");
+      if (granted) {
+        continue;
+      }
+      violations.push({
+        file: workflow.file,
+        fix: `Add \`contents: read\` to the \`permissions:\` of "${job.id}"; the action it runs is checked out of this repository, and a private repository refuses the checkout without it.`,
+        problem: `Job "${job.id}" runs a local action but its token cannot read the repository, so on a private repository the checkout fails and every step after it is skipped.`,
+      });
+    }
+  }
+
+  return violations;
 }
 
 function checkVerifiedDownloads(
@@ -633,6 +719,7 @@ export function checkWorkflowPolicy(root: string): PolicyViolation[] {
     ...checkWorkflowPermissions(workflows),
     ...checkVerifiedDownloads(workflows),
     ...checkScheduledSensorsReport(workflows),
+    ...checkLocalActionsCanCheckOut(workflows),
     ...checkScheduledSensorsDocumented(root, workflows),
     ...checkRulesetPayload(rulesets),
     ...checkRequiredChecksReport(rulesets, workflows),
