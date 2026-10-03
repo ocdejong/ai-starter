@@ -1,44 +1,25 @@
-import { execFile } from "node:child_process";
-import { fileURLToPath } from "node:url";
-import { promisify } from "node:util";
-
 import {
-  PostgreSqlContainer,
-  type StartedPostgreSqlContainer,
-} from "@testcontainers/postgresql";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  inject,
+  it,
+} from "vitest";
 
 import type { PrismaClient } from "../generated/prisma";
 import { createDatabaseClient } from "./client";
 import { createPrismaAnnouncementRepository } from "./announcement-repository";
 
-const execFileAsync = promisify(execFile);
-const packageDirectory = fileURLToPath(new URL("../", import.meta.url));
-const schemaPath = fileURLToPath(
-  new URL("../prisma/schema.prisma", import.meta.url),
-);
-
 describe("announcement repository against PostgreSQL", () => {
-  let container: StartedPostgreSqlContainer;
   let client: PrismaClient;
   let announcements: ReturnType<typeof createPrismaAnnouncementRepository>;
 
   beforeAll(async () => {
-    container = await new PostgreSqlContainer("postgres:17-alpine").start();
-    const databaseUrl = container.getConnectionUri();
-
-    await execFileAsync(
-      "pnpm",
-      ["exec", "prisma", "migrate", "deploy", "--schema", schemaPath],
-      {
-        cwd: packageDirectory,
-        env: { ...process.env, DATABASE_URL: databaseUrl },
-      },
-    );
-
-    client = createDatabaseClient(databaseUrl);
+    client = createDatabaseClient(inject("databaseUrl"));
     announcements = createPrismaAnnouncementRepository(client);
-  }, 120_000);
+  });
 
   afterEach(async () => {
     await client.announcement.deleteMany();
@@ -49,7 +30,6 @@ describe("announcement repository against PostgreSQL", () => {
 
   afterAll(async () => {
     await client?.$disconnect();
-    await container?.stop();
   });
 
   it("publishes into one group and lists nothing for another", async () => {

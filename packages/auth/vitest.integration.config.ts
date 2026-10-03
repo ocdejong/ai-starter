@@ -15,6 +15,8 @@ export default mergeConfig(
         ),
       },
       fileParallelism: false,
+      globalSetup: ["./test/integration-global-setup.ts"],
+      setupFiles: ["./test/integration-setup.ts"],
       include: ["src/**/*.integration.test.ts"],
       testTimeout: 60_000,
     },

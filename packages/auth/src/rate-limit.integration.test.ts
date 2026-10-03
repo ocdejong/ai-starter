@@ -1,5 +1,4 @@
 import type { Database } from "@ai-starter/db";
-import type { StartedPostgreSqlContainer } from "@testcontainers/postgresql";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { createEmailInbox, startAuthHarness } from "../test/harness";
@@ -22,12 +21,11 @@ import { initAuth } from "./init-auth";
  */
 
 const inbox = createEmailInbox();
-let container: StartedPostgreSqlContainer;
 let client: Database;
 let limited: ReturnType<typeof initAuth>;
 
 beforeAll(async () => {
-  ({ client, container } = await startAuthHarness(inbox));
+  ({ client } = await startAuthHarness(inbox));
   limited = initAuth({
     baseURL: "http://localhost:3000",
     database: client,
@@ -37,11 +35,10 @@ beforeAll(async () => {
     secret: "integration-secret-integration-secret",
     trustedOrigins: ["ai-starter://"],
   });
-}, 120_000);
+});
 
 afterAll(async () => {
   await client.$disconnect();
-  await container.stop();
 });
 
 /** One sign-up attempt from a fixed address, through the HTTP handler the limiter wraps. */

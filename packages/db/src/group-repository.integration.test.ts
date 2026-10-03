@@ -1,44 +1,25 @@
-import { execFile } from "node:child_process";
-import { fileURLToPath } from "node:url";
-import { promisify } from "node:util";
-
 import {
-  PostgreSqlContainer,
-  type StartedPostgreSqlContainer,
-} from "@testcontainers/postgresql";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  inject,
+  it,
+} from "vitest";
 
 import type { PrismaClient } from "../generated/prisma";
 import { createDatabaseClient } from "./client";
 import { createPrismaGroupRepository } from "./group-repository";
 
-const execFileAsync = promisify(execFile);
-const packageDirectory = fileURLToPath(new URL("../", import.meta.url));
-const schemaPath = fileURLToPath(
-  new URL("../prisma/schema.prisma", import.meta.url),
-);
-
 describe("group repository against PostgreSQL", () => {
-  let container: StartedPostgreSqlContainer;
   let client: PrismaClient;
   let groups: ReturnType<typeof createPrismaGroupRepository>;
 
   beforeAll(async () => {
-    container = await new PostgreSqlContainer("postgres:17-alpine").start();
-    const databaseUrl = container.getConnectionUri();
-
-    await execFileAsync(
-      "pnpm",
-      ["exec", "prisma", "migrate", "deploy", "--schema", schemaPath],
-      {
-        cwd: packageDirectory,
-        env: { ...process.env, DATABASE_URL: databaseUrl },
-      },
-    );
-
-    client = createDatabaseClient(databaseUrl);
+    client = createDatabaseClient(inject("databaseUrl"));
     groups = createPrismaGroupRepository(client);
-  }, 120_000);
+  });
 
   afterEach(async () => {
     await client.member.deleteMany();
@@ -48,7 +29,6 @@ describe("group repository against PostgreSQL", () => {
 
   afterAll(async () => {
     await client?.$disconnect();
-    await container?.stop();
   });
 
   it("answers only for the group the user is actually a member of", async () => {

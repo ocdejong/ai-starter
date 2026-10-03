@@ -1,23 +1,11 @@
-import { execFile } from "node:child_process";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { promisify } from "node:util";
-
 import { createDatabaseClient, type Database } from "@ai-starter/db";
-import {
-  PostgreSqlContainer,
-  type StartedPostgreSqlContainer,
-} from "@testcontainers/postgresql";
+import { inject } from "vitest";
 
 import {
   initAuth,
   type Auth,
   type AuthEmailDispatchers,
 } from "../src/init-auth";
-
-const execFileAsync = promisify(execFile);
-const dbDirectory = fileURLToPath(new URL("../../db", import.meta.url));
-const schemaPath = path.join(dbDirectory, "prisma/schema.prisma");
 
 /** One captured dispatch, so a test can assert the flow, recipient and link. */
 type CapturedEmail = {
@@ -77,26 +65,16 @@ export function createEmailInbox(): EmailInbox {
 }
 
 /**
- * Spins up a throwaway PostgreSQL container, applies the committed migrations
- * exactly as production would, and returns a client plus a factory that builds
- * an auth instance bound to it. Real database, real migrations — the flows are
- * exercised end to end, never against a mock.
+ * Binds a client and an auth instance to the package's one PostgreSQL, which
+ * the integration global setup starts and migrates exactly as production would.
+ * Real database, real migrations — the flows are exercised end to end, never
+ * against a mock.
  */
 export async function startAuthHarness(inbox: EmailInbox): Promise<{
-  container: StartedPostgreSqlContainer;
   client: Database;
   auth: Auth;
 }> {
-  const container = await new PostgreSqlContainer("postgres:17-alpine").start();
-  const databaseUrl = container.getConnectionUri();
-
-  await execFileAsync(
-    "pnpm",
-    ["exec", "prisma", "migrate", "deploy", "--schema", schemaPath],
-    { cwd: dbDirectory, env: { ...process.env, DATABASE_URL: databaseUrl } },
-  );
-
-  const client = createDatabaseClient(databaseUrl);
+  const client = createDatabaseClient(inject("databaseUrl"));
   const auth = initAuth({
     baseURL: "http://localhost:3000",
     database: client,
@@ -105,7 +83,7 @@ export async function startAuthHarness(inbox: EmailInbox): Promise<{
     trustedOrigins: ["ai-starter://"],
   });
 
-  return { auth, client, container };
+  return { auth, client };
 }
 
 /** The session cookie Better Auth set, folded into a single `Cookie` header. */
