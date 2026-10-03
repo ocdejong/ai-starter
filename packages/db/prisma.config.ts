@@ -36,8 +36,23 @@ import { defineConfig } from "prisma/config";
  */
 const url = process.env.DATABASE_URL;
 
+/**
+ * `prisma migrate diff --from-migrations` replays the committed migrations into
+ * a scratch database to learn what they build, and Prisma 7 reads that
+ * database's address from here. Only `pnpm db:migration:new` sets it, for the
+ * one diff it runs against a database it creates and drops itself.
+ */
+const shadowDatabaseUrl = process.env.SHADOW_DATABASE_URL;
+
 export default defineConfig({
-  ...(url === undefined ? {} : { datasource: { url } }),
+  ...(url === undefined
+    ? {}
+    : {
+        datasource: {
+          url,
+          ...(shadowDatabaseUrl === undefined ? {} : { shadowDatabaseUrl }),
+        },
+      }),
   migrations: {
     seed: "node ../tooling/src/bin/db-seed.ts",
   },

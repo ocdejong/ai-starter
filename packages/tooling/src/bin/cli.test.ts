@@ -21,6 +21,7 @@ describe("command entry points", () => {
       "bootstrap.ts",
       "check-links.ts",
       "db-lint.ts",
+      "db-migration-new.ts",
       "db-push-prototype.ts",
       "db-seed.ts",
       "deps-upstream.ts",
