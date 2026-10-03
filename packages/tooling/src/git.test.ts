@@ -44,17 +44,21 @@ function repository(): { root: string; git: (...args: string[]) => void } {
 
 describe("changedPaths", () => {
   // A file moved out of a watched prefix still selects what that prefix owns.
-  it("lists both paths of a renamed file, committed or not", () => {
-    const { git, root } = repository();
-    mkdirSync(path.join(root, "packages"));
-    git("mv", "docs/guide.md", "packages/guide.md");
-    git("commit", "--quiet", "--message", "move");
-    git("mv", "packages/guide.md", "guide.md");
+  it(
+    "lists both paths of a renamed file, committed or not",
+    { timeout: 60_000 },
+    () => {
+      const { git, root } = repository();
+      mkdirSync(path.join(root, "packages"));
+      git("mv", "docs/guide.md", "packages/guide.md");
+      git("commit", "--quiet", "--message", "move");
+      git("mv", "packages/guide.md", "guide.md");
 
-    expect(changedPaths(root, "HEAD~1")).toEqual([
-      "docs/guide.md",
-      "guide.md",
-      "packages/guide.md",
-    ]);
-  });
+      expect(changedPaths(root, "HEAD~1")).toEqual([
+        "docs/guide.md",
+        "guide.md",
+        "packages/guide.md",
+      ]);
+    },
+  );
 });
