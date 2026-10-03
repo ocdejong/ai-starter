@@ -1,10 +1,6 @@
-import { FlatCompat } from "@eslint/eslintrc";
+import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 import baseConfig from "@ai-starter/config/eslint/base";
 import { productUiRules } from "@ai-starter/config/eslint/product";
-
-const compat = new FlatCompat({
-  baseDirectory: import.meta.dirname,
-});
 
 const config = [
   {
@@ -16,7 +12,7 @@ const config = [
       "test-results/**",
     ],
   },
-  ...compat.extends("next/core-web-vitals"),
+  ...nextCoreWebVitals,
   ...baseConfig,
   {
     languageOptions: {
