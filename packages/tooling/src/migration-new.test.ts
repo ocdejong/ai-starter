@@ -181,7 +181,7 @@ describe("createMigration", () => {
       "--script",
       "--exit-code",
     ]);
-    expect(diff?.env["SHADOW_DATABASE_URL"]).toBe(
+    expect(diff?.env.SHADOW_DATABASE_URL).toBe(
       "postgresql://postgres:secret@localhost:5540/ai-starter_shadow_abc123",
     );
   });
