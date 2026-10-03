@@ -25,9 +25,8 @@ const ciWorkflow = workflow(`
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 permissions: {}
@@ -43,35 +42,14 @@ jobs:
         uses: ${pinnedCheckout}
       - name: Verify
         run: pnpm verify
-`);
-
-/** The line the pinned `uses:` sits on, so a failure can name it. */
-const checkoutLine = 19;
-
-const supplyChainWorkflow = workflow(`
-name: Supply chain
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-
-permissions: {}
-
-jobs:
-  workflows:
-    name: Workflows
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Check out repository
-        uses: ${pinnedCheckout}
       - name: Install actionlint
         run: |
           curl -o tool.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.12/tool.tar.gz
           echo "abc  tool.tar.gz" | sha256sum --check --strict
 `);
+
+/** The line the pinned `uses:` sits on, so a failure can name it. */
+const checkoutLine = 18;
 
 type RuleFixture = {
   type: string;
@@ -123,10 +101,7 @@ const ruleset: RulesetFixture = {
       {
         parameters: {
           do_not_enforce_on_create: false,
-          required_status_checks: [
-            { context: "Verify" },
-            { context: "Workflows" },
-          ],
+          required_status_checks: [{ context: "Verify" }],
           strict_required_status_checks_policy: true,
         },
         type: "required_status_checks",
@@ -158,7 +133,6 @@ function baseFiles(): Record<string, string> {
     ].join("\n"),
     ".github/rulesets/main.json": JSON.stringify(ruleset, null, 2),
     ".github/workflows/ci.yml": ciWorkflow,
-    ".github/workflows/supply-chain.yml": supplyChainWorkflow,
     "package.json": JSON.stringify({ name: "ai-starter" }),
     "pnpm-workspace.yaml": workspaceYaml,
   };
@@ -273,7 +247,7 @@ name: Sensors
 
 on:
   schedule:
-    - cron: "0 4 * * *"
+    - cron: "0 4 * * 1"
   workflow_dispatch:
 
 permissions: {}
@@ -297,6 +271,7 @@ ${reporting}`);
     needs: sense
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       issues: write
     steps:
       - name: Check out repository
@@ -327,6 +302,45 @@ ${reporting}`);
       ).toEqual([]);
     });
 
+    // The week every sensor failed silently: the job named the action, so the
+    // rule above was satisfied, and its token could not check the action out.
+    it("rejects a reporting job whose token cannot check the action out", () => {
+      const violations = check(
+        withFile(
+          ".github/workflows/sensors.yml",
+          sensor(
+            reportingJob.replace(
+              "      contents: read\n      issues: write",
+              "      issues: write",
+            ),
+          ),
+        ),
+      );
+
+      expect(violations).toHaveLength(1);
+      expect(violations[0]?.file).toBe(".github/workflows/sensors.yml");
+      expect(problems(violations)).toContain(
+        'Job "report" runs a local action',
+      );
+      expect(violations[0]?.fix).toContain("`contents: read`");
+    });
+
+    it("accepts a local action under a workflow-level grant", () => {
+      const inherited = sensor(
+        reportingJob.replace(
+          "    permissions:\n      contents: read\n      issues: write\n",
+          "",
+        ),
+      ).replace(
+        "permissions: {}",
+        "permissions:\n  contents: read\n  issues: write",
+      );
+
+      expect(
+        check(withFile(".github/workflows/sensors.yml", inherited)),
+      ).toEqual([]);
+    });
+
     // The rule is about `schedule`, not about workflows in general: CI runs on
     // every pull request, where a failure is already in front of somebody.
     it("asks nothing of a workflow that does not run on a schedule", () => {
@@ -350,7 +364,7 @@ ${reporting}`);
         check({
           ...withFile(".github/workflows/sensors.yml", sensor(reportingJob)),
           "docs/testing.md":
-            "# Testing\n\n## Sensors\n\n`.github/workflows/sensors.yml` runs daily.\n",
+            "# Testing\n\n## Sensors\n\n`.github/workflows/sensors.yml` runs weekly.\n",
         }),
       ).toEqual([]);
     });
@@ -397,8 +411,8 @@ ${reporting}`);
     it("rejects a release download with no checksum check in the same job", () => {
       const violations = check(
         withFile(
-          ".github/workflows/supply-chain.yml",
-          supplyChainWorkflow.replace(
+          ".github/workflows/ci.yml",
+          ciWorkflow.replace(
             '          echo "abc  tool.tar.gz" | sha256sum --check --strict\n',
             "",
           ),

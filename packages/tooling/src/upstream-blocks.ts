@@ -15,9 +15,9 @@
  *
  * The red therefore means "this file is now stale", not "something broke". That
  * is a true statement about the repository and it is why this fits the failure
- * semantics the other four sensors use, rather than inverting them: the four
- * ask "is something wrong that nobody has noticed", and a decline that is no
- * longer true is exactly that.
+ * semantics the other sensors use, rather than inverting them: they ask "is
+ * something wrong that nobody has noticed", and a decline that is no longer
+ * true is exactly that.
  */
 
 /** The npm registry's document for a package's `latest`. */
