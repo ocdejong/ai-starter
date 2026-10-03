@@ -24,6 +24,18 @@ const harnessPaths = [
   "turbo.json",
 ];
 
+/**
+ * What the process-spawning tooling tests run knip and depcruise against: the
+ * root configuration of the dead-code and architecture gates. `packages/tooling`
+ * and `packages/config` also feed those tests, but they are harness paths and so
+ * select the whole suite, `test:tooling` included.
+ */
+const gateConfigPaths = [
+  ".dependency-cruiser.cjs",
+  "knip.config.js",
+  "tsconfig.depcruise.json",
+];
+
 /** Turborepo cannot infer that a schema edit requires real-PostgreSQL evidence. */
 const schemaPaths = ["packages/db/prisma/"];
 
@@ -145,6 +157,15 @@ export function selectChecks(
     `Linting, typechecking and unit-testing packages affected since ${base}.`,
   ];
 
+  // `turbo run test` leaves the minutes-long knip and depcruise tests out of
+  // the affected graph; only an edit to what they exercise brings them back.
+  if (touches(changedPaths, gateConfigPaths)) {
+    steps.push(requireStep("test:tooling"));
+    reasons.push(
+      "The knip or dependency-cruiser configuration changed; running the tooling tests that prove those gates still catch violations.",
+    );
+  }
+
   if (
     touches(changedPaths, instructionPaths) ||
     changedPaths.some((file) => file.endsWith("/AGENTS.md"))
@@ -170,8 +191,14 @@ export function selectChecks(
 
   if (touches(changedPaths, webBehaviourPaths)) {
     // This selection has not built web. A focused journey compiles the current
-    // source in development mode instead of reading a stale production build.
-    steps.push({ ...requireStep("test:e2e"), env: { E2E_USE_BUILD: "false" } });
+    // source in development mode instead of reading a stale production build,
+    // and starts its own server: a dev server another checkout or product left
+    // on the port would otherwise answer, and the journey would assert against
+    // that application.
+    steps.push({
+      ...requireStep("test:e2e"),
+      env: { E2E_REUSE_SERVER: "false", E2E_USE_BUILD: "false" },
+    });
     reasons.push(
       "Web-observable behaviour changed; running the browser journey.",
     );

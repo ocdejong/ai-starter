@@ -43,6 +43,10 @@ export const verificationSteps: readonly OwnedVerificationStep[] = [
   script("lint", "checks"),
   script("typecheck", "checks"),
   script("test:unit", "units"),
+  // The tooling tests that start knip and depcruise take minutes between them.
+  // They stay in the units lane so CI runs them, but sit outside `test:unit` so
+  // `verify:changed` can leave them out of a diff that cannot affect them.
+  script("test:tooling", "units"),
   script("test:integration", "integration"),
   script("build:web", "web"),
   script("build:native", "native"),

@@ -47,6 +47,31 @@ describe("verificationSteps", () => {
     expect(position("db:lint")).toBeLessThan(position("db:migrate"));
   });
 
+  // The tests that spawn knip and depcruise are the slowest in the package, so
+  // they run as their own step. Dropping the step would silently stop CI from
+  // proving that the architecture and dead-code gates still catch violations.
+  it("runs the process-spawning tooling tests in the units lane", () => {
+    expect(requireStep("test:tooling").args).toEqual(["run", "test:tooling"]);
+    expect(selectVerificationLane("units").map((step) => step.name)).toContain(
+      "test:tooling",
+    );
+  });
+
+  // A test file is run by exactly one of the two scripts. Without the
+  // exclusion the slow tests would run twice; without the suffix filter they
+  // would not run at all.
+  it("splits the tooling tests between `test` and `test:process` by file suffix", () => {
+    const { scripts } = JSON.parse(
+      readFileSync(
+        path.join(repositoryRoot, "packages/tooling/package.json"),
+        "utf8",
+      ),
+    ) as { scripts: Record<string, string> };
+
+    expect(scripts["test"]).toContain("--exclude '**/*.process.test.ts'");
+    expect(scripts["test:process"]).toContain(".process.test.ts");
+  });
+
   // Nothing ran the native flow for two stages and it rotted. It is in the list
   // so `pnpm verify` reaches it on a machine that can run it, and it skips
   // loudly — never silently — everywhere else.
@@ -237,6 +262,7 @@ describe("verification lanes", () => {
         "lint",
         "typecheck",
         "test:unit",
+        "test:tooling",
         "test:integration",
         "build:web",
         "build:native",

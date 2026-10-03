@@ -40,6 +40,7 @@
     "test:e2e": "pnpm --filter @ai-starter/web test:e2e",
     "test:e2e:mobile": "node packages/tooling/src/bin/native-journey.ts",
     "test:integration": "pnpm --parallel --filter @ai-starter/db --filter @ai-starter/auth test:integration",
+    "test:tooling": "pnpm --filter @ai-starter/tooling test:process",
     "test:unit": "turbo run test",
     "typecheck": "turbo run typecheck",
     "verify": "node packages/tooling/src/bin/verify.ts",

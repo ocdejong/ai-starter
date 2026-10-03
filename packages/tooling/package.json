@@ -6,7 +6,8 @@
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "vitest run",
+    "test": "vitest run --exclude '**/*.process.test.ts'",
+    "test:process": "vitest run .process.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
