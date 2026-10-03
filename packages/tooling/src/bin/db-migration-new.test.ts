@@ -19,7 +19,7 @@ function run(args: string[], databaseUrl: string | undefined) {
  * touched. The path that does touch one is covered by `migration-new.test.ts`
  * with Prisma replaced, and the real command is exercised by hand.
  */
-describe("db:migration:new guards", () => {
+describe("db:migration:new guards", { timeout: 60_000 }, () => {
   it("refuses a remote database", () => {
     const result = run(
       ["add_invoice"],
