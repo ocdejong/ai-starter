@@ -30,8 +30,8 @@ export const chatTransport = new DefaultChatTransport({
   api: `${mobileEnv.EXPO_PUBLIC_API_URL}/api/chat`,
   credentials: "omit",
   fetch: streamingFetch,
-  headers: () => {
-    const cookie = authClient.getCookie();
+  headers: async () => {
+    const cookie = await authClient.getCookie();
     return cookie === "" ? {} : { Cookie: cookie };
   },
 });
