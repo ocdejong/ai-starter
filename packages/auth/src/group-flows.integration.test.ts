@@ -229,6 +229,79 @@ describe("personal group", () => {
     ).not.toBeNull();
   });
 
+  it("keeps the owner of a personal group a member and an owner, whoever asks otherwise", async () => {
+    const ownerHeaders = await signedInUser("sole-owner@example.com");
+    const personal = (
+      await auth.api.listOrganizations({ headers: ownerHeaders })
+    )[0];
+    const organizationId = personal?.id ?? "";
+    const coOwnerHeaders = await signedInUser("promoted@example.com");
+    await joinGroup(
+      organizationId,
+      ownerHeaders,
+      "promoted@example.com",
+      { as: coOwnerHeaders },
+      "owner",
+    );
+    const owner = await client.member.findFirstOrThrow({
+      where: { organizationId, user: { email: "sole-owner@example.com" } },
+    });
+    const refused = {
+      body: { code: "PERSONAL_GROUP_REQUIRED" },
+      status: "BAD_REQUEST",
+    };
+
+    // A second owner is enough for Better Auth to let the first one go, which
+    // would leave the group renamable and deletable; both spellings of the
+    // target, and an address in another case, name the same member.
+    for (const memberIdOrEmail of [
+      owner.id,
+      "sole-owner@example.com",
+      "Sole-Owner@Example.com",
+    ]) {
+      await expect(
+        auth.api.removeMember({
+          body: { memberIdOrEmail, organizationId },
+          headers: coOwnerHeaders,
+        }),
+      ).rejects.toMatchObject(refused);
+    }
+    // The owner's role is part of what makes the group theirs, so it is held
+    // against a co-owner's demotion and against their own.
+    await expect(
+      auth.api.updateMemberRole({
+        body: { memberId: owner.id, organizationId, role: "member" },
+        headers: coOwnerHeaders,
+      }),
+    ).rejects.toMatchObject(refused);
+    await expect(
+      auth.api.updateMemberRole({
+        body: { memberId: owner.id, organizationId, role: ["admin"] },
+        headers: ownerHeaders,
+      }),
+    ).rejects.toMatchObject(refused);
+
+    const unchanged = await client.member.findUniqueOrThrow({
+      where: { id: owner.id },
+    });
+    expect(unchanged.role).toBe("owner");
+
+    // The guard names the owner, not the group: the invitee is an ordinary
+    // member of it, and the owner can still remove them or change their role.
+    const invitee = await client.member.findFirstOrThrow({
+      where: { organizationId, user: { email: "promoted@example.com" } },
+    });
+    await auth.api.updateMemberRole({
+      body: { memberId: invitee.id, organizationId, role: "admin" },
+      headers: ownerHeaders,
+    });
+    await auth.api.removeMember({
+      body: { memberIdOrEmail: invitee.id, organizationId },
+      headers: ownerHeaders,
+    });
+    expect(await client.member.count({ where: { organizationId } })).toBe(1);
+  });
+
   it("takes the personal group with it when the account is deleted", async () => {
     const headers = await signedInUser("leaving@example.com");
     expect(await client.organization.count()).toBe(1);
