@@ -136,3 +136,4 @@ so that any weakening lives in the command that caused it.
 ## Scheduled workflows
 
 Scheduled workflows report a failure by filing an issue through `.github/actions/report-failure`. That action is checked out from this repository, so the reporting job needs `contents: read` as well as `issues: write`: a private repository answers a checkout without it "Repository not found", every report step is skipped, and the sensor fails without telling anyone. `pnpm policy` rejects a job that runs a local action without `contents: read`, from its own `permissions:` or the workflow's.
+<!-- draft probe -->
