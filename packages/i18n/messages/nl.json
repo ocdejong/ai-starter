@@ -209,7 +209,8 @@
           "submit": "Naam opslaan",
           "submitting": "Opslaan…",
           "saved": "De groepsnaam is bijgewerkt.",
-          "readOnly": "Alleen een eigenaar of beheerder kan deze groep hernoemen."
+          "readOnly": "Alleen een eigenaar of beheerder kan deze groep hernoemen.",
+          "personalReadOnly": "Je persoonlijke groep kan niet worden hernoemd."
         },
         "empty": {
           "title": "Je zit niet in een groep",
