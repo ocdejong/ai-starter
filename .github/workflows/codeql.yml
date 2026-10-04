@@ -20,7 +20,7 @@ permissions: {}
 jobs:
   analyze:
     name: Analyze JavaScript and TypeScript
-    if: ${{ github.event.repository.private == false && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
+    if: ${{ github.event.repository.visibility == 'public' && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
