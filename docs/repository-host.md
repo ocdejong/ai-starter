@@ -77,7 +77,7 @@ CI runs the full suite once per ready pull request and nowhere else, because eve
 - **Nothing runs on a push to `main`.** The pull request already ran that exact tree, and `.github/workflows/sensors.yml` and the weekly CodeQL run cover what a commit cannot.
 - **`workflow_dispatch`** runs the same suite by hand on any branch.
 
-GitHub counts a job skipped by `if:` as passing, so a draft's `Verify` reads green until the run that `ready_for_review` starts reports. Wait for that run's `Verify` before merging; a draft itself cannot be merged.
+GitHub counts a job skipped by `if:` as passing, and marking a pull request ready adds no commit, so the draft's skipped `Verify` stays on the head commit. Measured on a probe pull request (2026-10-04): the instant it was marked ready it read `MERGEABLE` with a skipped `Verify` and nothing else, and for the five minutes the ready run took the skipped `Verify` was still the only required result, so the pull request stayed mergeable while the lanes were queued and running. The run's own `Verify` appears only after every lane finishes. Merge on the ready run's lane results (`Verify checks`, `Verify units`, `Verify integration`, `Verify native`, `Verify web`, then a second `Verify`), never on the first `Verify` badge; a draft itself cannot be merged.
 
 ## Private repositories on GitHub Free
 
