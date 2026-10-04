@@ -131,14 +131,25 @@ describe("announcementRouter", () => {
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
-  it("refuses a caller whose session names a group they are not in", async () => {
+  it("treats an active group the caller left as no active group", async () => {
     const announcements = announcementsOfGroupA();
 
     await expect(
       createCaller(
         createContext(announcements, signedIn("group-b")),
       ).announcement.list(),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    expect(announcements.listByGroup).not.toHaveBeenCalled();
+  });
+
+  it("treats a deleted active group as no active group", async () => {
+    const announcements = announcementsOfGroupA();
+
+    await expect(
+      createCaller(
+        createContext(announcements, signedIn("group-deleted")),
+      ).announcement.list(),
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(announcements.listByGroup).not.toHaveBeenCalled();
   });
 

@@ -1,14 +1,65 @@
 import { messages } from "@ai-starter/i18n";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { announcementFailure } from "~/components/announcements/announcement-board";
+import {
+  AnnouncementBoard,
+  announcementFailure,
+  announcementReadFailure,
+} from "~/components/announcements/announcement-board";
 import {
   AnnouncementPanel,
   type Announcement,
 } from "~/components/announcements/announcement-panel";
 import { IntlTestProvider } from "~/test/intl";
+
+const mocks = vi.hoisted(() => {
+  const announcementQuery: {
+    data: readonly { id: string; isCurrent: boolean; title: string }[];
+    error: { data: unknown } | null;
+    isError: boolean;
+    isPending: boolean;
+  } = { data: [], error: null, isError: false, isPending: false };
+
+  return { announcementQuery, invalidate: vi.fn() };
+});
+
+// The board is wired to the API through these hooks; replacing them lets a test
+// put the query in exactly the state under examination.
+vi.mock("~/trpc/react", () => {
+  const idleMutation = {
+    useMutation: () => ({
+      error: null,
+      isPending: false,
+      isSuccess: false,
+      mutate: vi.fn(),
+    }),
+  };
+
+  return {
+    api: {
+      announcement: {
+        create: idleMutation,
+        list: { useQuery: () => mocks.announcementQuery },
+        rename: idleMutation,
+      },
+      useUtils: () => ({
+        announcement: { list: { invalidate: mocks.invalidate } },
+      }),
+    },
+  };
+});
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mocks.announcementQuery = {
+    data: [],
+    error: null,
+    isError: false,
+    isPending: false,
+  };
+});
 
 const current: Announcement = {
   id: "announcement-1",
@@ -180,5 +231,113 @@ describe("announcementFailure", () => {
     expect(announcementFailure({ data: { code: "FORBIDDEN" } })).toBe(
       "unexpected",
     );
+  });
+});
+
+describe("announcementReadFailure", () => {
+  it("separates a missing group and an ended session from a failure to retry", () => {
+    expect(announcementReadFailure(null)).toBeNull();
+    expect(announcementReadFailure({ data: null })).toBe("network");
+    expect(
+      announcementReadFailure({ data: { code: "PRECONDITION_FAILED" } }),
+    ).toBe("noGroup");
+    expect(announcementReadFailure({ data: { code: "UNAUTHORIZED" } })).toBe(
+      "signIn",
+    );
+    expect(
+      announcementReadFailure({ data: { code: "INTERNAL_SERVER_ERROR" } }),
+    ).toBe("unexpected");
+  });
+});
+
+describe("AnnouncementBoard", () => {
+  function renderBoard(locale: "en" | "nl" = "en") {
+    return render(
+      <IntlTestProvider locale={locale}>
+        <AnnouncementBoard />
+      </IntlTestProvider>,
+    );
+  }
+
+  it("offers a way to a group when the active group is gone", () => {
+    mocks.announcementQuery = {
+      data: [],
+      error: { data: { code: "PRECONDITION_FAILED" } },
+      isError: true,
+      isPending: false,
+    };
+    renderBoard();
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Choose or create a group before reading announcements.",
+    );
+    expect(
+      screen.getByRole("link", { name: "Create a group" }),
+    ).toHaveAttribute("href", "/settings/group");
+  });
+
+  it("asks for a new sign-in when the session has ended", () => {
+    mocks.announcementQuery = {
+      data: [],
+      error: { data: { code: "UNAUTHORIZED" } },
+      isError: true,
+      isPending: false,
+    };
+    renderBoard();
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Sign in again to read announcements.",
+    );
+  });
+
+  // A refetch that fails leaves the last good data on the query. Showing it
+  // would present the previous group's announcements as the current group's,
+  // so the failure has to win over the cache.
+  it("shows the failure rather than cached data when a refetch fails", () => {
+    mocks.announcementQuery = {
+      data: [current],
+      error: { data: { code: "PRECONDITION_FAILED" } },
+      isError: true,
+      isPending: false,
+    };
+    renderBoard();
+
+    expect(screen.queryByText(current.title)).toBeNull();
+    expect(
+      screen.getByRole("link", { name: "Create a group" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the announcements when the query is healthy", () => {
+    mocks.announcementQuery = {
+      data: [current],
+      error: null,
+      isError: false,
+      isPending: false,
+    };
+    renderBoard();
+
+    expect(screen.getByRole("textbox", { name: "Current title" })).toHaveValue(
+      current.title,
+    );
+  });
+
+  it("renders the recovery copy in Dutch", () => {
+    mocks.announcementQuery = {
+      data: [],
+      error: { data: { code: "PRECONDITION_FAILED" } },
+      isError: true,
+      isPending: false,
+    };
+    renderBoard("nl");
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      messages.nl.app.announcements.noGroup,
+    );
+    expect(
+      screen.getByRole("link", {
+        name: messages.nl.app.announcements.createGroup,
+      }),
+    ).toBeInTheDocument();
   });
 });
