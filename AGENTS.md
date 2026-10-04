@@ -33,7 +33,7 @@ ESLint encodes many of these boundaries per file; `pnpm arch` (dependency-cruise
 - `packages/config`: shared compiler, lint, and test configuration.
 - `packages/i18n`: shared EN/NL ICU message catalogs, the `Locale` schema, and locale negotiation. Platform-neutral; consumed by both apps.
 - `packages/tokens`: plain cross-platform design values.
-- `packages/tooling`: repository commands (`bootstrap`, `db:lint`, `db:push:prototype`, `db:seed`, `deps:upstream`, `diagnose`, `generate`, `instructions`, `links:check`, `policy`, `rehearse:template`, `repo:host`, `test:e2e:mobile`, `verify`, `verify:changed`, `starter:init`). `pnpm instructions` fails when a command here is missing from that list. Node built-ins only: `diagnose` must inspect a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency. Editing it also requires `packages/tooling/AGENTS.md`.
+- `packages/tooling`: repository commands (`bootstrap`, `db:lint`, `db:push:prototype`, `db:seed`, `deps:backlog`, `deps:upstream`, `diagnose`, `instructions`, `links:check`, `policy`, `repo:host`, `test:e2e:mobile`, `verify`, `verify:changed`, `starter:init`). `pnpm instructions` fails when a command here is missing from that list. Node built-ins only: `diagnose` must inspect a checkout whose dependencies are missing or broken, so nothing in this package may import an installed dependency. Editing it also requires `packages/tooling/AGENTS.md`.
 
 ## Getting a checkout running
 
@@ -41,11 +41,16 @@ ESLint encodes many of these boundaries per file; `pnpm arch` (dependency-cruise
 
 ## Adding a feature
 
-`pnpm rehearse:template` runs the whole golden path the way a downstream product first meets it — instantiate, `starter:init`, `bootstrap`, every generator, the full suite over the result, then `--remove` and the same suite again — and is the only check that compiles what the adapter generator and the unpinned shape emit. It runs weekly in CI; run it by hand after changing a generator, a template or `starter:init`.
+The committed `announcement` slice is the worked example: read it, then write your own in the product's own words. Copy its shape rather than its nouns, and decide how your records relate to each other (one current record per group that creating supersedes, as `announcement` does, or records that simply accumulate) before copying its copy. Inside out, a slice is:
 
-`pnpm generate feature <name> --shape <current|list>` writes a vertical slice in the product's own words and registers it in every place a feature has to be registered; `pnpm generate context <name>` writes the domain half alone, and `pnpm generate adapter <name>` writes a consumer-owned port with a vendor-free adapter behind it. Run `pnpm generate --help` for what each emits. **`--shape` is mandatory and has no default**: `current` means one record per group is current and creating supersedes it, `list` means records accumulate and each stands on its own. How records relate to each other is a decision about the product, and a generator that picked one would put its copy — "Publishing supersedes the current chore" — into a product that never chose it. `context` and `adapter` take no shape, because what they write is identical either way.
+- `packages/domain/src/announcement.ts` and its test: the Zod contract, invariants and stable validation codes, exported from `packages/domain/src/index.ts`.
+- `packages/api/src/context.ts`: the consumer-owned repository port, added to `TRPCContext`. `packages/api/src/routers/announcement.ts` and its test hold a `groupProcedure` router, registered in `packages/api/src/root.ts`; `packages/api/src/test-support/context.ts` gets an inert entry for the port.
+- `packages/db`: the model in `packages/db/prisma/schema.prisma`, a migration, `packages/db/src/announcement-repository.ts` with its real-PostgreSQL integration test, and the export in `packages/db/src/index.ts`.
+- `apps/web/src/server/api/context.ts`: the composition root satisfying the port with the Prisma adapter.
+- `apps/web` and `apps/mobile`: a screen under `src/app/(app)`, components under `src/components/announcements`, the route in `apps/web/src/lib/routes.ts` and the navigation entry in the web app shell and the mobile `(app)` layout.
+- `packages/i18n/messages`: a namespace in both catalogs. The Dutch is a translation, and `pnpm policy` fails on a message left identical to its English one.
 
-Generated output is expected to pass `pnpm verify:changed` once the follow-ups the command prints are done, and it prints them because it cannot do them: creating the migration — whose SQL it dictates verbatim, both timeouts included, because `pnpm db:lint` rejects the file Prisma writes on its own — and translating the Dutch catalog entries, which it writes in English and `pnpm policy` fails on until they are Dutch. `pnpm generate feature --remove <name>` is the inverse: it deletes the slice's files, reverses every registration, and names dropping the table as the one thing it cannot do. The committed `announcement` slice is that generator's output — `packages/tooling/src/generators/golden-path.test.ts` fails if it stops being, both for the files it creates and for the blocks it leaves in files it shares — so read it, or regenerate it, rather than copying an older feature by hand.
+Prisma cannot express a partial index or a CHECK constraint, so create the migration with `--create-only`, finish its SQL by hand, and give it both timeouts, because `pnpm db:lint` rejects the file Prisma writes on its own (see "Required workflow" for the sequence). Run `pnpm verify:changed` once the slice is wired. A product that does not want the example deletes those files and the registrations above, then adds a migration that drops its table.
 
 ## Required workflow
 
@@ -84,7 +89,7 @@ pnpm test:integration
 - Domain/web units and web components: Vitest; web interaction assertions: Testing Library.
 - Native components: Jest through `jest-expo` and React Native Testing Library.
 - Database behavior: Testcontainers with actual migrations and PostgreSQL.
-- Critical web journeys: Playwright. Critical native journeys: Maestro. Add a journey only for a critical boundary that unit, component or integration tests cannot prove; cover variations at the lowest faithful level. Feature generators emit those lower-level tests by default.
+- Critical web journeys: Playwright. Critical native journeys: Maestro. Add a journey only for a critical boundary that unit, component or integration tests cannot prove; cover variations at the lowest faithful level.
 - Test observable behavior, constraints, and failure cases. Avoid snapshots unless the serialized structure itself is the contract.
 - Never mock the database in a test intended to prove persistence integrity.
 
@@ -94,6 +99,7 @@ pnpm test:integration
 - Sentry is disabled without a DSN and must keep `sendDefaultPii: false` unless a documented privacy decision changes it.
 - Never log credentials, authorization headers, full provider payloads, or sensitive user content.
 - A workflow that runs on a schedule must file an issue when it fails, through `.github/actions/report-failure`; `pnpm policy` rejects one that does not. A red that only ever appears in the Actions tab is a signal nobody receives.
+- A dependency proposal ends merged, repaired and merged, or closed with the reason written in the pull request — before the weekly run that supersedes it. `pnpm deps:backlog` fails when one has not, because a red on a branch is invisible to every gate a pull request runs. `docs/dependency-updates.md` carries the recipe per class of failure.
 - The repository host is configuration, not folklore: `.github/rulesets/main.json` and `.github/CODEOWNERS` are checked in, `pnpm repo:host` applies them, and `pnpm policy` fails when a workflow, an action pin, or a pnpm setting drifts from what `docs/repository-host.md` describes.
 
 ## Completion criteria

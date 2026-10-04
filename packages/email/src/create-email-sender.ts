@@ -41,9 +41,8 @@ export function createEmailSender(config: EmailSenderConfig): EmailSender {
  * mailbox. It refuses per message rather than throwing at construction on
  * purpose: the web composition root builds the sender at module scope and
  * `next build` runs with `NODE_ENV=production`, so a constructor that threw
- * would fail the build of every keyless clone — including the one
- * `pnpm rehearse:template` builds — instead of the deployment that is actually
- * misconfigured.
+ * would fail the build of every keyless clone instead of the deployment that
+ * is actually misconfigured.
  */
 function createUnconfiguredEmailSender(): EmailSender {
   return {

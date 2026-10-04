@@ -40,7 +40,7 @@ describe("createEmailSender", () => {
   it("still constructs without a key, so a keyless production build succeeds", () => {
     // The web composition root builds the sender at module scope and `next
     // build` runs with NODE_ENV=production. Throwing here would fail the build
-    // of every keyless clone, including the template rehearsal.
+    // of every keyless clone.
     expect(() =>
       createEmailSender({
         allowDevMailbox: false,
