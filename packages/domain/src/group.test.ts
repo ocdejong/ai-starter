@@ -7,6 +7,7 @@ import {
   groupNamePolicy,
   groupSlug,
   inviteMemberInputSchema,
+  isOwnPersonalGroup,
   parseGroupRole,
   parseGroupValidationCode,
 } from "./group";
@@ -139,5 +140,22 @@ describe("group slug", () => {
     expect(groupSlug("a".repeat(80), "abc123")).toBe(
       `${"a".repeat(40)}-abc123`,
     );
+  });
+});
+
+describe("personal group", () => {
+  it("recognises a group by the slug the auth server gives it", () => {
+    expect(isOwnPersonalGroup("personal-user-1", "user-1")).toBe(true);
+  });
+
+  it("does not take someone else's personal group, or an ordinary one, for the viewer's", () => {
+    expect(isOwnPersonalGroup("personal-user-2", "user-1")).toBe(false);
+    expect(isOwnPersonalGroup("book-club-abc", "user-1")).toBe(false);
+    expect(isOwnPersonalGroup("personal-user-10", "user-1")).toBe(false);
+  });
+
+  it("claims nothing while the viewer is still unknown", () => {
+    expect(isOwnPersonalGroup("personal-undefined", undefined)).toBe(false);
+    expect(isOwnPersonalGroup("personal-", "")).toBe(false);
   });
 });

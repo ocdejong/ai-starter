@@ -54,6 +54,7 @@ export {
   groupSlug,
   groupValidationCodes,
   inviteMemberInputSchema,
+  isOwnPersonalGroup,
   parseGroupRole,
   parseGroupValidationCode,
   renameGroupInputSchema,

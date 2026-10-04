@@ -1,6 +1,10 @@
 "use client";
 
-import { parseGroupRole, type GroupRole } from "@ai-starter/domain";
+import {
+  isOwnPersonalGroup,
+  parseGroupRole,
+  type GroupRole,
+} from "@ai-starter/domain";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -85,11 +89,12 @@ export function GroupSettings() {
   const viewerRole: GroupRole =
     parseGroupRole(activeMember.data?.role) ?? "member";
   const members: readonly GroupMemberView[] = group.members;
-  // The slug is `personal-` and the owner's user id, which is what the auth
-  // server's own protection recognises the group by. Deleting, leaving and
-  // renaming it are refused there, so they are not offered here.
-  const isPersonalGroup =
-    group.slug === `personal-${activeMember.data?.userId}`;
+  // Deleting, leaving and renaming the viewer's personal group are refused by
+  // the auth server, so they are not offered here.
+  const isPersonalGroup = isOwnPersonalGroup(
+    group.slug,
+    activeMember.data?.userId,
+  );
   const ownerCount = members.filter(
     (member) => parseGroupRole(member.role) === "owner",
   ).length;
