@@ -107,6 +107,7 @@ describe("group errors", () => {
     expect(groupErrorFor("USER_IS_NOT_A_MEMBER_OF_THE_ORGANIZATION")).toBe(
       "notAllowed",
     );
+    expect(groupErrorFor("PERSONAL_GROUP_REQUIRED")).toBe("personalGroup");
   });
 
   it("falls back rather than showing a code nobody wrote copy for", () => {
