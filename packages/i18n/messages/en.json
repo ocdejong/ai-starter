@@ -310,6 +310,9 @@
       "title": "Announcements",
       "description": "Announcements belong to the group you are working in. Switch groups and you are looking at another set.",
       "loading": "Loading announcements…",
+      "noGroup": "Choose or create a group before reading announcements.",
+      "createGroup": "Create a group",
+      "signIn": "Sign in again to read announcements.",
       "count": "{count, plural, =0 {No announcements yet} one {# announcement} other {# announcements}}",
       "create": {
         "title": "New announcement",

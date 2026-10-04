@@ -84,9 +84,14 @@ export const groupProcedure = protectedProcedure.use(async ({ ctx, next }) => {
     userId: ctx.session.user.id,
   });
   if (group === null) {
+    // The group was left, removed or deleted since the session last named it.
+    // That is a stale choice, not a permission the caller lacks: nothing was
+    // served, and the way out — pick a group — is something the client can
+    // offer, which a bare FORBIDDEN gave it no way to tell apart from a refusal
+    // it cannot repair.
     throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "You are not a member of the active group.",
+      code: "PRECONDITION_FAILED",
+      message: "This request needs an active group.",
     });
   }
 

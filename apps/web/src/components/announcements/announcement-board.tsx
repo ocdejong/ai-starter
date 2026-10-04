@@ -1,11 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 
 import {
   AnnouncementPanel,
   type AnnouncementFailure,
 } from "~/components/announcements/announcement-panel";
+import { groupSettingsPath } from "~/lib/routes";
 import { api } from "~/trpc/react";
 
 /**
@@ -22,6 +24,35 @@ export function announcementFailure(
   return error.data === null || error.data === undefined
     ? "network"
     : "unexpected";
+}
+
+/** What reading can fail with beyond what a write can: two states with a way out. */
+type AnnouncementReadFailure = AnnouncementFailure | "noGroup" | "signIn";
+
+/**
+ * Reading adds two refusals a reader can act on. `PRECONDITION_FAILED` is how
+ * the API says the session names no group the caller still belongs to — left,
+ * removed or deleted — and the way out is to pick or create one;
+ * `UNAUTHORIZED` is a session that has ended, and the way out is to sign in.
+ * Anything else keeps the generic answer.
+ */
+export function announcementReadFailure(
+  error: { readonly data?: unknown } | null,
+): AnnouncementReadFailure | null {
+  const failure = announcementFailure(error);
+  if (failure !== "unexpected") {
+    return failure;
+  }
+  const code =
+    typeof error?.data === "object" &&
+    error.data !== null &&
+    "code" in error.data
+      ? error.data.code
+      : undefined;
+  if (code === "PRECONDITION_FAILED") {
+    return "noGroup";
+  }
+  return code === "UNAUTHORIZED" ? "signIn" : "unexpected";
 }
 
 /**
@@ -51,14 +82,28 @@ export function AnnouncementBoard() {
     return <p className="text-muted-foreground">{t("loading")}</p>;
   }
 
-  if (announcements.data === undefined) {
+  // `isError`, not a missing `data`: when a refetch fails the query keeps the
+  // last good data beside the error, and that data may belong to a group the
+  // caller has since left.
+  if (announcements.isError) {
+    const failure =
+      announcementReadFailure(announcements.error) ?? "unexpected";
     return (
       <p
         className="border-destructive/40 bg-destructive/10 text-destructive rounded-lg border px-3 py-2 text-sm"
         role="alert"
       >
-        {t(
-          `errors.${announcementFailure(announcements.error) ?? "unexpected"}`,
+        {failure === "noGroup" ? (
+          <>
+            {t("noGroup")}{" "}
+            <Link className="underline" href={groupSettingsPath}>
+              {t("createGroup")}
+            </Link>
+          </>
+        ) : failure === "signIn" ? (
+          t("signIn")
+        ) : (
+          t(`errors.${failure}`)
         )}
       </p>
     );

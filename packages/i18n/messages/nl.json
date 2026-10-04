@@ -310,6 +310,9 @@
       "title": "Aankondigingen",
       "description": "Aankondigingen horen bij de groep waarin je werkt. Wissel je van groep, dan zie je een andere set.",
       "loading": "Aankondigingen laden…",
+      "noGroup": "Kies of maak een groep voordat je aankondigingen leest.",
+      "createGroup": "Groep aanmaken",
+      "signIn": "Log opnieuw in om aankondigingen te lezen.",
       "count": "{count, plural, =0 {Nog geen aankondigingen} one {# aankondiging} other {# aankondigingen}}",
       "create": {
         "title": "Nieuwe aankondiging",

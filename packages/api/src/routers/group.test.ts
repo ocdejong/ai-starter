@@ -91,19 +91,22 @@ describe("groupRouter", () => {
     expect(result).toEqual(ownMembers);
   });
 
-  it("refuses a session pointing at a group the caller does not belong to", async () => {
+  it("treats a session pointing at a group the caller left as no active group", async () => {
     // The session's active group is the one value a client can influence and
     // the cookie cache can serve stale. A member of group A carrying "group-b"
     // must be refused rather than served group B — the Dokploy cross-group IDOR
-    // (GHSA-f8wj-5c4w-frhg) is exactly this read succeeding.
+    // (GHSA-f8wj-5c4w-frhg) is exactly this read succeeding. The refusal is a
+    // missing precondition, not a permission failure: a stale session is
+    // repaired by choosing a group, which the client can offer, whereas a
+    // FORBIDDEN is a dead end.
     const groups = groupsForMemberOfA();
     const caller = createCaller(createContext(groups, signedIn("group-b")));
 
     await expect(caller.group.current()).rejects.toMatchObject({
-      code: "FORBIDDEN",
+      code: "PRECONDITION_FAILED",
     });
     await expect(caller.group.members()).rejects.toMatchObject({
-      code: "FORBIDDEN",
+      code: "PRECONDITION_FAILED",
     });
     expect(groups.listMembers).not.toHaveBeenCalled();
   });

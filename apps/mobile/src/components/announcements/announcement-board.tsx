@@ -55,7 +55,10 @@ export function AnnouncementBoard() {
     return <Notice message={t("loading")} tone="info" />;
   }
 
-  if (announcements.data === undefined) {
+  // `isError`, not a missing `data`: when a refetch fails the query keeps the
+  // last good data beside the error, and that data may belong to a group the
+  // caller has since left.
+  if (announcements.isError) {
     return (
       <Notice
         message={t(
