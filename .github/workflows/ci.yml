@@ -230,8 +230,11 @@ jobs:
   # Reports on every ready pull request and every manual dispatch, and not on a
   # draft: `always()` alone would run it after skipped lanes and fail a draft
   # that was never meant to be tested. GitHub counts a skipped job as passing
-  # for a required check, so the draft's `Verify` reads green until the run that
-  # `ready_for_review` starts reports: merge on that run's result.
+  # for a required check, and marking ready adds no commit, so the draft's
+  # skipped `Verify` stays on the head commit. The pull request reads mergeable
+  # with a green `Verify` while the ready run is still working, and a second
+  # `Verify` appears only when its lanes finish: merge on the ready run's lane
+  # results, never on the first `Verify` badge.
   verify:
     name: Verify
     needs: [lanes, web]
