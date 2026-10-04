@@ -154,6 +154,67 @@ describe("GroupSection", () => {
     ).toBeOnTheScreen();
   });
 
+  describe("the personal group", () => {
+    // The auth server refuses to delete, leave or rename it, so the section must
+    // not offer what would only be refused; the web settings page withholds the
+    // same controls.
+    function openPersonalGroup(slug = "personal-user-1") {
+      useActiveOrganization.mockReturnValue(query({ ...group(), slug }));
+    }
+
+    it("offers neither leaving nor deleting", async () => {
+      openPersonalGroup();
+      await renderSection();
+
+      expect(screen.getByText("Members")).toBeOnTheScreen();
+      expect(screen.queryByRole("button", { name: "Delete group" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Leave group" })).toBeNull();
+    });
+
+    it("shows the name and says it cannot be changed", async () => {
+      openPersonalGroup();
+      await renderSection();
+
+      // The switcher lists the group too, so the name is on screen twice.
+      expect(screen.getAllByText("Book Club")).toHaveLength(2);
+      expect(screen.queryByLabelText("Group name")).toBeNull();
+      expect(
+        screen.getByText("Your personal group cannot be renamed."),
+      ).toBeOnTheScreen();
+    });
+
+    it("says so in Dutch under the Dutch catalog", async () => {
+      openPersonalGroup();
+      await renderSection("nl");
+
+      expect(
+        screen.getByText("Je persoonlijke groep kan niet worden hernoemd."),
+      ).toBeOnTheScreen();
+    });
+
+    it("waits for the active member before deciding what to offer", async () => {
+      useActiveMember.mockReturnValue(query(null, true));
+      openPersonalGroup();
+      await renderSection();
+
+      // Without the member the section cannot tell whose personal group this
+      // is, and would flash controls the server refuses.
+      expect(screen.getByText("Loading your groups…")).toBeOnTheScreen();
+      expect(screen.queryByRole("button", { name: "Delete group" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Leave group" })).toBeNull();
+    });
+
+    it("keeps the full surface for someone else's group named like it", async () => {
+      openPersonalGroup("personal-user-2");
+      await renderSection();
+
+      expect(screen.getByLabelText("Group name")).toBeOnTheScreen();
+      expect(
+        screen.getByRole("button", { name: "Delete group" }),
+      ).toBeOnTheScreen();
+    });
+  });
+
   it("withholds every owner affordance from a plain member", async () => {
     useActiveMember.mockReturnValue(query(plainMember));
     await renderSection();

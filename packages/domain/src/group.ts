@@ -173,3 +173,24 @@ export function groupSlug(name: string, suffix: string): string {
   const base = slugify(name).slice(0, slugBaseMaxLength).replace(/-+$/g, "");
   return `${base === "" ? "group" : base}-${slugify(suffix)}`;
 }
+
+/**
+ * Whether a group is the viewer's own personal group.
+ *
+ * The auth server names it `personal-` and its owner's user id, and refuses to
+ * delete, leave or rename it (`personalGroupProtection` in `@ai-starter/auth`,
+ * which `domain` cannot import — change the slug in both places together). Both
+ * interfaces withhold those controls with this one rule instead of offering
+ * what would be refused. An unknown viewer owns nothing, so nothing is
+ * withheld until the member has arrived.
+ */
+export function isOwnPersonalGroup(
+  slug: string,
+  viewerUserId: string | undefined,
+): boolean {
+  return (
+    viewerUserId !== undefined &&
+    viewerUserId !== "" &&
+    slug === `personal-${viewerUserId}`
+  );
+}

@@ -23,14 +23,18 @@ import { useTheme } from "../../theme/theme-provider";
  *
  * A reader who may not rename it sees the name and the reason instead of a
  * disabled field: a control that cannot be used is a worse answer than a
- * sentence saying why.
+ * sentence saying why. The personal group is the one nobody may rename — the auth
+ * server refuses it for everyone — so it gets its own reason rather than the
+ * role-based one.
  */
 export function GroupNameForm({
   canRename,
+  isPersonal,
   name,
   onRenamed,
 }: {
   canRename: boolean;
+  isPersonal: boolean;
   name: string;
   onRenamed: () => void;
 }) {
@@ -48,7 +52,7 @@ export function GroupNameForm({
   );
   const [draft, setDraft] = useState(name);
 
-  if (!canRename) {
+  if (isPersonal || !canRename) {
     return (
       <View style={styles.section}>
         <Text style={[styles.heading, { color: theme.foreground }]}>
@@ -56,7 +60,7 @@ export function GroupNameForm({
         </Text>
         <Text style={[styles.body, { color: theme.foreground }]}>{name}</Text>
         <Text style={[styles.body, { color: theme["muted-foreground"] }]}>
-          {t("readOnly")}
+          {isPersonal ? t("personalReadOnly") : t("readOnly")}
         </Text>
       </View>
     );
