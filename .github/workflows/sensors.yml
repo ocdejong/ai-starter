@@ -77,8 +77,18 @@ jobs:
       # Dependabot already reports this, into the Security tab. This is the same
       # question asked somewhere a person is looking, and it keeps working in a
       # downstream product that never turned Dependabot on.
+      #
+      # `--ignore-unfixable` skips an advisory that has no patched version
+      # anywhere: there is nothing a person could do about that row, so it would
+      # keep this job red for as long as upstream takes. It is the one ignore that
+      # expires by itself — the day a patched release is published the advisory is
+      # fixable, stops being skipped, and fails this job. (pnpm records what it
+      # skipped in `pnpm-workspace.yaml`; that edit stays in this runner's
+      # checkout.) An advisory that *has* a fix but cannot reach us goes under
+      # `auditConfig.ignoreGhsas` instead; `docs/dependency-updates.md` explains
+      # the difference.
       - name: Audit the resolved dependency tree
-        run: pnpm audit --audit-level high
+        run: pnpm audit --audit-level high --ignore-unfixable
 
   upstream:
     name: The upstream releases this repository waits on

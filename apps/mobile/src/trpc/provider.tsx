@@ -38,7 +38,7 @@ export function TRPCProvider({ children }: { children: ReactNode }) {
           url: `${mobileEnv.EXPO_PUBLIC_API_URL}/api/trpc`,
           // Read per request, not once: the cookie changes as the user signs in
           // and out, and a captured value would authorize the wrong session.
-          headers: () => trpcRequestHeaders(authClient.getCookie()),
+          headers: async () => trpcRequestHeaders(await authClient.getCookie()),
           // The platform has no cookie jar to consult, and asking for one would
           // let a stale ambient credential ride along with the explicit header.
           fetch: (url, options) => {
