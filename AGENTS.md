@@ -62,7 +62,7 @@ Prisma cannot express a partial index or a CHECK constraint, so create the migra
 6. Inspect the finished diff and exercise the real user/runtime interface appropriate to the risk.
 7. Iterate with `pnpm verify:changed`, which runs only the checks the current diff can affect.
 8. Commit one coherent change at a time with an imperative commit message. Leave no unrelated or half-finished state.
-9. Open the pull request as a draft; CI does not run on a draft. Mark it ready for review once `pnpm verify:changed` passes. CI then runs every lane on the ready pull request, and that run is the gate.
+9. Open the pull request as a draft; CI does not run on a draft. Mark it ready for review once `pnpm verify:changed` passes. CI then runs every lane on the ready pull request, and that run is the gate. The draft's skipped `Verify` stays on the head commit and reads green until the ready run finishes (`docs/repository-host.md`), so read the lane results of that run, not the first `Verify` badge.
 
 ```bash
 pnpm verify:changed   # only the checks the current diff can affect; the local gate
@@ -107,4 +107,4 @@ pnpm test:integration
 
 ## Completion criteria
 
-A task is complete when `pnpm verify:changed` passes locally and CI is green on the ready pull request. Completion MUST report concrete verification evidence — the commands run with their results, and the CI run — and any check that could not run. Do not silently skip a gate, claim success from code inspection alone, or hand a reviewer output you have not reviewed. A full `pnpm verify` you chose to run counts: if it fails, the task is not complete.
+A task is complete when `pnpm verify:changed` passes locally and the lanes of the CI run on the ready pull request are green; the first green `Verify` badge can be the draft's skipped one, so the evidence is that run's lane results. Completion MUST report concrete verification evidence — the commands run with their results, and the CI run with each lane's result — and any check that could not run. Do not silently skip a gate, claim success from code inspection alone, or hand a reviewer output you have not reviewed. A full `pnpm verify` you chose to run counts: if it fails, the task is not complete.

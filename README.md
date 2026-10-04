@@ -89,7 +89,7 @@ OAuth and Sentry are optional. Copy the relevant values from the environment exa
 
 Read the `announcement` slice and write yours beside it. `AGENTS.md` ("Adding a feature") lists every file a slice owns, from the Zod contract in `packages/domain` through the API port and router, the Prisma model and adapter, and the composition root, to the web and native screens and both message catalogs. `docs/architecture.md` ("The feature slice") explains why it is shaped that way.
 
-Two things need a hand: the migration (create it with `--create-only` and finish its SQL, because Prisma cannot write a partial index or a CHECK constraint) and the Dutch copy, which `pnpm policy` reports as untranslated until a person has translated it. A product that does not want the example deletes the slice and adds a migration that drops its table.
+Two things need a hand: the migration (write it with `pnpm db:migration:new` and finish its SQL, because Prisma cannot write a partial index or a CHECK constraint) and the Dutch copy, which `pnpm policy` reports as untranslated until a person has translated it. A product that does not want the example deletes the slice and adds a migration that drops its table.
 
 ## Verify
 
