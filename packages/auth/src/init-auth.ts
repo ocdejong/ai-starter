@@ -14,6 +14,7 @@ import {
   groupOwnerRole,
   seedGroupIdFor,
 } from "./personal-group";
+import { personalGroupProtection } from "./personal-group-protection";
 
 /**
  * How long an emailed group invitation stays acceptable. Two days is long
@@ -132,9 +133,25 @@ export function initAuth(options: InitAuthOptions) {
               session.userId,
               typeof carried === "string" ? carried : null,
             );
-            return groupId === null
-              ? undefined
-              : { data: { ...session, activeOrganizationId: groupId } };
+            if (groupId === null) {
+              // An account with no membership at all — its personal group was
+              // removed out of band, or sign-up's own seeding failed — would
+              // otherwise start every session with nowhere to be. Restoring it
+              // here is what keeps "never groupless" true for accounts that
+              // already exist, not just for new ones.
+              const user = await database.user.findUnique({
+                select: { email: true, id: true, name: true },
+                where: { id: session.userId },
+              });
+              if (user === null) {
+                return undefined;
+              }
+              const personalGroupId = await createPersonalGroup(database, user);
+              return {
+                data: { ...session, activeOrganizationId: personalGroupId },
+              };
+            }
+            return { data: { ...session, activeOrganizationId: groupId } };
           },
         },
       },
@@ -190,6 +207,7 @@ export function initAuth(options: InitAuthOptions) {
           email.sendGroupInvitation({ invitationId: id, to });
         },
       }),
+      personalGroupProtection(database),
       expo(),
       ...(options.plugins ?? []),
     ],

@@ -129,6 +129,59 @@ describe("GroupSettings", () => {
     expect(screen.getByRole("button", { name: "Delete group" })).toBeVisible();
   });
 
+  describe("the personal group", () => {
+    // The auth server refuses to delete, leave or rename it, so the screen must
+    // not offer what would only be refused.
+    function openPersonalGroup() {
+      mocks.useActiveOrganization.mockReturnValue(
+        query({ ...group(), slug: "personal-user-1" }),
+      );
+      return renderSettings();
+    }
+
+    it("offers neither leaving nor deleting", () => {
+      openPersonalGroup();
+
+      expect(screen.getByText("Members")).toBeVisible();
+      expect(screen.queryByRole("button", { name: "Delete group" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Leave group" })).toBeNull();
+    });
+
+    it("shows the name and says it cannot be changed", () => {
+      openPersonalGroup();
+
+      expect(screen.getByText("Book Club")).toBeVisible();
+      expect(screen.queryByLabelText("Group name")).toBeNull();
+      expect(
+        screen.getByText("Your personal group cannot be renamed."),
+      ).toBeVisible();
+    });
+
+    it("waits for the active member before deciding what to offer", () => {
+      mocks.useActiveMember.mockReturnValue(query(undefined, true));
+      openPersonalGroup();
+
+      // Without the member the screen cannot tell whose personal group this is,
+      // and would flash controls the server refuses.
+      expect(screen.getByText("Loading your groups…")).toBeVisible();
+      expect(screen.queryByRole("button", { name: "Delete group" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Leave group" })).toBeNull();
+    });
+
+    it("keeps the full surface for someone else's group named like it", () => {
+      // Only the slug of the viewer's own personal group marks it.
+      mocks.useActiveOrganization.mockReturnValue(
+        query({ ...group(), slug: "personal-user-2" }),
+      );
+      renderSettings();
+
+      expect(screen.getByLabelText("Group name")).toBeVisible();
+      expect(
+        screen.getByRole("button", { name: "Delete group" }),
+      ).toBeVisible();
+    });
+  });
+
   it("withholds every owner affordance from a plain member", () => {
     mocks.useActiveMember.mockReturnValue(query(plainMember));
     renderSettings();

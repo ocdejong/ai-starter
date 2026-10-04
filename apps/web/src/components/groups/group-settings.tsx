@@ -56,7 +56,10 @@ export function GroupSettings() {
     void refresh();
   }
 
-  if (activeGroup.isPending || groups.isPending) {
+  // The member is needed too: whether this is the viewer's personal group is
+  // decided by comparing its slug with their id, and deciding early would show
+  // controls the server refuses for the moment before it arrives.
+  if (activeGroup.isPending || activeMember.isPending || groups.isPending) {
     return <p className="text-muted-foreground text-sm">{t("loading")}</p>;
   }
 
@@ -82,6 +85,11 @@ export function GroupSettings() {
   const viewerRole: GroupRole =
     parseGroupRole(activeMember.data?.role) ?? "member";
   const members: readonly GroupMemberView[] = group.members;
+  // The slug is `personal-` and the owner's user id, which is what the auth
+  // server's own protection recognises the group by. Deleting, leaving and
+  // renaming it are refused there, so they are not offered here.
+  const isPersonalGroup =
+    group.slug === `personal-${activeMember.data?.userId}`;
   const ownerCount = members.filter(
     (member) => parseGroupRole(member.role) === "owner",
   ).length;
@@ -116,6 +124,7 @@ export function GroupSettings() {
        */}
       <GroupNameForm
         canRename={may({ organization: ["update"] })}
+        isPersonal={isPersonalGroup}
         key={group.id}
         name={group.name}
         onChanged={reload}
@@ -132,26 +141,28 @@ export function GroupSettings() {
           <PendingInvitations invitations={invitations} onChanged={reload} />
         </>
       ) : null}
-      <GroupDangerZone
-        canDelete={may({ organization: ["delete"] })}
-        groupId={group.id}
-        isOnlyOwner={viewerRole === "owner" && ownerCount === 1}
-        name={group.name}
-        onLeft={() => {
-          void (async () => {
-            const remaining = (groups.data ?? []).filter(
-              (candidate) => candidate.id !== group.id,
-            );
-            const next = remaining[0];
-            if (next !== undefined) {
-              await authClient.organization.setActive({
-                organizationId: next.id,
-              });
-            }
-            await refresh();
-          })();
-        }}
-      />
+      {isPersonalGroup ? null : (
+        <GroupDangerZone
+          canDelete={may({ organization: ["delete"] })}
+          groupId={group.id}
+          isOnlyOwner={viewerRole === "owner" && ownerCount === 1}
+          name={group.name}
+          onLeft={() => {
+            void (async () => {
+              const remaining = (groups.data ?? []).filter(
+                (candidate) => candidate.id !== group.id,
+              );
+              const next = remaining[0];
+              if (next !== undefined) {
+                await authClient.organization.setActive({
+                  organizationId: next.id,
+                });
+              }
+              await refresh();
+            })();
+          }}
+        />
+      )}
       <CreateGroupForm onCreated={reload} />
     </div>
   );

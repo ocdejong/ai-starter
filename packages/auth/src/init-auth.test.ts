@@ -32,12 +32,12 @@ describe("initAuth", () => {
     expect(ids.at(-1)).toBe("next-cookies");
   });
 
-  it("registers the group and expo plugins even when none are appended", () => {
+  it("registers the group, personal-group-protection and expo plugins even when none are appended", () => {
     const auth = build([]);
 
     const ids = (auth.options.plugins ?? []).map((plugin) => plugin.id);
 
-    expect(ids).toEqual(["organization", "expo"]);
+    expect(ids).toEqual(["organization", "personal-group-protection", "expo"]);
   });
 
   it("makes the group creator an owner and expires invitations", () => {

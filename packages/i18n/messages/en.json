@@ -209,7 +209,8 @@
           "submit": "Save name",
           "submitting": "Saving…",
           "saved": "The group name was updated.",
-          "readOnly": "Only an owner or an admin can rename this group."
+          "readOnly": "Only an owner or an admin can rename this group.",
+          "personalReadOnly": "Your personal group cannot be renamed."
         },
         "empty": {
           "title": "You are not in a group",

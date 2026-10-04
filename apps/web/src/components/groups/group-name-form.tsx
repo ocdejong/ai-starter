@@ -23,14 +23,18 @@ import { authClient } from "~/server/better-auth/client";
  *
  * A reader who may not rename it sees the name and the reason rather than a
  * disabled field: a control that cannot be used is a worse answer than a
- * sentence explaining why.
+ * sentence explaining why. The personal group is the one nobody may rename —
+ * the auth server refuses it for everyone — so it gets its own reason rather
+ * than the role-based one.
  */
 export function GroupNameForm({
   canRename,
+  isPersonal,
   name,
   onChanged,
 }: {
   readonly canRename: boolean;
+  readonly isPersonal: boolean;
   readonly name: string;
   readonly onChanged: () => void;
 }) {
@@ -46,14 +50,16 @@ export function GroupNameForm({
     resolver: zodResolver(renameGroupInputSchema),
   });
 
-  if (!canRename) {
+  if (isPersonal || !canRename) {
     return (
       <section aria-labelledby="group-name" className="space-y-2">
         <h3 className="text-lg font-medium" id="group-name">
           {t("title")}
         </h3>
         <p className="text-base">{name}</p>
-        <p className="text-muted-foreground text-sm">{t("readOnly")}</p>
+        <p className="text-muted-foreground text-sm">
+          {isPersonal ? t("personalReadOnly") : t("readOnly")}
+        </p>
       </section>
     );
   }

@@ -86,6 +86,149 @@ describe("personal group", () => {
     expect(new Set(slugs).size).toBe(2);
   });
 
+  it("re-seeds one personal group when concurrent sign-ins find none", async () => {
+    const email = "reseed@example.com";
+    await signedInUser(email);
+    const user = await client.user.findUniqueOrThrow({ where: { email } });
+    await client.organization.deleteMany({
+      where: { slug: `personal-${user.id}` },
+    });
+
+    await Promise.all([
+      auth.api.signInEmail({ body: { email, password } }),
+      auth.api.signInEmail({ body: { email, password } }),
+    ]);
+
+    const personal = await client.organization.findMany({
+      where: { slug: `personal-${user.id}` },
+    });
+    expect(personal).toHaveLength(1);
+    const personalGroup = personal[0];
+    if (personalGroup === undefined) {
+      throw new Error("the re-seeded personal group was not found");
+    }
+    expect(
+      await client.member.count({
+        where: { organizationId: personalGroup.id, userId: user.id },
+      }),
+    ).toBe(1);
+    // The new session lands in the group it just got, not in none.
+    const session = await client.session.findFirstOrThrow({
+      orderBy: { createdAt: "desc" },
+      where: { userId: user.id },
+    });
+    expect(session.activeOrganizationId).toBe(personalGroup.id);
+  });
+
+  it("leaves an account with memberships unchanged on the next sign-in", async () => {
+    const email = "member-stays@example.com";
+    const headers = await signedInUser(email);
+    const before = await auth.api.listOrganizations({ headers });
+
+    await auth.api.signInEmail({ body: { email, password } });
+
+    expect(await auth.api.listOrganizations({ headers })).toEqual(before);
+  });
+
+  it("refuses direct removal, leaving and renaming of the personal group", async () => {
+    const headers = await signedInUser("personal-protected@example.com");
+    const personal = (await auth.api.listOrganizations({ headers }))[0];
+    const organizationId = personal?.id ?? "";
+    const refused = {
+      body: { code: "PERSONAL_GROUP_REQUIRED" },
+      status: "BAD_REQUEST",
+    };
+
+    await expect(
+      auth.api.deleteOrganization({ body: { organizationId }, headers }),
+    ).rejects.toMatchObject(refused);
+    await expect(
+      auth.api.leaveOrganization({ body: { organizationId }, headers }),
+    ).rejects.toMatchObject(refused);
+    // Both shapes the settings screen and an older client may send: the group
+    // named explicitly, and the active group implied by the session.
+    await expect(
+      auth.api.updateOrganization({
+        body: { data: { name: "Renamed" }, organizationId },
+        headers,
+      }),
+    ).rejects.toMatchObject(refused);
+    await expect(
+      auth.api.updateOrganization({
+        body: { data: { slug: "renamed-personal-group" } },
+        headers,
+      }),
+    ).rejects.toMatchObject(refused);
+
+    const unchanged = await client.organization.findUniqueOrThrow({
+      where: { id: organizationId },
+    });
+    expect(unchanged.slug).toMatch(/^personal-/u);
+    expect(await client.member.count({ where: { organizationId } })).toBe(1);
+  });
+
+  it("still lets someone rename, leave and delete a group that is not personal", async () => {
+    const headers = await signedInUser("ordinary@example.com");
+    const group = await auth.api.createOrganization({
+      body: { name: "Chess Club", slug: "chess-club" },
+      headers,
+    });
+    const organizationId = group?.id ?? "";
+
+    await auth.api.updateOrganization({
+      body: { data: { name: "Chess Society" }, organizationId },
+      headers,
+    });
+    await auth.api.deleteOrganization({ body: { organizationId }, headers });
+
+    expect(
+      await client.organization.findUnique({ where: { id: organizationId } }),
+    ).toBeNull();
+  });
+
+  it("keeps a personal group standing when someone invited into it tries to remove or rename it", async () => {
+    const ownerHeaders = await signedInUser("private-owner@example.com");
+    const personal = (
+      await auth.api.listOrganizations({
+        headers: ownerHeaders,
+      })
+    )[0];
+    const organizationId = personal?.id ?? "";
+    const coOwnerHeaders = await signedInUser("co-owner@example.com");
+    await joinGroup(
+      organizationId,
+      ownerHeaders,
+      "co-owner@example.com",
+      { as: coOwnerHeaders },
+      "owner",
+    );
+    const refused = {
+      body: { code: "PERSONAL_GROUP_REQUIRED" },
+      status: "BAD_REQUEST",
+    };
+
+    await expect(
+      auth.api.deleteOrganization({
+        body: { organizationId },
+        headers: coOwnerHeaders,
+      }),
+    ).rejects.toMatchObject(refused);
+    await expect(
+      auth.api.updateOrganization({
+        body: { data: { name: "Taken over" }, organizationId },
+        headers: coOwnerHeaders,
+      }),
+    ).rejects.toMatchObject(refused);
+    // Leaving is the invitee's own business: it takes nothing from the owner.
+    await auth.api.leaveOrganization({
+      body: { organizationId },
+      headers: coOwnerHeaders,
+    });
+    expect(
+      await client.organization.findUnique({ where: { id: organizationId } }),
+    ).not.toBeNull();
+  });
+
   it("takes the personal group with it when the account is deleted", async () => {
     const headers = await signedInUser("leaving@example.com");
     expect(await client.organization.count()).toBe(1);
@@ -776,9 +919,10 @@ async function joinGroup(
   inviterHeaders: Headers,
   email: string,
   guest: { as: Headers },
+  role: "member" | "admin" | "owner" = "member",
 ): Promise<void> {
   const invitation = await auth.api.createInvitation({
-    body: { email, organizationId: groupId, role: "member" },
+    body: { email, organizationId: groupId, role },
     headers: inviterHeaders,
   });
   await auth.api.acceptInvitation({
