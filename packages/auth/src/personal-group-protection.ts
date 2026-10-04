@@ -8,6 +8,10 @@ import {
 
 import { personalGroupOwnerId } from "./personal-group";
 
+// The message is for whoever reads a log or a raw response; no client displays
+// it. Web and mobile both read only `code`, and `groupErrorFor` in
+// `@ai-starter/domain` turns this one into catalog copy (`personalGroup`).
+// Change the code in both places together.
 const refusal = {
   code: "PERSONAL_GROUP_REQUIRED",
   message: "A personal group cannot be removed or renamed.",

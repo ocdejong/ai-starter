@@ -275,6 +275,7 @@
           "alreadyMember": "That person is already in this group.",
           "lastOwner": "A group always needs an owner. Make someone else an owner first.",
           "notAllowed": "Your role in this group does not allow that.",
+          "personalGroup": "A personal group cannot be renamed or deleted.",
           "unexpected": "Something went wrong. Please try again."
         }
       }

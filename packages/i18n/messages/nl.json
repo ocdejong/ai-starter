@@ -275,6 +275,7 @@
           "alreadyMember": "Die persoon zit al in deze groep.",
           "lastOwner": "Een groep heeft altijd een eigenaar nodig. Maak eerst iemand anders eigenaar.",
           "notAllowed": "Je rol in deze groep staat dat niet toe.",
+          "personalGroup": "Een persoonlijke groep kan niet worden hernoemd of verwijderd.",
           "unexpected": "Er ging iets mis. Probeer het opnieuw."
         }
       }

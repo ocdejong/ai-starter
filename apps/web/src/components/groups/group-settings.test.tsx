@@ -6,9 +6,11 @@ import { IntlTestProvider } from "~/test/intl";
 import { GroupSettings } from "./group-settings";
 
 const mocks = vi.hoisted(() => ({
+  delete: vi.fn(),
   leave: vi.fn(),
   refresh: vi.fn(),
   setActive: vi.fn(),
+  update: vi.fn(),
   useActiveMember: vi.fn(),
   useActiveOrganization: vi.fn(),
   useListOrganizations: vi.fn(),
@@ -33,12 +35,12 @@ vi.mock("~/server/better-auth/client", async () => {
           permissions: Record<string, string[]>;
         }) => clientSideHasPermission({ ...data, options: {} }),
         create: vi.fn(),
-        delete: vi.fn(),
+        delete: mocks.delete,
         inviteMember: vi.fn(),
         leave: mocks.leave,
         removeMember: vi.fn(),
         setActive: mocks.setActive,
-        update: vi.fn(),
+        update: mocks.update,
         updateMemberRole: vi.fn(),
       },
       useActiveMember: mocks.useActiveMember,
@@ -166,6 +168,59 @@ describe("GroupSettings", () => {
       expect(screen.getByText("Loading your groups…")).toBeVisible();
       expect(screen.queryByRole("button", { name: "Delete group" })).toBeNull();
       expect(screen.queryByRole("button", { name: "Leave group" })).toBeNull();
+    });
+
+    // Only the owner's own screen hides the controls, so a member of someone
+    // else's personal group can still ask for what the server refuses. What they
+    // read then is the refusal in their own language, not the server's English
+    // sentence and not the generic failure.
+    describe("when the server refuses a change to someone else's", () => {
+      const refusal = {
+        data: null,
+        error: {
+          code: "PERSONAL_GROUP_REQUIRED",
+          message: "A personal group cannot be removed or renamed.",
+        },
+      };
+
+      beforeEach(() => {
+        mocks.useActiveOrganization.mockReturnValue(
+          query({ ...group(), slug: "personal-user-2" }),
+        );
+      });
+
+      function expectPersonalGroupCopy() {
+        expect(screen.getByRole("alert")).toHaveTextContent(
+          "A personal group cannot be renamed or deleted.",
+        );
+        expect(screen.queryByText(/something went wrong/i)).toBeNull();
+        expect(screen.queryByText(refusal.error.message)).toBeNull();
+      }
+
+      it("explains a refused rename", async () => {
+        mocks.update.mockResolvedValue(refusal);
+        const user = userEvent.setup();
+        renderSettings();
+
+        await user.clear(screen.getByLabelText("Group name"));
+        await user.type(screen.getByLabelText("Group name"), "Mine now");
+        await user.click(screen.getByRole("button", { name: "Save name" }));
+
+        await screen.findByRole("alert");
+        expectPersonalGroupCopy();
+      });
+
+      it("explains a refused deletion", async () => {
+        mocks.delete.mockResolvedValue(refusal);
+        const user = userEvent.setup();
+        renderSettings();
+
+        await user.click(screen.getByRole("button", { name: "Delete group" }));
+        await user.click(screen.getByRole("button", { name: "Yes, continue" }));
+
+        await screen.findByRole("alert");
+        expectPersonalGroupCopy();
+      });
     });
 
     it("keeps the full surface for someone else's group named like it", () => {

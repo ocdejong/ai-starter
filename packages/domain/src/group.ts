@@ -106,6 +106,7 @@ export const groupErrorCodes = [
   "alreadyMember",
   "lastOwner",
   "notAllowed",
+  "personalGroup",
   "unexpected",
 ] as const;
 
@@ -118,7 +119,8 @@ export type GroupErrorCode = (typeof groupErrorCodes)[number];
  * release, so anything unrecognised becomes the generic failure rather than a
  * missing translation. Only the refusals that tell someone what to do
  * differently are named: the address is already a member, the group would be
- * left without an owner, or their role does not allow it.
+ * left without an owner, it is a personal group, or their role does not allow
+ * it.
  */
 export function groupErrorFor(
   serverCode: string | null | undefined,
@@ -128,6 +130,11 @@ export function groupErrorFor(
   }
   if (serverCode === "USER_IS_ALREADY_A_MEMBER_OF_THIS_ORGANIZATION") {
     return "alreadyMember";
+  }
+  // Raised by `personalGroupProtection` in `@ai-starter/auth`, which `domain`
+  // cannot import; `group-flows.integration.test.ts` there pins the same string.
+  if (serverCode === "PERSONAL_GROUP_REQUIRED") {
+    return "personalGroup";
   }
   if (serverCode.startsWith("YOU_CANNOT_LEAVE_THE_ORGANIZATION")) {
     return "lastOwner";
