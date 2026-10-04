@@ -180,6 +180,23 @@ describe("verification lanes", () => {
     }
   });
 
+  // An expression comparing a missing field with `false` coerces both to
+  // numbers, so `repository.private == false` is true when the payload has no
+  // `repository` object and a private fork would run code scanning and fail.
+  // `visibility == 'public'` is false for a missing field and skips instead.
+  it("gates the public-repository jobs on visibility, not on private", () => {
+    for (const file of ["ci.yml", "codeql.yml"]) {
+      const workflow = readFileSync(
+        path.join(repositoryRoot, ".github/workflows", file),
+        "utf8",
+      );
+      expect(workflow).not.toContain("repository.private");
+      expect(workflow).toContain(
+        "github.event.repository.visibility == 'public'",
+      );
+    }
+  });
+
   it("schedules every defined lane in CI", () => {
     const workflow = readFileSync(
       path.join(repositoryRoot, ".github/workflows/ci.yml"),
