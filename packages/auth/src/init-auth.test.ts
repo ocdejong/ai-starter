@@ -40,6 +40,15 @@ describe("initAuth", () => {
     expect(ids).toEqual(["organization", "personal-group-protection", "expo"]);
   });
 
+  it("encrypts stored provider tokens", () => {
+    // A provider access token is a credential to somebody else's system, so a
+    // database dump must not be a set of working keys. Better Auth encrypts and
+    // decrypts on its own OAuth read and write paths; this is the switch.
+    const auth = build([]);
+
+    expect(auth.options.account?.encryptOAuthTokens).toBe(true);
+  });
+
   it("makes the group creator an owner and expires invitations", () => {
     const auth = build([]);
 

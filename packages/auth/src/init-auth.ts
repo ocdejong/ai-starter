@@ -108,6 +108,19 @@ export function initAuth(options: InitAuthOptions) {
   const { database, email } = options;
 
   return betterAuth({
+    account: {
+      // Provider tokens are encrypted at rest with AES-GCM under the Better
+      // Auth secret. They are the one thing in this database that is a
+      // credential to somebody else's system, so a database dump, a stray
+      // backup or a read-only replica must not be a set of working keys.
+      //
+      // The key is the signing secret rather than a second variable, because
+      // Better Auth encrypts and decrypts on its own read and write paths and
+      // takes the key from one place. Rotating the secret therefore invalidates
+      // stored provider tokens as well as sessions, and the user signs in
+      // again — the same repair either way.
+      encryptOAuthTokens: true,
+    },
     baseURL: options.baseURL,
     database: prismaAdapter(database, { provider: "postgresql" }),
     databaseHooks: {
