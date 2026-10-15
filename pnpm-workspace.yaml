@@ -83,10 +83,19 @@ auditConfig:
     - GHSA-ggr8-5vv4-36mx
 
 # The toolchain release, in one place. `vp test`, `vp lint` and `vp fmt` run
-# the Vitest, Oxlint and Oxfmt that `vite-plus` pins exactly, so the packages a
-# package names directly — `vitest` wherever a setup file or jest-dom
-# augments its types or the coverage provider peers on it, and the provider
-# itself — must be that same release or a second runner loads beside the first. Move these together, and only with `vp migrate`.
+# the Vitest, Oxlint and Oxfmt that `vite-plus` pins exactly, so a package that
+# names one directly (`vitest` where a setup file or jest-dom augments its
+# types or the coverage provider peers on it, and the provider itself) takes
+# that same release. Move these together, and only with `vp migrate`.
+#
+# Same release is not enough: it must be the same copy. `vp run` starts the
+# workspace root's Vitest for every package, and a package whose `vite-plus`
+# resolved another peer variant registers its tests with a runner that is not
+# running ("Vitest failed to find the current suite"). So every workspace that
+# runs Vite+ declares `vite` from this catalog and `@types/node` at the root's
+# major, the two peers pnpm would otherwise fill differently per package.
+# `packages/domain` sets `"types": []` so the Node types it installs for this
+# reason never reach its code.
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@1.2.0
   vitest: 5.0.4

@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "@ai-starter/config": "workspace:*",
+    "@types/node": "^24",
     "@vitest/coverage-v8": "catalog:",
     "typescript": "^6.0.3",
     "vite": "catalog:",
