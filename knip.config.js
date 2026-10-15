@@ -34,6 +34,10 @@ const config = {
     // `packages/db` names it a direct dependency. Without the declaration Next
     // fails to build with `Can't resolve '@prisma/client-runtime-utils'`.
     "@prisma/client-runtime-utils",
+    // Declared in every workspace that runs Vite+ so each resolves Vite's peer
+    // to Vite+'s core and one shared Vitest instance; see the catalog comment
+    // in pnpm-workspace.yaml. Nothing imports it by this name.
+    "vite",
     // Injected into compiled output by the Expo/Metro Babel transform.
     "@babel/runtime",
     // Run as a binary by `pnpm db:lint`, never imported.
@@ -74,11 +78,8 @@ const config = {
     },
     "packages/db": {
       // Reached only by the `declare module "vitest"` augmentation in the
-      // integration setup, which Knip does not count as a use. `vite` is
-      // declared beside it so this package's Vitest and the one `vite-plus`
-      // runs resolve to a single instance, or the augmentation lands on a copy
-      // `inject()` never reads.
-      ignoreDependencies: ["vite", "vitest"],
+      // integration setup, which Knip does not count as a use.
+      ignoreDependencies: ["vitest"],
       vitest: ["vitest.integration.config.ts"],
     },
     "packages/config": {
