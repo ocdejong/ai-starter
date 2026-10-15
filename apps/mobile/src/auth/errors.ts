@@ -4,7 +4,10 @@
  * only, and sometimes internal — ever reaches a reader.
  */
 export type AuthErrorKey =
-  "invalidCredentials" | "network" | "resetLinkRejected" | "unexpected";
+  | "invalidCredentials"
+  | "network"
+  | "resetLinkRejected"
+  | "unexpected";
 
 /**
  * The code Better Auth answers an unverified sign-in with. It is a route change

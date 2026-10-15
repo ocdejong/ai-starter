@@ -9,7 +9,9 @@ import { useTranslations } from "next-intl";
  * the answers it is allowed to give.
  */
 export type AuthFormErrorCode =
-  "invalidCredentials" | "resetLinkRejected" | "unexpected";
+  | "invalidCredentials"
+  | "resetLinkRejected"
+  | "unexpected";
 
 export function FormError({ code }: { code: AuthFormErrorCode | null }) {
   const t = useTranslations("auth.errors");

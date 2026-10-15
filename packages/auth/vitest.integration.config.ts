@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 
 import { baseVitestConfig } from "@ai-starter/config/vitest/base";
-import { defineConfig, mergeConfig } from "vitest/config";
+import { defineConfig, mergeConfig } from "vite-plus";
 
 export default mergeConfig(
   baseVitestConfig,

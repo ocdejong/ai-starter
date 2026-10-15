@@ -67,10 +67,24 @@ const config = {
     "apps/web": {
       entry: ["e2e/**/*.spec.ts", "scripts/*.ts"],
     },
+    // `vp test --config` names the real-PostgreSQL configs, which Knip's Vitest
+    // plugin does not read from a `vp` command line.
+    "packages/auth": {
+      vitest: ["vitest.config.ts", "vitest.integration.config.ts"],
+    },
+    "packages/db": {
+      // Reached only by the `declare module "vitest"` augmentation in the
+      // integration setup, which Knip does not count as a use. `vite` is
+      // declared beside it so this package's Vitest and the one `vite-plus`
+      // runs resolve to a single instance, or the augmentation lands on a copy
+      // `inject()` never reads.
+      ignoreDependencies: ["vite", "vitest"],
+      vitest: ["vitest.integration.config.ts"],
+    },
     "packages/config": {
       // Every file here is configuration another workspace loads by path, so
       // the package is entirely its own entry point.
-      entry: ["eslint/*.js", "vitest/*.ts", "*.js"],
+      entry: ["lint/*.js", "vitest/*.ts"],
       project: ["**/*.{js,ts}"],
     },
     "packages/tooling": {

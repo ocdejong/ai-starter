@@ -24,8 +24,6 @@ updates:
     # package at a time unless told otherwise, and a proposal that is red the
     # moment it opens is a proposal nobody can act on:
     #
-    #   eslint 10 + eslint-config-next 15  ->  "Failed to patch ESLint" (#3)
-    #   eslint 9  + eslint-config-next 16  ->  "Converting circular structure"  (#5)
     #   @prisma/client 7 + prisma 6        ->  `prisma generate` ENOENT (#11)
     #   jest 30 + jest-expo 57             ->  clearMocksOnScope is not a function (#4)
     #
@@ -34,13 +32,14 @@ updates:
     # `compatible-updates` excludes the same patterns so a family cannot be
     # split across two pull requests by whichever group Dependabot matches first.
     groups:
-      eslint:
+      # Vite+ pins its bundled Vite, Vitest, Oxlint and Oxfmt exactly, and the
+      # workspace catalog pins the Vitest packages a test config imports to the
+      # same release, so they move as one.
+      vite-plus:
         patterns:
-          - eslint
-          - eslint-config-*
-          - eslint-plugin-*
-          - "@eslint/*"
-          - typescript-eslint
+          - vite-plus
+          - vitest
+          - "@vitest/*"
       prisma:
         patterns:
           - prisma
@@ -53,11 +52,9 @@ updates:
           - babel-jest
       compatible-updates:
         exclude-patterns:
-          - eslint
-          - eslint-config-*
-          - eslint-plugin-*
-          - "@eslint/*"
-          - typescript-eslint
+          - vite-plus
+          - vitest
+          - "@vitest/*"
           - prisma
           - "@prisma/*"
           - jest

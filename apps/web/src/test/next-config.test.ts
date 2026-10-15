@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 // Configuration validation belongs to the env tests; this reads the real Next
 // configuration without asking for a complete environment.

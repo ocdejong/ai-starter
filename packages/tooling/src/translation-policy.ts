@@ -222,7 +222,9 @@ export function checkTranslationPolicy(
   for (const locale of translationLocales(root)) {
     const catalog = readCatalog(root, locale);
 
-    for (const [key, message] of [...catalog].sort()) {
+    for (const [key, message] of [...catalog].sort(([a], [b]) =>
+      a.localeCompare(b),
+    )) {
       if (reference.get(key) !== message) {
         continue;
       }

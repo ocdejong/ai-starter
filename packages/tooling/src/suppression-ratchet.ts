@@ -9,11 +9,11 @@ import { listFiles } from "./repository-files.ts";
  * look away.
  *
  * The bypasses that can be banned outright already are: `pnpm policy` rejects
- * `@ts-ignore` and `@ts-nocheck` in product sources, and ESLint rejects a
+ * `@ts-ignore` and `@ts-nocheck` in product sources, and the linter rejects a
  * skipped test, a focused one and a laundered assertion everywhere. What is left
  * is the pair that cannot be banned without lying — a `@ts-expect-error` that
- * documents a genuine upstream defect, and an `eslint-disable` that carries a
- * reason. Both are legitimate; both are also how a codebase accumulates blind
+ * documents a genuine upstream defect, and an `oxlint-disable` (or the
+ * `eslint-disable` spelling Oxlint also honours) that carries a reason. Both are legitimate; both are also how a codebase accumulates blind
  * spots one justified exception at a time.
  *
  * So they are counted rather than forbidden, against a list that may only
@@ -40,12 +40,6 @@ export type SuppressionAllowance = {
 export const allowedSuppressions: readonly SuppressionAllowance[] = [
   {
     count: 1,
-    file: "apps/mobile/jest.setup.ts",
-    reason:
-      "A jest.mock factory cannot use `import`, so the require it needs is disabled with a reason.",
-  },
-  {
-    count: 1,
     file: "apps/mobile/src/i18n/messages.test.tsx",
     reason:
       "The typed-key probe: the `@ts-expect-error` is the assertion. If the catalog augmentation lapses, the directive stops being used and typecheck fails.",
@@ -57,15 +51,15 @@ export const allowedSuppressions: readonly SuppressionAllowance[] = [
   },
   {
     count: 1,
-    file: "packages/config/eslint/rules.test.ts",
+    file: "packages/config/lint/config.test.ts",
     reason:
-      "A planted stale disable directive, proving `reportUnusedDisableDirectives` is an error rather than a warning.",
+      "A planted stale disable directive, proving `reportUnusedDisableDirectives` is an error rather than ignored.",
   },
   {
-    count: 5,
+    count: 6,
     file: "packages/tooling/src/repository-policy.test.ts",
     reason:
-      "Planted violations inside string fixtures, proving the bypass checker reports an undescribed directive and accepts a justified one.",
+      "Planted violations inside string fixtures, proving the bypass checker reports an undescribed directive in either lint spelling and accepts a justified one.",
   },
   {
     count: 5,
@@ -87,7 +81,8 @@ const suppressionExtensions = new Set([
 /** A directive only silences anything inside a comment, matching the bypass checker. */
 const typeDirective =
   /(?:\/\/|\/\*|^\s*\*)\s*@ts-(?:ignore|nocheck|expect-error)\b/;
-const lintDirective = /(?:\/\/|\/\*)\s*eslint-disable(?:-next-line|-line)?\b/;
+const lintDirective =
+  /(?:\/\/|\/\*)\s*(?:eslint|oxlint)-disable(?:-next-line|-line)?\b/;
 
 export function countSuppressions(root: string): Map<string, number> {
   const counts = new Map<string, number>();
@@ -126,7 +121,9 @@ export function checkSuppressionRatchet(root: string): PolicyViolation[] {
   );
   const violations: PolicyViolation[] = [];
 
-  for (const [file, found] of [...counted].sort()) {
+  for (const [file, found] of [...counted].sort(([a], [b]) =>
+    a.localeCompare(b),
+  )) {
     const budget = allowed.get(file);
 
     if (budget === undefined) {

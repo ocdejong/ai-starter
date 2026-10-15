@@ -1,5 +1,12 @@
 import type { Database } from "@ai-starter/db";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+} from "vite-plus/test";
 
 import {
   createEmailInbox,
