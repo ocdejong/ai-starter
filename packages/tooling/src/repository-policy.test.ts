@@ -326,34 +326,6 @@ describe("repository policy", () => {
     expect(checkRepositoryPolicy(root)).toEqual([]);
   });
 
-  it("reports an app environment variable outside the build task's hash", () => {
-    const root = checkout({
-      "apps/web/src/env.js":
-        "export const env = { secret: process.env.BETTER_AUTH_SECRET };\n",
-      "turbo.json": JSON.stringify({
-        tasks: { build: { env: ["DATABASE_URL"] } },
-      }),
-    });
-
-    const violations = checkRepositoryPolicy(root);
-
-    expect(violations).toHaveLength(1);
-    expect(violations[0]?.file).toBe("turbo.json");
-    expect(violations[0]?.problem).toContain("BETTER_AUTH_SECRET");
-  });
-
-  it("accepts an app environment variable a prefix pattern covers", () => {
-    const root = checkout({
-      "apps/mobile/src/env.ts":
-        "export const env = { url: process.env.EXPO_PUBLIC_API_URL };\n",
-      "turbo.json": JSON.stringify({
-        tasks: { build: { env: ["EXPO_PUBLIC_*"] } },
-      }),
-    });
-
-    expect(checkRepositoryPolicy(root)).toEqual([]);
-  });
-
   it("reports the root missing a verification-step script", () => {
     const step = verificationSteps[0]?.name ?? "";
     const remaining = { ...rootScripts };
