@@ -9,6 +9,15 @@ import { defineConfig } from "vite-plus";
  */
 export default defineConfig({
   lint: lintConfig,
+  run: {
+    // Package scripts run uncached, on purpose. A cached task receives only
+    // the environment variables its cache config names, and a change to one it
+    // does not name replays the old output — measured here: an undeclared
+    // `DATABASE_URL` reached a cached script as `undefined`, and changing it
+    // was still a cache hit. Caching a build is a decision that comes with its
+    // environment list, task by task.
+    cache: false,
+  },
   fmt: {
     printWidth: 80,
     sortPackageJson: false,

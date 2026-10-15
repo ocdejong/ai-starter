@@ -20,8 +20,7 @@ const harnessPaths = [
   "packages/tooling/",
   "pnpm-lock.yaml",
   "pnpm-workspace.yaml",
-  "prettier.config.js",
-  "turbo.json",
+  "vite.config.ts",
 ];
 
 /**
@@ -36,7 +35,7 @@ const gateConfigPaths = [
   "tsconfig.depcruise.json",
 ];
 
-/** Turborepo cannot infer that a schema edit requires real-PostgreSQL evidence. */
+/** The task graph cannot infer that a schema edit requires real-PostgreSQL evidence. */
 const schemaPaths = ["packages/db/prisma/"];
 
 /**
@@ -48,7 +47,7 @@ const schemaPaths = ["packages/db/prisma/"];
 const integrationBehaviourPaths = ["packages/auth/", "packages/db/"];
 
 /**
- * Instruction and documentation surfaces. Turborepo cannot see these at all,
+ * Instruction and documentation surfaces. No workspace owns these at all,
  * yet an edit here is exactly what makes a pointer stale or a link dangle.
  */
 const instructionPaths = [
@@ -89,6 +88,34 @@ const webBehaviourPaths = [
  */
 const nativeBehaviourPaths = ["apps/mobile/", "packages/i18n/"];
 
+/** The workspace a path belongs to, as the directory `pnpm-workspace.yaml` globs. */
+function owningWorkspace(file: string): string | undefined {
+  return /^((?:apps|packages)\/[^/]+)\//.exec(file)?.[1];
+}
+
+/**
+ * Runs one package script in each changed workspace and every workspace that
+ * depends on it, in dependency order. `vp run` has no git-range filter, so the
+ * workspaces are named directly; `...{./dir}` adds the dependents.
+ */
+function affectedTask(
+  name: string,
+  task: string,
+  workspaces: readonly string[],
+): VerificationStep {
+  return {
+    args: [
+      "exec",
+      "vp",
+      "run",
+      ...workspaces.flatMap((workspace) => ["--filter", `...{./${workspace}}`]),
+      task,
+    ],
+    command: "pnpm",
+    name,
+  };
+}
+
 function touches(
   changed: readonly string[],
   prefixes: readonly string[],
@@ -101,9 +128,10 @@ function touches(
 }
 
 /**
- * Chooses the checks a change can affect. Turborepo's affected graph covers
- * package-level lint, typecheck and unit tests; the explicit rules below cover
- * the evidence the graph cannot infer from imports alone.
+ * Chooses the checks a change can affect. The workspace graph covers
+ * package-level typecheck and unit tests, and lint runs once over the whole
+ * repository because Oxlint reads one root configuration; the explicit rules
+ * below cover the evidence the graph cannot infer from imports alone.
  */
 export function selectChecks(
   changedPaths: readonly string[],
@@ -138,27 +166,28 @@ export function selectChecks(
           requireStep("db:generate"),
         ]
       : []),
-    {
-      args: [
-        "exec",
-        "turbo",
-        "run",
-        "lint",
-        "typecheck",
-        "test",
-        `--filter=...[${base}]`,
-      ],
-      command: "pnpm",
-      name: "affected lint, typecheck and unit tests",
-    },
   ];
   const reasons = [
     "Checking repository structure, the architecture graph and what nothing reaches, which any change can affect.",
-    `Linting, typechecking and unit-testing packages affected since ${base}.`,
   ];
 
-  // `turbo run test` leaves the minutes-long knip and depcruise tests out of
-  // the affected graph; only an edit to what they exercise brings them back.
+  const workspaces = [
+    ...new Set(changedPaths.flatMap((file) => owningWorkspace(file) ?? [])),
+  ].sort((a, b) => a.localeCompare(b));
+  if (workspaces.length > 0) {
+    steps.push(
+      requireStep("lint"),
+      affectedTask("affected typecheck", "typecheck", workspaces),
+      affectedTask("affected unit tests", "test", workspaces),
+    );
+    reasons.push(
+      `Linting the repository, then typechecking and unit-testing ${workspaces.join(", ")} and what depends on them, changed since ${base}.`,
+    );
+  }
+
+  // The package `test` scripts leave the minutes-long knip and depcruise tests
+  // out of the affected graph; only an edit to what they exercise brings them
+  // back.
   if (touches(changedPaths, gateConfigPaths)) {
     steps.push(requireStep("test:tooling"));
     reasons.push(
