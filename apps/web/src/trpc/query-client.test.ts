@@ -1,5 +1,5 @@
 import type * as ReactQuery from "@tanstack/react-query";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 import { createQueryClient, shouldRetryQuery } from "./query-client";
 

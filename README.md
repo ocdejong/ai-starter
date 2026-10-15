@@ -1,6 +1,6 @@
 # AI-first full-stack starter
 
-A strongly typed pnpm/Turborepo starter for a Next.js web app and Expo mobile app. It keeps the productive T3 path—Prisma → tRPC → TanStack Query → component—while enforcing runtime validation, database integrity, client/server boundaries, and cross-platform tests.
+A strongly typed pnpm/Vite+ starter for a Next.js web app and Expo mobile app. It keeps the productive T3 path—Prisma → tRPC → TanStack Query → component—while enforcing runtime validation, database integrity, client/server boundaries, and cross-platform tests.
 
 ## Stack
 
@@ -8,7 +8,7 @@ A strongly typed pnpm/Turborepo starter for a Next.js web app and Expo mobile ap
 - Expo Router and React Native
 - Better Auth: email and password, with the server half of Google/GitHub OAuth configured but no sign-in button on either platform yet
 - tRPC, TanStack Query, Zod, Prisma, and PostgreSQL
-- strict TypeScript; flat, type-aware ESLint; Prettier
+- strict TypeScript; Vite+ for type-aware Oxlint, Oxfmt, Vitest and the workspace task runner
 - Vitest/Testing Library, Jest/RNTL, Testcontainers, Playwright, and Maestro
 - GitHub Actions that run once per ready pull request, monthly Dependabot, CodeQL and dependency review on public repositories, and optional Sentry
 
@@ -22,7 +22,7 @@ packages/
   db/        server-only Prisma client, migrations, and integration tests
   auth/      Better Auth factory: account, group, and session flows
   email/     react-email templates, Resend and dev-mailbox adapters
-  config/    shared TypeScript, ESLint, and Vitest configuration
+  config/    shared TypeScript, Oxlint, and Vitest configuration
   i18n/      shared EN/NL message catalogs and locale negotiation
   tokens/    platform-neutral design tokens
   tooling/   every `pnpm` command in this README
@@ -98,7 +98,7 @@ pnpm verify:changed   # only the checks the current diff can affect; the local g
 pnpm verify           # the complete suite in CI's order; optional locally
 ```
 
-`pnpm verify` is the single source of truth for what "green" means; CI runs its five independent lanes in parallel, with one required `Verify` result, on every ready pull request. Locally, `verify:changed` is enough to mark a draft ready; run the full `pnpm verify` for a risky change or when CI is unavailable. `verify:changed` uses Turborepo's affected graph, plus explicit rules for evidence the graph cannot infer: a Prisma schema or migration change adds the real-PostgreSQL tests, and web-observable behavior adds the browser journey. A change to the harness itself falls back to the full suite.
+`pnpm verify` is the single source of truth for what "green" means; CI runs its five independent lanes in parallel, with one required `Verify` result, on every ready pull request. Locally, `verify:changed` is enough to mark a draft ready; run the full `pnpm verify` for a risky change or when CI is unavailable. `verify:changed` typechecks and unit-tests the changed workspaces and everything that depends on them, plus explicit rules for evidence the graph cannot infer: a Prisma schema or migration change adds the real-PostgreSQL tests, and web-observable behavior adds the browser journey. A change to the harness itself falls back to the full suite.
 
 See `AGENTS.md` for the binding agent contract and `docs/README.md` for the repository knowledge map. The ranked hard rules live in `docs/engineering-principles.md`; architecture, verification, and their research basis stay in separate progressively loaded documents.
 

@@ -6,7 +6,7 @@
  * ever imported from it.
  *
  * The empty body is the point. It resolves `import "~/styles/globals.css"` in
- * `app/layout.tsx` while still making `import styles from "…​.css"` a compile
+ * `app/layout.tsx` while still making `import styles from "./page.css"` a compile
  * error, which a shorthand `declare module "*.css";` would silently type as
  * `any`. Delete this the day Next ships a declaration for global stylesheets.
  */

@@ -15,10 +15,8 @@
     "db:push:prototype": "prisma db push",
     "db:studio": "prisma studio",
     "db:validate": "prisma validate",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "test": "vitest run --passWithNoTests --exclude '**/*.integration.test.ts'",
-    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test": "vp test run --passWithNoTests --exclude '**/*.integration.test.ts'",
+    "test:integration": "vp test run --config vitest.integration.config.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -31,9 +29,10 @@
     "@ai-starter/config": "workspace:*",
     "@testcontainers/postgresql": "^12.2.0",
     "@types/node": "^24",
-    "eslint": "^9.39.5",
     "prisma": "^7.10.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.11"
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "vitest": "catalog:"
   }
 }

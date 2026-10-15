@@ -1,6 +1,13 @@
 // @vitest-environment node
 import type * as NodeFs from "node:fs";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
 
 /**
  * What a linked worktree that never derived its own origin looks like on disk:

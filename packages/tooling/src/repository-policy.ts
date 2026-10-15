@@ -84,7 +84,7 @@ const requiredCompilerFlags = [
   "exactOptionalPropertyTypes",
 ];
 
-const requiredPackageScripts = ["lint", "typecheck"];
+const requiredPackageScripts = ["typecheck"];
 
 const strictBaseTsconfig = "packages/config/typescript/base.json";
 const generatedClientIgnore = "packages/db/generated";
@@ -389,8 +389,9 @@ const tsExtensions = new Set([".ts", ".tsx"]);
 /** A bypass only takes effect in a comment, so string mentions of a directive are inert. */
 const commentedTsDirective =
   /(?:\/\/|\/\*|^\s*\*)\s*@ts-(ignore|nocheck|expect-error)\b[ \t]*(.*)$/;
-const commentedEslintDisable =
-  /(?:\/\/|\/\*)\s*(eslint-disable(?:-next-line|-line)?)\b(.*)$/;
+/** Oxlint honours ESLint's spelling as well as its own. */
+const commentedLintDisable =
+  /(?:\/\/|\/\*)\s*((?:eslint|oxlint)-disable(?:-next-line|-line)?)\b(.*)$/;
 
 function checkForbiddenBypasses(root: string): PolicyViolation[] {
   const violations: PolicyViolation[] = [];
@@ -430,15 +431,15 @@ function checkForbiddenBypasses(root: string): PolicyViolation[] {
         }
       }
 
-      const eslint = commentedEslintDisable.exec(line);
-      if (eslint !== null) {
-        const trailing = eslint[2] ?? "";
+      const lint = commentedLintDisable.exec(line);
+      if (lint !== null) {
+        const trailing = lint[2] ?? "";
         const justification = trailing.split("--")[1]?.trim() ?? "";
         if (justification.length === 0) {
           violations.push({
             file: location,
             fix: `Justify the disable with " -- reason", or fix the code so the rule passes.`,
-            problem: `${eslint[1]} silences a lint rule without a justification.`,
+            problem: `${lint[1]} silences a lint rule without a justification.`,
           });
         }
       }
@@ -494,7 +495,7 @@ function checkRequiredScripts(all: readonly Manifest[]): PolicyViolation[] {
       if (!scripts.has(required)) {
         violations.push({
           file: manifest.manifestPath,
-          fix: `Add a "${required}" script so \`turbo run ${required}\` reaches ${manifest.name}.`,
+          fix: `Add a "${required}" script so \`vp run -r ${required}\` reaches ${manifest.name}.`,
           problem: `${manifest.name} defines no "${required}" script.`,
         });
       }
@@ -626,76 +627,6 @@ function splitTopLevel(body: string): string[] {
   return entries.filter((entry) => entry.trim() !== "");
 }
 
-/**
- * Every environment variable an app declares has to be in the build task's
- * environment, or Turborepo can serve a cached build made under a different
- * value. The failure is silent by construction — the build is *correct*, just
- * for yesterday's configuration — and it is what let the two Google OAuth
- * variables sit outside the hash from the stage that introduced them.
- *
- * The app's own `env` module is the source: it names what the app reads, and
- * `process.env.X` is the one shape every entry in it takes.
- */
-function checkBuildEnvironment(root: string): PolicyViolation[] {
-  const declared = readJson(root, "turbo.json")?.tasks;
-  const build =
-    typeof declared === "object" && declared !== null
-      ? (declared as Record<string, unknown>).build
-      : undefined;
-  const listed =
-    typeof build === "object" && build !== null
-      ? (build as Record<string, unknown>).env
-      : undefined;
-
-  if (!Array.isArray(listed)) {
-    return [];
-  }
-
-  const patterns = listed.filter(
-    (entry): entry is string => typeof entry === "string",
-  );
-  const covered = (name: string): boolean =>
-    patterns.some((pattern) =>
-      pattern.endsWith("*")
-        ? name.startsWith(pattern.slice(0, -1))
-        : pattern === name,
-    );
-
-  return appEnvModules(root).flatMap((file) => {
-    const source = readText(root, file) ?? "";
-    const names = new Set(
-      [...source.matchAll(/process\.env\.([A-Z][A-Z0-9_]*)/g)].flatMap(
-        ([, name]) => (name === undefined ? [] : [name]),
-      ),
-    );
-
-    return [...names]
-      .filter((name) => !covered(name))
-      .sort()
-      .map((name) => ({
-        file: "turbo.json",
-        fix: `Add "${name}" to tasks.build.env, or a prefix pattern that covers it.`,
-        problem: `${file} reads ${name}, which is outside the build task's environment, so a change to it can be served a stale cached build.`,
-      }));
-  });
-}
-
-/** Each app's declared environment contract, `apps/<app>/src/env.{js,ts}`. */
-function appEnvModules(root: string): string[] {
-  const apps = path.join(root, "apps");
-  if (!existsSync(apps)) {
-    return [];
-  }
-
-  return readdirSync(apps, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .flatMap((entry) =>
-      ["js", "ts"]
-        .map((extension) => `apps/${entry.name}/src/env.${extension}`)
-        .filter((file) => existsSync(path.join(root, file))),
-    );
-}
-
 /** Every way the repository structure can drift, checked against one checkout. */
 export function checkRepositoryPolicy(root: string): PolicyViolation[] {
   const all = manifests(root);
@@ -708,7 +639,6 @@ export function checkRepositoryPolicy(root: string): PolicyViolation[] {
     ...checkForbiddenBypasses(root),
     ...checkGeneratedCleanliness(root),
     ...checkRequiredScripts(all),
-    ...checkBuildEnvironment(root),
     ...checkErrorReporting(root),
   ];
 }
@@ -726,6 +656,6 @@ export function formatViolations(
 
 export function summarise(violations: readonly PolicyViolation[]): string {
   return violations.length === 0
-    ? "policy: repository structure, exports, compiler flags, SDK locations, scripts, build environment, error reporting, workflows, supply-chain settings, native flows, translated copy and the suppression ratchet are consistent."
+    ? "policy: repository structure, exports, compiler flags, SDK locations, scripts, error reporting, workflows, supply-chain settings, native flows, translated copy and the suppression ratchet are consistent."
     : `policy: ${violations.length} problem(s) found. Fix them and run \`pnpm policy\` again.`;
 }

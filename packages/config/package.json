@@ -4,29 +4,22 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./eslint/base": "./eslint/base.js",
-    "./eslint/product": "./eslint/product.js",
-    "./eslint/rules": "./eslint/rules.js",
+    "./lint": "./lint/config.js",
     "./typescript/base.json": "./typescript/base.json",
     "./typescript/nextjs.json": "./typescript/nextjs.json",
     "./vitest/base": "./vitest/base.ts"
   },
   "scripts": {
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "test": "vitest run",
+    "test": "vp test run",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "typescript-eslint": "^8.71.0",
-    "vitest": "^4.1.11"
-  },
   "peerDependencies": {
-    "eslint": "^9.0.0",
     "typescript": ">=5.8"
   },
   "devDependencies": {
-    "eslint": "^9.39.5",
-    "typescript": "^6.0.3"
+    "@types/node": "^24",
+    "typescript": "^6.0.3",
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

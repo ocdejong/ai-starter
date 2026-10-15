@@ -108,7 +108,8 @@ function parseWorkflow(file: string, text: string): Workflow {
   let section = "";
   let currentTrigger: { name: string; hasPathFilter: boolean } | undefined;
   let currentJob:
-    { id: string; checkName: string; lines: string[] } | undefined;
+    | { id: string; checkName: string; lines: string[] }
+    | undefined;
   let hasTopLevelPermissions = false;
 
   const closeTrigger = (): void => {

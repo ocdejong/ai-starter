@@ -5,5 +5,10 @@
     "allowImportingTsExtensions": true,
     "allowJs": true
   },
-  "include": ["eslint/**/*.ts", "vitest/**/*.ts", "vitest.config.ts"]
+  "include": [
+    "lint/**/*.ts",
+    "lint/**/*.js",
+    "vitest/**/*.ts",
+    "vitest.config.ts"
+  ]
 }

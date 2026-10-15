@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import {
   checkRepositoryPolicy,
@@ -232,6 +232,19 @@ describe("repository policy", () => {
     );
   });
 
+  // Oxlint honours its own spelling as well as ESLint's, so an unjustified
+  // `oxlint-disable` is the same escape hatch under another name.
+  it("reports an oxlint-disable without a justification", () => {
+    const root = checkout({
+      "packages/domain/src/index.ts":
+        "// oxlint-disable-next-line no-console\nexport const value = 1;\n",
+    });
+
+    expect(checkRepositoryPolicy(root)[0]?.problem).toContain(
+      "oxlint-disable-next-line silences a lint rule without a justification",
+    );
+  });
+
   it("accepts a @ts-expect-error and eslint-disable that carry a reason", () => {
     const root = checkout({
       "packages/domain/src/index.ts":
@@ -308,34 +321,6 @@ describe("repository policy", () => {
         "  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1,",
         "});",
       ].join("\n"),
-    });
-
-    expect(checkRepositoryPolicy(root)).toEqual([]);
-  });
-
-  it("reports an app environment variable outside the build task's hash", () => {
-    const root = checkout({
-      "apps/web/src/env.js":
-        "export const env = { secret: process.env.BETTER_AUTH_SECRET };\n",
-      "turbo.json": JSON.stringify({
-        tasks: { build: { env: ["DATABASE_URL"] } },
-      }),
-    });
-
-    const violations = checkRepositoryPolicy(root);
-
-    expect(violations).toHaveLength(1);
-    expect(violations[0]?.file).toBe("turbo.json");
-    expect(violations[0]?.problem).toContain("BETTER_AUTH_SECRET");
-  });
-
-  it("accepts an app environment variable a prefix pattern covers", () => {
-    const root = checkout({
-      "apps/mobile/src/env.ts":
-        "export const env = { url: process.env.EXPO_PUBLIC_API_URL };\n",
-      "turbo.json": JSON.stringify({
-        tasks: { build: { env: ["EXPO_PUBLIC_*"] } },
-      }),
     });
 
     expect(checkRepositoryPolicy(root)).toEqual([]);

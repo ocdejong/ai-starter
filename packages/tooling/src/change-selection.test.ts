@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { selectChecks } from "./change-selection.ts";
 import { verificationSteps } from "./verification.ts";
@@ -20,20 +20,47 @@ describe("selectChecks", () => {
       "policy",
       "arch",
       "knip",
-      "affected lint, typecheck and unit tests",
+      "lint",
+      "affected typecheck",
+      "affected unit tests",
       "test:e2e",
     ]);
   });
 
-  it("passes the resolved base to the Turborepo filter", () => {
-    const affected = selectChecks(
-      ["apps/mobile/src/app/index.tsx"],
+  // `vp run` has no git-range filter, so the changed workspaces are named
+  // directly, each with everything that depends on it.
+  it("hands the task runner each changed workspace and its dependents", () => {
+    const { steps } = selectChecks(
+      [
+        "apps/mobile/src/app/index.tsx",
+        "apps/mobile/src/env.ts",
+        "packages/domain/src/group.ts",
+      ],
       base,
-    ).steps.find(
-      (step) => step.name === "affected lint, typecheck and unit tests",
     );
 
-    expect(affected?.args).toContain(`--filter=...[${base}]`);
+    for (const name of ["affected typecheck", "affected unit tests"]) {
+      expect(steps.find((step) => step.name === name)?.args).toEqual([
+        "exec",
+        "vp",
+        "run",
+        "--filter",
+        "...{./apps/mobile}",
+        "--filter",
+        "...{./packages/domain}",
+        name === "affected typecheck" ? "typecheck" : "test",
+      ]);
+    }
+  });
+
+  // With no filter, `vp run` runs the task in the current directory's package,
+  // which here is the root — the whole suite's own script.
+  it("checks no package when no workspace changed", () => {
+    const selected = names(["docs/architecture.md"]);
+
+    expect(selected).not.toContain("lint");
+    expect(selected).not.toContain("affected typecheck");
+    expect(selected).not.toContain("affected unit tests");
   });
 
   it.each([
@@ -77,9 +104,7 @@ describe("selectChecks", () => {
 
   it("regenerates the Prisma client before the affected typecheck when the schema changes", () => {
     const selected = names(["packages/db/prisma/schema.prisma"]);
-    const affected = selected.indexOf(
-      "affected lint, typecheck and unit tests",
-    );
+    const affected = selected.indexOf("affected typecheck");
 
     expect(selected.indexOf("db:generate")).toBeGreaterThan(-1);
     expect(selected.indexOf("db:generate")).toBeLessThan(affected);
@@ -123,10 +148,10 @@ describe("selectChecks", () => {
   });
 
   it.each([
-    "turbo.json",
+    "vite.config.ts",
     "package.json",
     "pnpm-lock.yaml",
-    "packages/config/eslint/rules.js",
+    "packages/config/lint/config.js",
     "packages/tooling/src/verification.ts",
     ".github/workflows/ci.yml",
   ])("falls back to the authoritative suite when %s changes", (file) => {
@@ -185,7 +210,7 @@ describe("selectChecks", () => {
  */
 describe("selectChecks by class of change", () => {
   const always = ["format:check", "policy", "arch", "knip"];
-  const affected = "affected lint, typecheck and unit tests";
+  const affected = ["lint", "affected typecheck", "affected unit tests"];
 
   it("a migration: schema gates, real PostgreSQL, and the browser journey", () => {
     expect(
@@ -197,7 +222,7 @@ describe("selectChecks by class of change", () => {
       "db:validate",
       "db:lint",
       "db:generate",
-      affected,
+      ...affected,
       "test:integration",
       "test:e2e",
     ]);
@@ -206,14 +231,14 @@ describe("selectChecks by class of change", () => {
   it("a web page: the browser journey, no database container, no device", () => {
     expect(names(["apps/web/src/app/(app)/dashboard/page.tsx"])).toEqual([
       ...always,
-      affected,
+      ...affected,
       "test:e2e",
     ]);
   });
 
   it("a native screen: the native journey, and no browser", () => {
     expect(names(["apps/mobile/src/components/auth/sign-in-form.tsx"])).toEqual(
-      [...always, affected, "test:e2e:mobile"],
+      [...always, ...affected, "test:e2e:mobile"],
     );
   });
 
@@ -226,7 +251,7 @@ describe("selectChecks by class of change", () => {
   it("a domain schema: every consumer, and the journey that renders it", () => {
     expect(names(["packages/domain/src/announcement.ts"])).toEqual([
       ...always,
-      affected,
+      ...affected,
       "test:e2e",
     ]);
   });
@@ -236,7 +261,7 @@ describe("selectChecks by class of change", () => {
   it("an email template: the browser journey that reads the mailbox", () => {
     expect(names(["packages/email/src/templates/verification.tsx"])).toEqual([
       ...always,
-      affected,
+      ...affected,
       "test:e2e",
     ]);
   });
@@ -245,7 +270,7 @@ describe("selectChecks by class of change", () => {
   it("an i18n catalog: both journeys", () => {
     expect(names(["packages/i18n/messages/en.json"])).toEqual([
       ...always,
-      affected,
+      ...affected,
       "test:e2e",
       "test:e2e:mobile",
     ]);
@@ -263,7 +288,7 @@ describe("selectChecks by class of change", () => {
   it("design tokens: the affected graph only", () => {
     expect(names(["packages/tokens/src/index.ts"])).toEqual([
       ...always,
-      affected,
+      ...affected,
     ]);
   });
 });

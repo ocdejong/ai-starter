@@ -4,17 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "test": "vitest run --exclude '**/*.process.test.ts'",
-    "test:process": "vitest run .process.test.ts",
+    "test": "vp test run --exclude '**/*.process.test.ts'",
+    "test:process": "vp test run .process.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@ai-starter/config": "workspace:*",
     "@types/node": "^24",
-    "eslint": "^9.39.5",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.11"
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

@@ -48,11 +48,11 @@ overrides:
   # fixed version satisfies the range its parent already declares, so nothing
   # but the lockfile stood in the way. The selector names the *line* that
   # carries the advisory, never the package: three majors of `brace-expansion`
-  # and two of `js-yaml` coexist here, and a bare key collapses them — ESLint
+  # and two of `js-yaml` coexist here, and a bare key collapses them — Jest
   # then dies with `TypeError: expand is not a function`, because
   # `minimatch@3` calls the export as a function and v5 is not one.
   #
-  # eslint > minimatch@3.1.5 declares `^1.1.7`. GHSA-mh99-v99m-4gvg,
+  # jest > @jest/reporters > glob@7 > minimatch@3.1.5 declares `^1.1.7`. GHSA-mh99-v99m-4gvg,
   # GHSA-rgw5-rvv9-x895, GHSA-6j4f-fj2g-mc7p, GHSA-qhr7-859c-m2p7.
   brace-expansion@^1: ^1.1.20
   # jest > @jest/core > @jest/transform > babel-plugin-istanbul >
@@ -61,6 +61,13 @@ overrides:
   # better-auth only *peers* on mysql2 (`^3.0.0`; nothing here uses MySQL), so
   # pnpm auto-installs it and kept the stale 3.15.3. GHSA-3f6p-5ww8-9rcr.
   mysql2: ^3.22.0
+  # One Vite and one Vitest: the ones Vite+ bundles. `vite-plus` depends on
+  # `vite` as an alias of its own core, and anything else that peers on Vite
+  # or Vitest (`@vitejs/plugin-react`, the coverage provider) would otherwise
+  # install a second copy beside it. `@*` leaves `catalog:` references to the
+  # catalog below, which already resolves them.
+  vite@*: "catalog:"
+  vitest@*: "catalog:"
 
 # An advisory that has a fix this repository cannot take, answered by an entry in
 # `packages/tooling/src/upstream-blocks.ts` so the day upstream moves,
@@ -74,3 +81,35 @@ auditConfig:
     # is 8.0.0. An override would run the Prisma CLI's config loader, a
     # development-time tool, on a major it never claimed to support.
     - GHSA-ggr8-5vv4-36mx
+
+# The toolchain release, in one place. `vp test`, `vp lint` and `vp fmt` run
+# the Vitest, Oxlint and Oxfmt that `vite-plus` pins exactly, so a package that
+# names one directly (`vitest` where a setup file or jest-dom augments its
+# types or the coverage provider peers on it, and the provider itself) takes
+# that same release. Move these together, and only with `vp migrate`.
+#
+# Same release is not enough: it must be the same copy. `vp run` starts the
+# workspace root's Vitest for every package, and a package whose `vite-plus`
+# resolved another peer variant registers its tests with a runner that is not
+# running ("Vitest failed to find the current suite"). So every workspace that
+# runs Vite+ declares `vite` from this catalog and `@types/node` at the root's
+# major, the two peers pnpm would otherwise fill differently per package.
+# `packages/domain` sets `"types": []` so the Node types it installs for this
+# reason never reach its code.
+catalog:
+  vite: npm:@voidzero-dev/vite-plus-core@1.2.0
+  vitest: 5.0.4
+  vite-plus: 1.2.0
+  "@vitest/coverage-v8": 5.0.4
+
+# Packages that peer on `vite@^6 || ^7 || ^8` see Vite+'s core, which is
+# versioned as Vite+ (1.x) rather than as the Vite release it ships. The range
+# check is about the version label, not compatibility, so it is waived for the
+# two names the toolchain owns and no others.
+peerDependencyRules:
+  allowAny:
+    - vite
+    - vitest
+  allowedVersions:
+    vite: "*"
+    vitest: "*"

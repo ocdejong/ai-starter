@@ -1,11 +1,7 @@
-import { defineConfig, type ViteUserConfig } from "vitest/config";
+import { defineConfig, type ViteUserConfig } from "vite-plus";
 
 export const baseVitestConfig = defineConfig({
   test: {
-    coverage: {
-      provider: "v8",
-      reporter: ["text", "json", "html"],
-    },
     passWithNoTests: true,
   },
 });
@@ -33,10 +29,10 @@ export function coveredVitestConfig(floor: CoverageFloor): ViteUserConfig {
     test: {
       ...baseVitestConfig.test,
       coverage: {
-        ...baseVitestConfig.test?.coverage,
         exclude: ["src/**/*.test.ts", "src/index.ts"],
         include: ["src/**/*.ts"],
         provider: "v8",
+        reporter: ["text", "json", "html"],
         thresholds: { ...floor },
       },
     },

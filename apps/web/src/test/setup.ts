@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 
 import { cleanup } from "@testing-library/react";
-import { afterEach, vi } from "vitest";
+import { afterEach, vi } from "vite-plus/test";
 
 // jsdom does not implement matchMedia; next-themes reads it for the system
 // scheme. Setup files run for every test file, including the server ones that

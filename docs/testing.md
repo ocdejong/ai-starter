@@ -32,7 +32,7 @@ Use a focused unit test while editing, then `pnpm verify:changed`. Open the pull
 
 Two files in `packages/tooling` spawn knip and depcruise against planted fixtures and take minutes: `packages/tooling/src/knip.process.test.ts` and `packages/tooling/src/dependency-cruiser.process.test.ts`. Their `process` file suffix keeps them out of `pnpm test:unit` and into `pnpm test:tooling`, which `packages/tooling/src/verification.ts` still places in the units lane, so CI runs them. `verify:changed` adds `test:tooling` only when `knip.config.js`, `.dependency-cruiser.cjs` or `tsconfig.depcruise.json` changes; a change to `packages/tooling` or `packages/config` is a harness change and runs the whole suite, that step included.
 
-`pnpm verify:changed` always runs `pnpm arch`, `pnpm policy` and `pnpm knip` alongside formatting, because any change can shift the dependency graph or the repository structure — and deleting the last caller of an export orphans it in a package the diff never named. On top of that it selects work from Turborepo's affected graph — `--filter=...[base]` reaches every dependent, so a change to `packages/domain` typechecks and unit-tests the API, both apps and the email package — plus the rules the graph cannot infer from imports:
+`pnpm verify:changed` always runs `pnpm arch`, `pnpm policy` and `pnpm knip` alongside formatting, because any change can shift the dependency graph or the repository structure — and deleting the last caller of an export orphans it in a package the diff never named. On top of that it lints the repository and selects package work from the workspace graph — each changed workspace runs as `vp run --filter "...{./<dir>}"`, which reaches every dependent, so a change to `packages/domain` typechecks and unit-tests the API, both apps and the email package — plus the rules the graph cannot infer from imports:
 
 - a change under `packages/db/prisma/` adds schema validation, migration linting, client regeneration ahead of the affected typecheck, and the real-PostgreSQL tests;
 - a change under `packages/auth/` or `packages/db/` adds the real-PostgreSQL tests on its own;
@@ -40,7 +40,7 @@ Two files in `packages/tooling` spawn knip and depcruise against planted fixture
 - a change under `apps/mobile/` or `packages/i18n/` adds the native journey;
 - a change to the knip or dependency-cruiser configuration adds `test:tooling`;
 - a change to an instruction surface or a documentation file rechecks the instruction policy;
-- a change to the harness itself (`turbo.json`, the root manifest, the lockfile, `packages/config`, `packages/tooling`, or a workflow) falls back to the full suite.
+- a change to the harness itself (`vite.config.ts`, the root manifest, the lockfile, `packages/config`, `packages/tooling`, or a workflow) falls back to the full suite.
 
 `packages/tokens/` is deliberately absent from the journey rules: it reaches the browser as colours no journey asserts, and the generated stylesheet is kept honest by a unit test. `verify:changed` is the fast local filter; the CI run on the ready pull request is the gate.
 

@@ -4,7 +4,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 vi.mock("next/font/google", () => ({ Geist: () => ({ variable: "geist" }) }));
 vi.mock("~/styles/globals.css", () => ({}));
