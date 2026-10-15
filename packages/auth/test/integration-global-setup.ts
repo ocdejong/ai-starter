@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 import { PostgreSqlContainer } from "@testcontainers/postgresql";
-import type { TestProject } from "vitest/node";
+import type { TestProject } from "vite-plus/test/node";
 
 const execFileAsync = promisify(execFile);
 

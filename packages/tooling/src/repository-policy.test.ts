@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import {
   checkRepositoryPolicy,
@@ -229,6 +229,19 @@ describe("repository policy", () => {
 
     expect(checkRepositoryPolicy(root)[0]?.problem).toContain(
       "without a justification",
+    );
+  });
+
+  // Oxlint honours its own spelling as well as ESLint's, so an unjustified
+  // `oxlint-disable` is the same escape hatch under another name.
+  it("reports an oxlint-disable without a justification", () => {
+    const root = checkout({
+      "packages/domain/src/index.ts":
+        "// oxlint-disable-next-line no-console\nexport const value = 1;\n",
+    });
+
+    expect(checkRepositoryPolicy(root)[0]?.problem).toContain(
+      "oxlint-disable-next-line silences a lint rule without a justification",
     );
   });
 

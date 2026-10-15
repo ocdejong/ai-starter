@@ -21,7 +21,7 @@ whose required checks can actually report, and one pnpm lifecycle-script
 allowlist — plus the native flows, whose application id and asserted copy are
 all a machine without a simulator can check, plus the ratchet over the two
 suppressions that cannot be banned outright — a described \`@ts-expect-error\` and
-a justified \`eslint-disable\` — whose recorded counts may only shrink, plus the
+a justified \`oxlint-disable\` — whose recorded counts may only shrink, plus the
 translations, where a message identical to the English one is untranslated until
 an allowance says why. Each failure names the file and the edit that fixes it.
 \`pnpm arch\` covers the import-graph half.`;

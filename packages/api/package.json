@@ -8,9 +8,7 @@
     "./client": "./src/client.ts"
   },
   "scripts": {
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "test": "vitest run --coverage",
+    "test": "vp test run --coverage",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -23,9 +21,10 @@
   "devDependencies": {
     "@ai-starter/config": "workspace:*",
     "@types/node": "^24",
-    "@vitest/coverage-v8": "^4.1.11",
-    "eslint": "^9.39.5",
+    "@vitest/coverage-v8": "catalog:",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.11"
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "vitest": "catalog:"
   }
 }

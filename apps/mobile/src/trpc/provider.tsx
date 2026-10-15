@@ -44,14 +44,21 @@ export function TRPCProvider({ children }: { children: ReactNode }) {
           fetch: (url, options) => {
             const { signal, ...rest } = options ?? {};
 
-            return fetch(url.toString(), {
-              ...rest,
-              credentials: "omit",
-              // React Native types `signal` as `AbortSignal | null`, so an
-              // explicit `undefined` is rejected; omit the field instead of
-              // widening the platform's type.
-              ...(signal == null ? {} : { signal }),
-            });
+            // tRPC passes a string today, but its type admits a `Request`,
+            // which stringifies to "[object Request]" rather than its URL.
+            return fetch(
+              typeof url === "object" && "url" in url
+                ? url.url
+                : url.toString(),
+              {
+                ...rest,
+                credentials: "omit",
+                // React Native types `signal` as `AbortSignal | null`, so an
+                // explicit `undefined` is rejected; omit the field instead of
+                // widening the platform's type.
+                ...(signal == null ? {} : { signal }),
+              },
+            );
           },
         }),
       ],

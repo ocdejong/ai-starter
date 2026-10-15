@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { repositoryRoot } from "./repository.ts";
 import {
@@ -231,9 +231,10 @@ describe("verification lanes", () => {
     const matrixLanes = matrix?.split(",").map((lane) => lane.trim()) ?? [];
     const dedicatedLanes = [
       ...workflow.matchAll(/run: pnpm verify --lane (\w+)/g),
-    ].map((match) => match[1]);
-    expect([...matrixLanes, ...dedicatedLanes].sort()).toEqual(
-      [...verificationLanes].sort(),
+    ].flatMap((match) => (match[1] === undefined ? [] : [match[1]]));
+    const byName = (a: string, b: string) => a.localeCompare(b);
+    expect([...matrixLanes, ...dedicatedLanes].sort(byName)).toEqual(
+      [...verificationLanes].sort(byName),
     );
   });
 

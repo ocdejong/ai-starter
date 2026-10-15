@@ -64,10 +64,10 @@ export function createGitHubClient(options: {
       sent.push({ body: body ?? null, method, path });
 
       const response = await fetch(`${options.baseUrl}${path}`, {
-        // `null`, not `undefined`: `exactOptionalPropertyTypes` rejects an
-        // optional property explicitly set to undefined, and fetch reads null
-        // as "no body" just the same.
-        body: body === undefined ? null : JSON.stringify(body),
+        // Omitted rather than `undefined`: `exactOptionalPropertyTypes` rejects
+        // an optional property explicitly set to undefined, and a GET with any
+        // `body` key at all is one fetch is entitled to refuse.
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         headers: {
           accept: "application/vnd.github+json",
           authorization: `Bearer ${options.token}`,

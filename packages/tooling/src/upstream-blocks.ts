@@ -3,9 +3,9 @@
  * one back.
  *
  * These are the declines that have no local trigger. A Dependabot group
- * re-proposes eslint 10 and jest 30 every Monday, each fails for a reason
- * nothing here can fix, and each is closed again — and the day the upstream
- * release lands, *nothing in this repository notices*. That is the shape stage
+ * re-proposes jest 30 every month, it fails for a reason nothing here can
+ * fix, and it is closed again — and the day the upstream release lands,
+ * *nothing in this repository notices*. That is the shape stage
  * 21 exists to kill: a decision that lives in somebody's memory rather than in
  * the repository.
  *
@@ -45,23 +45,13 @@ export type UpstreamBlock = {
 };
 
 /**
- * The first two recorded 2026-07-28, the rest 2026-10-04, each against the
+ * The first recorded 2026-07-28, the second 2026-10-04, each against the
  * newest published version at the time. A block that clears is deleted from this
  * list in the same change that takes the bump — the list is the backlog, not a
  * log. The `deepmerge-ts` entry also has an `auditConfig.ignoreGhsas` entry in
  * `pnpm-workspace.yaml`, which goes in the same change.
  */
 export const upstreamBlocks: readonly UpstreamBlock[] = [
-  {
-    dependency: "eslint",
-    field: "peerDependencies",
-    issue: 38,
-    pkg: "eslint-plugin-react",
-    recorded: "^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9.7",
-    summary:
-      "eslint 10 — `eslint-plugin-react` breaks under it (`contextOrFilename.getFilename is not a function`) and reaches this repository transitively through `eslint-config-expo`, so no Dependabot pattern can ever match it",
-    wanted: 10,
-  },
   {
     dependency: "@jest/globals",
     field: "dependencies",
@@ -71,16 +61,6 @@ export const upstreamBlocks: readonly UpstreamBlock[] = [
     summary:
       "jest 30 — `jest-expo` is Expo-SDK-pinned and still depends on the Jest 29 runtime, so the mobile suite dies on `clearMocksOnScope`",
     wanted: 30,
-  },
-  {
-    dependency: "typescript",
-    field: "peerDependencies",
-    issue: 60,
-    pkg: "typescript-eslint",
-    recorded: ">=4.8.4 <6.1.0",
-    summary:
-      "typescript 7 — `typescript-eslint` declares a compiler range that stops below 6.1, and the same tree in Cloud OS found `dependency-cruiser` and the Next.js path-alias resolver failing under 7.0 too (#60)",
-    wanted: 7,
   },
   {
     dependency: "deepmerge-ts",

@@ -1,5 +1,5 @@
 import { createDatabaseClient } from "@ai-starter/db";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { initAuth, type AuthEmailDispatchers } from "./init-auth";
 

@@ -6,7 +6,7 @@ import {
   expect,
   inject,
   it,
-} from "vitest";
+} from "vite-plus/test";
 
 import type { PrismaClient } from "../generated/prisma";
 import { createDatabaseClient } from "./client";

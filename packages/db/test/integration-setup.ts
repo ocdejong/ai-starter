@@ -1,4 +1,4 @@
-import { beforeAll, inject } from "vitest";
+import { beforeAll, inject } from "vite-plus/test";
 
 import { createDatabaseClient } from "../src/client";
 

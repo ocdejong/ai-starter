@@ -7,7 +7,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vite-plus/test";
 
 import { repositoryRoot } from "./repository.ts";
 import {
@@ -49,7 +49,7 @@ describe("countSuppressions", () => {
       "src/comments.ts": [
         "// @ts-expect-error the upstream type is wrong",
         "export const a = 1;",
-        "/* eslint-disable-next-line no-console -- the CLI prints here */",
+        "/* oxlint-disable-next-line no-console -- the CLI prints here */",
         "export const b = 2;",
         "// @ts-ignore",
         "export const c = 3;",

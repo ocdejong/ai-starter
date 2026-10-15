@@ -1,5 +1,5 @@
 import { createDatabaseClient, type Database } from "@ai-starter/db";
-import { inject } from "vitest";
+import { inject } from "vite-plus/test";
 
 import {
   initAuth,

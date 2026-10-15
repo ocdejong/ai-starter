@@ -84,7 +84,7 @@ const requiredCompilerFlags = [
   "exactOptionalPropertyTypes",
 ];
 
-const requiredPackageScripts = ["lint", "typecheck"];
+const requiredPackageScripts = ["typecheck"];
 
 const strictBaseTsconfig = "packages/config/typescript/base.json";
 const generatedClientIgnore = "packages/db/generated";
@@ -389,8 +389,9 @@ const tsExtensions = new Set([".ts", ".tsx"]);
 /** A bypass only takes effect in a comment, so string mentions of a directive are inert. */
 const commentedTsDirective =
   /(?:\/\/|\/\*|^\s*\*)\s*@ts-(ignore|nocheck|expect-error)\b[ \t]*(.*)$/;
-const commentedEslintDisable =
-  /(?:\/\/|\/\*)\s*(eslint-disable(?:-next-line|-line)?)\b(.*)$/;
+/** Oxlint honours ESLint's spelling as well as its own. */
+const commentedLintDisable =
+  /(?:\/\/|\/\*)\s*((?:eslint|oxlint)-disable(?:-next-line|-line)?)\b(.*)$/;
 
 function checkForbiddenBypasses(root: string): PolicyViolation[] {
   const violations: PolicyViolation[] = [];
@@ -430,15 +431,15 @@ function checkForbiddenBypasses(root: string): PolicyViolation[] {
         }
       }
 
-      const eslint = commentedEslintDisable.exec(line);
-      if (eslint !== null) {
-        const trailing = eslint[2] ?? "";
+      const lint = commentedLintDisable.exec(line);
+      if (lint !== null) {
+        const trailing = lint[2] ?? "";
         const justification = trailing.split("--")[1]?.trim() ?? "";
         if (justification.length === 0) {
           violations.push({
             file: location,
             fix: `Justify the disable with " -- reason", or fix the code so the rule passes.`,
-            problem: `${eslint[1]} silences a lint rule without a justification.`,
+            problem: `${lint[1]} silences a lint rule without a justification.`,
           });
         }
       }
@@ -494,7 +495,7 @@ function checkRequiredScripts(all: readonly Manifest[]): PolicyViolation[] {
       if (!scripts.has(required)) {
         violations.push({
           file: manifest.manifestPath,
-          fix: `Add a "${required}" script so \`turbo run ${required}\` reaches ${manifest.name}.`,
+          fix: `Add a "${required}" script so \`vp run -r ${required}\` reaches ${manifest.name}.`,
           problem: `${manifest.name} defines no "${required}" script.`,
         });
       }

@@ -1,7 +1,7 @@
 import { messages } from "@ai-starter/i18n";
 import { render, screen, within } from "@testing-library/react";
 import { createTranslator } from "next-intl";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 import { IntlTestProvider } from "~/test/intl";
 

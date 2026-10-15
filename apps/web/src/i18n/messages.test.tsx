@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { useTranslations } from "next-intl";
 import { ThemeProvider } from "next-themes";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { ThemeToggle } from "~/components/theme-toggle";
 import { IntlTestProvider } from "~/test/intl";

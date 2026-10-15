@@ -7,13 +7,10 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@ai-starter/config": "workspace:*",
-    "eslint": "^9.39.5",
     "typescript": "^6.0.3"
   }
 }

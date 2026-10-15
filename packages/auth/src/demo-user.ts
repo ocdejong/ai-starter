@@ -21,7 +21,9 @@ export const demoUser = {
 const seedOnlySigningSecret = "seed-only-verification-token-secret";
 
 export type DemoUserSeedOutcome =
-  "created" | "verification-completed" | "already-seeded";
+  | "created"
+  | "verification-completed"
+  | "already-seeded";
 
 const dispatchNothing = () => undefined;
 

@@ -1,5 +1,5 @@
 import { createTranslator } from "use-intl";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { messages } from "./index";
 

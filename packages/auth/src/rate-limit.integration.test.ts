@@ -1,5 +1,5 @@
 import type { Database } from "@ai-starter/db";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 
 import { createEmailInbox, startAuthHarness } from "../test/harness";
 import { initAuth } from "./init-auth";

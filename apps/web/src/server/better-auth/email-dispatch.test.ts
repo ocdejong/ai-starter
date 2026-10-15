@@ -1,7 +1,7 @@
 import type { EmailMessage, EmailSender } from "@ai-starter/api";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 import {
   createAuthEmailDispatchers,

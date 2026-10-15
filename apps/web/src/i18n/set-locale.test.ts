@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE } from "./locale-cookie";
 
