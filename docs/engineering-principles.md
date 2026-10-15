@@ -12,7 +12,7 @@ Every completion claim MUST cite executable evidence appropriate to the risk: te
 
 ### 2. Make architecture executable
 
-Dependency direction and layer ownership are contracts, not suggestions. New dependencies MUST point inward according to `docs/architecture.md`. If a rule matters repeatedly, encode it in types, ESLint, a schema, a database constraint, or a test. Do not weaken a guardrail to land a change; fix the design or explicitly change the documented architecture.
+Dependency direction and layer ownership are contracts, not suggestions. New dependencies MUST point inward according to `docs/architecture.md`. If a rule matters repeatedly, encode it in types, a lint rule, a schema, a database constraint, or a test. Do not weaken a guardrail to land a change; fix the design or explicitly change the documented architecture.
 
 ### 3. Model the domain before the framework
 
@@ -98,7 +98,7 @@ Apply dependency inversion selectively: contracts around real boundaries improve
 
 ## Current mechanical enforcement
 
-- TypeScript strictness and type-aware ESLint reject unsafe shortcuts and enforce major import boundaries.
+- TypeScript strictness and type-aware Oxlint reject unsafe shortcuts and enforce major import boundaries.
 - Zod validates runtime inputs; tRPC carries contracts to clients; Prisma migrations and PostgreSQL enforce persisted integrity.
 - Unit, component, real-database integration, Playwright, and Maestro suites provide layered evidence.
 - CI repeats format, lint, typecheck, schema, test, build, migration, and end-to-end gates once per ready pull request; CodeQL on public repositories and monthly Dependabot add security and dependency feedback.

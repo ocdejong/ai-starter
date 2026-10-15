@@ -15,11 +15,11 @@ This file is the only place repository rules are written. The files each agent l
 - Never commit secrets or generated Prisma output. Public environment variables are not secret.
 - Keep web and native UI separate. Share schemas, business logic, API types, and tokens—not DOM or React Native components.
 - Every colour in product UI comes from `packages/tokens`, and every string a person reads comes from both message catalogs in `packages/i18n`. Punctuation around a translated string is copy too: a locale may not punctuate the way English does.
-- Do not disable or focus a test, swallow an error in an empty `catch`, or assert between unrelated types by laundering through `unknown`. Each reports a confidence the code has not earned. The two suppressions that survive — a described `@ts-expect-error` and a justified `eslint-disable` — are counted against a list that may only shrink, so adding one is a decision somebody records rather than a habit.
+- Do not disable or focus a test, swallow an error in an empty `catch`, or assert between unrelated types by laundering through `unknown`. Each reports a confidence the code has not earned. The two suppressions that survive — a described `@ts-expect-error` and a justified `oxlint-disable` — are counted against a list that may only shrink, so adding one is a decision somebody records rather than a habit.
 - Delete what a change orphans. An export widened for a caller that has since moved, and a module the slice replacing it left behind, both still compile and still pass their own tests.
 - Prefer the smallest change that satisfies the requirement. Add dependencies and abstractions only when the product needs them.
 
-ESLint encodes many of these boundaries per file; `pnpm arch` (dependency-cruiser) enforces the direction and acyclicity across the whole module graph, `pnpm policy` enforces the structural rules the graph cannot see, and `pnpm knip` fails on the files, exports and dependencies nothing reaches at all. Do not weaken a rule to make a change pass; fix the dependency direction. The ordered golden principles and anti-rationalization rules in `docs/engineering-principles.md` are binding even where automation cannot yet enforce them.
+Oxlint (`pnpm lint`, one configuration in `packages/config/lint` read through the root `vite.config.ts`) encodes many of these boundaries per file; `pnpm arch` (dependency-cruiser) enforces the direction and acyclicity across the whole module graph, `pnpm policy` enforces the structural rules the graph cannot see, and `pnpm knip` fails on the files, exports and dependencies nothing reaches at all. Do not weaken a rule to make a change pass; fix the dependency direction. The ordered golden principles and anti-rationalization rules in `docs/engineering-principles.md` are binding even where automation cannot yet enforce them.
 
 ## Where code belongs
 
@@ -90,7 +90,7 @@ pnpm test:integration
 
 ## Testing rules
 
-- Domain/web units and web components: Vitest; web interaction assertions: Testing Library.
+- Domain/web units and web components: Vitest, run by Vite+ and imported from `vite-plus/test`; web interaction assertions: Testing Library.
 - Native components: Jest through `jest-expo` and React Native Testing Library.
 - Database behavior: Testcontainers with actual migrations and PostgreSQL.
 - Critical web journeys: Playwright. Critical native journeys: Maestro. Add a journey only for a critical boundary that unit, component or integration tests cannot prove; cover variations at the lowest faithful level.

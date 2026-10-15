@@ -446,7 +446,10 @@ export const lintConfig = {
     "apps/web/test-results/**",
     "packages/db/generated/**",
   ],
-  jsPlugins: [{ name: "guard", specifier: plugin }],
+  jsPlugins: [
+    { name: "guard", specifier: plugin },
+    { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
+  ],
   options: {
     // A disable comment that no longer suppresses anything is a claim about the
     // code that stopped being true, and `pnpm policy` only checks that a
@@ -457,7 +460,12 @@ export const lintConfig = {
     typeAware: true,
   },
   plugins: ["typescript", "oxc", "unicorn", "react", "import", "jsx-a11y"],
-  rules: declinedCorrectnessRules,
+  rules: {
+    ...declinedCorrectnessRules,
+    // Test code imports Vitest through `vite-plus/test`, the runner `vp test`
+    // actually loads; a bare `vitest` import can resolve a second copy.
+    "vite-plus/prefer-vite-plus-imports": "error",
+  },
   settings: { next: { rootDir: "apps/web/" } },
   overrides: [
     { files: ["**/*.{ts,tsx,mts,cts}"], rules: typescriptRules },
