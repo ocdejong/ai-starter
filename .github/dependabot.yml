@@ -38,6 +38,8 @@ updates:
       vite-plus:
         patterns:
           - vite-plus
+          - vite
+          - "@voidzero-dev/*"
           - vitest
           - "@vitest/*"
       prisma:
@@ -53,6 +55,8 @@ updates:
       compatible-updates:
         exclude-patterns:
           - vite-plus
+          - vite
+          - "@voidzero-dev/*"
           - vitest
           - "@vitest/*"
           - prisma
