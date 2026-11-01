@@ -18,7 +18,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "typescript-eslint": "^8.71.0",
+    "typescript-eslint": "^8.72.0",
     "vitest": "^4.1.11"
   },
   "peerDependencies": {
@@ -26,7 +26,7 @@
     "typescript": ">=5.8"
   },
   "devDependencies": {
-    "eslint": "^9.39.5",
+    "eslint": "^10.11.0",
     "typescript": "^6.0.3"
   }
 }
