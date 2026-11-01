@@ -54,7 +54,7 @@
     "react-native-worklets": "0.10.1",
     "superjson": "^2.2.6",
     "use-intl": "^4.14.9",
-    "zod": "^4.6.5"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@ai-starter/config": "workspace:*",
