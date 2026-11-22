@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vite-plus/test";
 import {
   deriveWebOrigin,
   isLinkedWorktree,
+  unclaimedWorktreeOffset,
   worktreePortOffset,
   worktreePortSpread,
 } from "./worktree-ports.ts";
@@ -94,5 +95,25 @@ describe("deriveWebOrigin", () => {
   it("declines a missing value", () => {
     expect(deriveWebOrigin(undefined, 7)).toBeUndefined();
     expect(deriveWebOrigin("", 7)).toBeUndefined();
+  });
+});
+
+describe("unclaimedWorktreeOffset", () => {
+  it("keeps the preferred offset when nothing claims it", () => {
+    expect(unclaimedWorktreeOffset(42, () => false)).toBe(42);
+  });
+
+  it("steps past claimed offsets, wrapping within the spread", () => {
+    const claimed = new Set([worktreePortSpread, 1]);
+
+    expect(
+      unclaimedWorktreeOffset(worktreePortSpread, (offset) =>
+        claimed.has(offset),
+      ),
+    ).toBe(2);
+  });
+
+  it("returns the preferred offset when every offset is claimed", () => {
+    expect(unclaimedWorktreeOffset(7, () => true)).toBe(7);
   });
 });
