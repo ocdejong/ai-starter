@@ -2,7 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import {
   formatReviews,
-  namesMajorAtLeast,
+  namesVersionAtLeast,
   reviewBlock,
   type Manifest,
   type UpstreamBlock,
@@ -16,7 +16,7 @@ const block: UpstreamBlock = {
   pkg: "jest-expo",
   recorded: "^29.2.1",
   summary: "jest 30",
-  wanted: 30,
+  wanted: "30",
 };
 
 const manifest = (
@@ -24,24 +24,38 @@ const manifest = (
   version = "57.0.2",
 ): Manifest => ({ dependencies, version });
 
-describe("namesMajorAtLeast", () => {
+describe("namesVersionAtLeast", () => {
   it("reads the majors a disjunction names", () => {
     const peers = "^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9.7";
-    expect(namesMajorAtLeast(peers, 10)).toBe(false);
-    expect(namesMajorAtLeast(`${peers} || ^10`, 10)).toBe(true);
+    expect(namesVersionAtLeast(peers, "10")).toBe(false);
+    expect(namesVersionAtLeast(`${peers} || ^10`, "10")).toBe(true);
   });
 
   it("does not fire on patch churn inside a blocked major", () => {
     // The reason this is not a string comparison against the recorded range:
     // an upstream that ships 1.19.10 has not unblocked anything.
-    expect(namesMajorAtLeast("^1.19.9", 2)).toBe(false);
-    expect(namesMajorAtLeast("^1.19.20", 2)).toBe(false);
-    expect(namesMajorAtLeast("^2.0.5", 2)).toBe(true);
+    expect(namesVersionAtLeast("^1.19.9", "2")).toBe(false);
+    expect(namesVersionAtLeast("^1.19.20", "2")).toBe(false);
+    expect(namesVersionAtLeast("^2.0.5", "2")).toBe(true);
   });
 
   it("reads an exact pin, which is how a transitive dependency arrives", () => {
-    expect(namesMajorAtLeast("1.19.11", 2)).toBe(false);
-    expect(namesMajorAtLeast("2.0.5", 2)).toBe(true);
+    expect(namesVersionAtLeast("1.19.11", "2")).toBe(false);
+    expect(namesVersionAtLeast("2.0.5", "2")).toBe(true);
+  });
+
+  it("waits for a fix inside the pinned major", () => {
+    // `@prisma/config` pins `effect` exactly; the advisory's fix is a minor.
+    expect(namesVersionAtLeast("3.20.0", "3.22.1")).toBe(false);
+    expect(namesVersionAtLeast("3.22.0", "3.22.1")).toBe(false);
+    expect(namesVersionAtLeast("3.22.1", "3.22.1")).toBe(true);
+    expect(namesVersionAtLeast("3.23.0", "3.22.1")).toBe(true);
+  });
+
+  it("counts a caret or tilde range that admits the fix", () => {
+    expect(namesVersionAtLeast("^3.20.0", "3.22.1")).toBe(true);
+    expect(namesVersionAtLeast("~3.20.0", "3.22.1")).toBe(false);
+    expect(namesVersionAtLeast("~3.22.0", "3.22.1")).toBe(true);
   });
 });
 
@@ -107,11 +121,11 @@ describe("the recorded blocks", () => {
     expect(new Set(packages).size).toBe(packages.length);
   });
 
-  it("each record a range that does not already reach the wanted major", () => {
+  it("each record a range that does not already reach the wanted version", () => {
     // A block recorded as already-cleared would fire on its first run and
     // never stop, which reads as a broken sensor rather than a stale list.
     for (const entry of upstreamBlocks) {
-      expect(namesMajorAtLeast(entry.recorded, entry.wanted)).toBe(false);
+      expect(namesVersionAtLeast(entry.recorded, entry.wanted)).toBe(false);
     }
   });
 });
