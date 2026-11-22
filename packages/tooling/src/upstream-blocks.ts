@@ -49,12 +49,22 @@ export type UpstreamBlock = {
 };
 
 /**
- * Recorded 2026-11-22 against the newest published version at the time. A block that clears is deleted from this
+ * Both recorded 2026-11-22 against the newest published version at the time. A block that clears is deleted from this
  * list in the same change that takes the bump — the list is the backlog, not a
  * log. The `effect` entry also has an `auditConfig.ignoreGhsas` entry in
  * `pnpm-workspace.yaml`, which goes in the same change.
  */
 export const upstreamBlocks: readonly UpstreamBlock[] = [
+  {
+    dependency: "@babel/runtime",
+    field: "peerDependencies",
+    issue: 107,
+    pkg: "babel-preset-expo",
+    recorded: "^7.20.0",
+    summary:
+      "@babel/runtime 8 — `babel-preset-expo` peers on ^7 and feeds the installed runtime's version to `@babel/plugin-transform-runtime` 7, so the app stays on Babel runtime 7 until Expo's preset moves",
+    wanted: "8",
+  },
   {
     dependency: "effect",
     field: "dependencies",
