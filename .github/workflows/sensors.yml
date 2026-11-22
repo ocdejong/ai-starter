@@ -67,12 +67,13 @@ jobs:
         with:
           version: 10.34.9
 
+      # No `cache: pnpm`: this job never installs, so there is no store to save,
+      # and setup-node 7.1 fails its post step on a cache path that does not
+      # exist.
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
 
       # Dependabot already reports this, into the Security tab. This is the same
       # question asked somewhere a person is looking, and it keeps working in a
