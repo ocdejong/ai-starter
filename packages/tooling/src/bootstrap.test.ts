@@ -146,8 +146,105 @@ describe("ensureWebEnvironment", () => {
     );
   });
 
-  it("leaves the database of an existing .env where the checkout already migrated it", async () => {
+  it("moves a worktree whose .env names the example's database onto its own", async () => {
+    // A .env copied from the primary checkout for its secrets: the database it
+    // names is the one the primary checkout and every such sibling migrate.
     const root = checkout("worktree");
+    writeEnv(root, exampleEnv);
+
+    const databaseUrl = await ensureWebEnvironment(root);
+
+    expect(parseDatabaseUrl(databaseUrl).port).toBe(
+      15433 + worktreePortOffset(root),
+    );
+    expect(writtenEnv(root).get("DATABASE_URL")).toBe(databaseUrl);
+  });
+
+  function envWithPorts(webPort: number, databasePort: number): string {
+    return exampleEnv
+      .replace("localhost:13000", `localhost:${String(webPort)}`)
+      .replace("localhost:15433", `localhost:${String(databasePort)}`);
+  }
+
+  it("moves a worktree whose .env was copied from a sibling onto its own values", async () => {
+    // What copying a sibling's file for its secrets produces: the sibling's
+    // own derived origin and database, named by two checkouts at once.
+    const root = checkout("worktree");
+    const offset = worktreePortOffset(root);
+    const theirs = ((offset + 99) % 200) + 1;
+    const copied = envWithPorts(13000 + theirs, 15433 + theirs);
+    const sibling = checkout("worktree");
+    writeEnv(sibling, copied);
+    writeEnv(root, copied);
+
+    const databaseUrl = await ensureWebEnvironment(root, [sibling]);
+
+    expect(writtenEnv(root).get("BETTER_AUTH_URL")).toBe(
+      `http://localhost:${String(13000 + offset)}`,
+    );
+    expect(parseDatabaseUrl(databaseUrl).port).toBe(15433 + offset);
+  });
+
+  it("steps past an offset a sibling already holds, so a hash collision resolves", async () => {
+    const root = checkout("worktree");
+    const offset = worktreePortOffset(root);
+    // A sibling whose path hashed to the same offset and bootstrapped first.
+    const sibling = checkout("worktree");
+    writeEnv(sibling, envWithPorts(13000 + offset, 15433 + offset));
+
+    const databaseUrl = await ensureWebEnvironment(root, [sibling]);
+
+    const next = (offset % 200) + 1;
+    expect(writtenEnv(root).get("BETTER_AUTH_URL")).toBe(
+      `http://localhost:${String(13000 + next)}`,
+    );
+    expect(parseDatabaseUrl(databaseUrl).port).toBe(15433 + next);
+  });
+
+  it("leaves the other copy where it is once one of two has moved", async () => {
+    const first = checkout("worktree");
+    const second = checkout("worktree");
+    const copied = envWithPorts(13187, 15620);
+    writeEnv(first, copied);
+    writeEnv(second, copied);
+
+    await ensureWebEnvironment(first, [second]);
+    await ensureWebEnvironment(second, [first]);
+
+    expect(writtenEnv(second).get("BETTER_AUTH_URL")).toBe(
+      "http://localhost:13187",
+    );
+    expect(writtenEnv(second).get("DATABASE_URL")).toContain("localhost:15620");
+    expect(writtenEnv(first).get("BETTER_AUTH_URL")).not.toBe(
+      "http://localhost:13187",
+    );
+  });
+
+  it("leaves a primary checkout alone even when a worktree copied its .env", async () => {
+    const root = checkout("primary");
+    writeEnv(root, exampleEnv);
+    const worktree = checkout("worktree");
+    writeEnv(worktree, exampleEnv);
+
+    const databaseUrl = await ensureWebEnvironment(root, [worktree]);
+
+    expect(parseDatabaseUrl(databaseUrl).port).toBe(15433);
+    expect(writtenEnv(root).get("BETTER_AUTH_URL")).toBe(
+      "http://localhost:13000",
+    );
+  });
+
+  it("keeps a database the developer pointed elsewhere", async () => {
+    const root = checkout("worktree");
+    writeEnv(root, exampleEnv.replace("localhost:15433", "localhost:15499"));
+
+    const databaseUrl = await ensureWebEnvironment(root);
+
+    expect(parseDatabaseUrl(databaseUrl).port).toBe(15499);
+  });
+
+  it("leaves a primary checkout on the example's database", async () => {
+    const root = checkout("primary");
     writeEnv(root, exampleEnv);
 
     const databaseUrl = await ensureWebEnvironment(root);

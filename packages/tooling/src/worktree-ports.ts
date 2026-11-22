@@ -30,12 +30,11 @@ export function isLinkedWorktree(root: string): boolean {
  * Hashes the absolute root path (FNV-1a) into [1, worktreePortSpread]. The
  * same worktree derives the same offset on every run, so a re-bootstrap finds
  * its own container again; two worktrees agree only on a hash collision. A
- * collision moves the database port to the next free one, because that port is
- * probed. The web origin is not probed and a collision therefore survives it:
- * the origin has to stay stable across runs — it is persisted in `.env` and
- * baked into emailed auth links — while a probe answers differently depending
- * on whether a dev server happens to be up. That leaves a 1-in-`spread` chance
- * that two worktrees share an origin, which nothing here detects.
+ * collision is resolved by `unclaimedWorktreeOffset` against the ports the
+ * other checkouts' `.env` files name, not by probing: the origin has to stay
+ * stable across runs — it is persisted in `.env` and baked into emailed auth
+ * links — while a probe answers differently depending on whether a dev server
+ * happens to be up.
  */
 export function worktreePortOffset(root: string): number {
   let hash = 0x811c9dc5;
@@ -44,6 +43,24 @@ export function worktreePortOffset(root: string): number {
     hash = Math.imul(hash, 0x01000193) >>> 0;
   }
   return (hash % worktreePortSpread) + 1;
+}
+
+/**
+ * The first offset from `preferred` on, wrapping within the spread, that
+ * `isClaimed` refuses — or `preferred` itself when every offset is claimed,
+ * which leaves the clash for the probe or the browser suite to report.
+ */
+export function unclaimedWorktreeOffset(
+  preferred: number,
+  isClaimed: (offset: number) => boolean,
+): number {
+  for (let step = 0; step < worktreePortSpread; step += 1) {
+    const candidate = ((preferred - 1 + step) % worktreePortSpread) + 1;
+    if (!isClaimed(candidate)) {
+      return candidate;
+    }
+  }
+  return preferred;
 }
 
 /**

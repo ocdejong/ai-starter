@@ -1,5 +1,11 @@
 import { randomBytes } from "node:crypto";
-import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  readFileSync,
+  realpathSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
 
 import { runCapture, runInherit } from "./command.ts";
@@ -21,6 +27,7 @@ import { findFreePort, isPortAccepting, waitForPort } from "./tcp.ts";
 import {
   deriveWebOrigin,
   isLinkedWorktree,
+  unclaimedWorktreeOffset,
   worktreePortOffset,
 } from "./worktree-ports.ts";
 
@@ -95,29 +102,33 @@ function requireSuccess(code: number, command: string): void {
 
 /**
  * Brings `apps/web/.env` to the state this checkout needs, creating it from the
- * example on first run. The web origin is then settled on every run rather than
- * only at creation, so a worktree whose file predates that rule converges
- * instead of naming the shared origin forever. See `webEnvironmentFromExample`
- * for what a fresh file starts from, and `worktreeWebOrigin` for the rule.
+ * example on first run. In a linked worktree the web origin and the database
+ * are then settled on every run rather than only at creation, so a worktree
+ * whose file predates that rule — or was copied from another checkout for its
+ * secrets — converges instead of sharing that checkout's values forever. See
+ * `settleWorktreeValues` for the rule. `siblings` are the other checkouts of
+ * this repository; a parameter so the rule can be exercised on fixture trees.
  */
-export async function ensureWebEnvironment(root: string): Promise<string> {
+export async function ensureWebEnvironment(
+  root: string,
+  siblings: readonly string[] = siblingCheckouts(root),
+): Promise<string> {
   const absolute = path.join(root, webEnvPath);
   const example = path.join(root, `${webEnvPath}.example`);
+  const linked = isLinkedWorktree(root);
 
   let content = readFileIfPresent(absolute);
   if (content === undefined) {
-    content = await webEnvironmentFromExample(root, example);
+    content = linked
+      ? readExample(example)
+      : await primaryEnvironmentFromExample(example);
     writeFileSync(absolute, content);
     log(`created ${webEnvPath}`);
   }
 
-  let settled = content;
-
-  const origin = worktreeWebOrigin(root, content, example);
-  if (origin !== undefined) {
-    settled = setEnvValue(settled, "BETTER_AUTH_URL", origin);
-    log(`the web app in this worktree defaults to ${origin}`);
-  }
+  let settled = linked
+    ? await settleWorktreeValues(root, content, example, siblings)
+    : content;
 
   if ((parseEnvFile(content).get("BETTER_AUTH_SECRET") ?? "").length < 32) {
     settled = setEnvValue(
@@ -149,16 +160,7 @@ function readFileIfPresent(file: string): string | undefined {
   }
 }
 
-/**
- * The `.env` a fresh checkout starts from. The database port moves to the next
- * free one when the example's is already taken, so several products generated
- * from this starter can run side by side, and a linked worktree offsets it by
- * its own path first so siblings do not race onto one database.
- */
-async function webEnvironmentFromExample(
-  root: string,
-  examplePath: string,
-): Promise<string> {
+function readExample(examplePath: string): string {
   const example = readFileIfPresent(examplePath);
   if (example === undefined) {
     throw new BootstrapError(
@@ -166,66 +168,180 @@ async function webEnvironmentFromExample(
       "Restore the example file from version control.",
     );
   }
-
-  const configured = readDatabaseUrl(example, `${webEnvPath}.example`);
-  const connection = parseDatabaseUrl(configured);
-  const offset = isLinkedWorktree(root) ? worktreePortOffset(root) : 0;
-  const port = await findFreePort(connection.host, connection.port + offset);
-
-  if (offset > 0) {
-    log(`linked worktree; the local database gets its own port ${port}`);
-  } else if (port !== connection.port) {
-    log(
-      `port ${connection.port} is in use; the local database will use ${port}`,
-    );
-  }
-
-  return port === connection.port
-    ? example
-    : setEnvValue(example, "DATABASE_URL", withPort(configured, port));
+  return example;
 }
 
 /**
- * The web origin a linked worktree should default to, or undefined when its
- * `.env` already names the right one. Deriving here rather than only where the
- * file is created is what makes the rule converge: a worktree bootstrapped
- * before the derivation existed keeps a complete `.env`, so the creation branch
- * never runs again, and it stays on the origin every sibling also names — where
- * Playwright's `reuseExistingServer` silently attaches to whichever checkout's
- * dev server reached the port first.
+ * The `.env` a fresh primary checkout starts from. The database port moves to
+ * the next free one when the example's is already taken, so several products
+ * generated from this starter can run side by side.
+ */
+async function primaryEnvironmentFromExample(
+  examplePath: string,
+): Promise<string> {
+  const example = readExample(examplePath);
+  const configured = readDatabaseUrl(example, `${webEnvPath}.example`);
+  const connection = parseDatabaseUrl(configured);
+  const port = await findFreePort(connection.host, connection.port);
+
+  if (port === connection.port) {
+    return example;
+  }
+  log(`port ${connection.port} is in use; the local database will use ${port}`);
+  return setEnvValue(example, "DATABASE_URL", withPort(configured, port));
+}
+
+/**
+ * The other checkouts of this repository — the primary one and every linked
+ * worktree but this — as git lists them. A checkout git cannot list for (no
+ * git, or a fixture whose `.git` points nowhere) has none: the rule below
+ * then falls back to the example comparison alone.
+ */
+function siblingCheckouts(root: string): string[] {
+  const listing = runCapture("git", ["worktree", "list", "--porcelain"], {
+    cwd: root,
+  });
+  if (listing.code !== 0) {
+    return [];
+  }
+  const self = canonicalPath(root);
+  return listing.stdout
+    .split("\n")
+    .filter((line) => line.startsWith("worktree "))
+    .map((line) => line.slice("worktree ".length))
+    .filter((checkout) => canonicalPath(checkout) !== self);
+}
+
+function canonicalPath(file: string): string {
+  try {
+    return realpathSync(file);
+  } catch {
+    return path.resolve(file);
+  }
+}
+
+/** The explicit port a URL names, or undefined when it names none. */
+function urlPort(value: string | undefined): number | undefined {
+  if (value === undefined) return undefined;
+  try {
+    const port = new URL(value).port;
+    return port === "" ? undefined : Number(port);
+  } catch {
+    return undefined;
+  }
+}
+
+function databasePort(value: string | undefined): number | undefined {
+  if (value === undefined || value === "") return undefined;
+  try {
+    return parseDatabaseUrl(value).port;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The local ports another checkout's `.env` already names: its web origin and
+ * its database.
+ */
+function claimedPorts(siblings: readonly string[]): Set<number> {
+  const claimed: (number | undefined)[] = [];
+  for (const sibling of siblings) {
+    const content = readFileIfPresent(path.join(sibling, webEnvPath));
+    if (content === undefined) continue;
+    const env = parseEnvFile(content);
+    claimed.push(
+      urlPort(env.get("BETTER_AUTH_URL")),
+      databasePort(env.get("DATABASE_URL")),
+    );
+  }
+  return new Set(claimed.filter((port) => port !== undefined));
+}
+
+/**
+ * Re-points a linked worktree's web origin and database at its own when the
+ * values its `.env` names are not its own: the example's, which every
+ * checkout starts from, or another checkout's, which is what copying a
+ * sibling's file for its secrets produces. Deriving on every run rather than
+ * only where the file is created is what makes the rule converge, and two
+ * checkouts on one value is not cosmetic: Playwright's `reuseExistingServer`
+ * attaches to whichever dev server reached the origin first and asserts
+ * against that checkout's application, and the browser lane migrates the
+ * database it names, so one branch's unmerged migration becomes a sibling's
+ * schema.
  *
- * Only the example's own value is replaced, so an origin a developer chose
- * survives. The database port is deliberately not converged the same way: this
- * checkout has already created a container and migrated data at the port its
- * `.env` names, and moving it would strand both.
+ * Both move by one offset: the path's own hash, stepped past any offset whose
+ * port another checkout already holds, so a hash collision between two paths
+ * resolves the moment the second of them bootstraps. Of two copies, the one
+ * that bootstraps first moves and the other then finds itself alone. Nothing
+ * is stranded by moving: data at the old port belongs to the checkout whose
+ * container it is, and the same bootstrap run creates and migrates this one's.
+ * A value a developer chose — neither the example's nor claimed — survives.
  *
  * The example is read rather than checked for first: a missing one is the same
- * answer as one naming no origin, and asking before reading would be a check
+ * answer as one naming nothing, and asking before reading would be a check
  * whose result the read cannot rely on.
  */
-function worktreeWebOrigin(
+async function settleWorktreeValues(
   root: string,
   content: string,
   examplePath: string,
-): string | undefined {
-  if (!isLinkedWorktree(root)) {
-    return undefined;
-  }
-
+  siblings: readonly string[],
+): Promise<string> {
   const example = readFileIfPresent(examplePath);
   if (example === undefined) {
-    return undefined;
+    return content;
   }
 
-  const shared = parseEnvFile(example).get("BETTER_AUTH_URL");
+  const shared = parseEnvFile(example);
+  const own = parseEnvFile(content);
+  const claimed = claimedPorts(siblings);
+  const sharedOrigin = shared.get("BETTER_AUTH_URL");
+  const sharedDatabase = shared.get("DATABASE_URL");
+  const origin = own.get("BETTER_AUTH_URL");
+  const database = own.get("DATABASE_URL");
+
+  const examplePorts = [urlPort(sharedOrigin), databasePort(sharedDatabase)];
+  const offset = unclaimedWorktreeOffset(
+    worktreePortOffset(root),
+    (candidate) =>
+      examplePorts.some(
+        (port) => port !== undefined && claimed.has(port + candidate),
+      ),
+  );
+  const notOwn = (
+    value: string | undefined,
+    sharedValue: string | undefined,
+    port: number | undefined,
+  ) =>
+    value !== undefined &&
+    (value === sharedValue || (port !== undefined && claimed.has(port)));
+
+  let settled = content;
+
+  if (notOwn(origin, sharedOrigin, urlPort(origin))) {
+    const derived = deriveWebOrigin(sharedOrigin, offset);
+    if (derived !== undefined && derived !== origin) {
+      settled = setEnvValue(settled, "BETTER_AUTH_URL", derived);
+      log(`the web app in this worktree defaults to ${derived}`);
+    }
+  }
+
+  const exampleDatabase = databasePort(sharedDatabase);
   if (
-    shared === undefined ||
-    parseEnvFile(content).get("BETTER_AUTH_URL") !== shared
+    database !== undefined &&
+    exampleDatabase !== undefined &&
+    notOwn(database, sharedDatabase, databasePort(database))
   ) {
-    return undefined;
+    const port = await findFreePort(
+      parseDatabaseUrl(database).host,
+      exampleDatabase + offset,
+    );
+    settled = setEnvValue(settled, "DATABASE_URL", withPort(database, port));
+    log(`linked worktree; the local database gets its own port ${port}`);
   }
 
-  return deriveWebOrigin(shared, worktreePortOffset(root));
+  return settled;
 }
 
 function readDatabaseUrl(content: string, source: string): string {
