@@ -509,8 +509,8 @@ function checkRequiredScripts(all: readonly Manifest[]): PolicyViolation[] {
  * Error reporting stays off without a DSN, and never sends personal data.
  *
  * Both are rules `AGENTS.md` states and nothing enforced: four `Sentry.init`
- * call sites, no test, and a default — `sendDefaultPii` — whose absence reads
- * exactly like its presence. The options object is read as text because that is
+ * call sites, no test, and defaults — `sendDefaultPii` before v11, every
+ * `dataCollection` category since — whose absence reads exactly like a choice. The options object is read as text because that is
  * what a reviewer reads, and because these files run before anything a test
  * could import them into.
  */
@@ -533,17 +533,14 @@ function checkErrorReporting(root: string): PolicyViolation[] {
     }
 
     const violations: PolicyViolation[] = [];
-    const pii = options.get("sendDefaultPii");
+    const personalData = personalDataProblem(options);
     const enabled = options.get("enabled");
 
-    if (pii !== "false") {
+    if (personalData !== undefined) {
       violations.push({
         file,
-        fix: "Pass `sendDefaultPii: false` to Sentry.init, or record the privacy decision that changes it.",
-        problem:
-          pii === undefined
-            ? "Sentry.init does not set sendDefaultPii, so the SDK's own default decides whether personal data is sent."
-            : `Sentry.init sets sendDefaultPii to ${pii}.`,
+        fix: "Pass `sendDefaultPii: false` (SDKs before v11) or a `dataCollection` literal that turns every category off (v11), or record the privacy decision that changes it.",
+        problem: personalData,
       });
     }
 
@@ -560,6 +557,92 @@ function checkErrorReporting(root: string): PolicyViolation[] {
 
     return violations;
   });
+}
+
+/**
+ * What `dataCollection` must say for a v11 SDK to collect what `sendDefaultPii:
+ * false` collected before it: Sentry's own "keep the v10 default" baseline.
+ * Leaving a category out is not the same as turning it off, because v11's
+ * defaults collect each one. Header and query-parameter filters may be any
+ * deny or allow list, so they only have to be written down and not be `true`.
+ */
+const restrictedDataCollection: ReadonlyMap<string, string> = new Map([
+  ["userInfo", "false"],
+  ["cookies", "false"],
+  ["httpBodies", "[]"],
+  ["databaseQueryData", "false"],
+  ["queues", "false"],
+  ["genAI", "inputs: false, outputs: false"],
+  ["graphQL", "document: false, variables: false"],
+]);
+const filteredDataCollection = ["httpHeaders", "urlQueryParams"];
+
+/**
+ * Why a `Sentry.init` call may send personal data, or undefined when it cannot.
+ * An SDK before v11 says so with `sendDefaultPii: false`; v11 replaced that
+ * option with `dataCollection`, whose categories are read one by one.
+ */
+function personalDataProblem(
+  options: ReadonlyMap<string, string>,
+): string | undefined {
+  const collection = options.get("dataCollection");
+  if (collection === undefined) {
+    const pii = options.get("sendDefaultPii");
+    if (pii === "false") {
+      return undefined;
+    }
+    return pii === undefined
+      ? "Sentry.init sets neither sendDefaultPii nor dataCollection, so the SDK's own default decides whether personal data is sent."
+      : `Sentry.init sets sendDefaultPii to ${pii}.`;
+  }
+
+  const categories = objectLiteralEntries(collection);
+  if (categories === undefined) {
+    return "Sentry.init's dataCollection is not an object literal, so what it collects cannot be read here.";
+  }
+
+  const permissive = [...restrictedDataCollection]
+    .filter(([key, wanted]) => {
+      const value = categories.get(key);
+      if (value === undefined) {
+        return true;
+      }
+      const nested = objectLiteralEntries(value);
+      return nested === undefined
+        ? value !== wanted
+        : [...nested.values()].some((entry) => entry !== "false") ||
+            nested.size !== wanted.split(",").length;
+    })
+    .map(([key]) => key);
+  for (const key of filteredDataCollection) {
+    const value = categories.get(key);
+    if (value === undefined || value === "true") {
+      permissive.push(key);
+    }
+  }
+
+  return permissive.length === 0
+    ? undefined
+    : `Sentry.init's dataCollection leaves ${permissive.join(", ")} on or to the SDK's default, which collects it.`;
+}
+
+/** The entries of an object literal's text, or undefined when it is not one. */
+function objectLiteralEntries(text: string): Map<string, string> | undefined {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) {
+    return undefined;
+  }
+  const entries = new Map<string, string>();
+  for (const entry of splitTopLevel(trimmed.slice(1, -1))) {
+    const separator = entry.indexOf(":");
+    if (separator !== -1) {
+      entries.set(
+        entry.slice(0, separator).trim(),
+        entry.slice(separator + 1).trim(),
+      );
+    }
+  }
+  return entries;
 }
 
 /**
@@ -587,8 +670,11 @@ function sentryInitOptions(text: string): Map<string, string> | undefined {
     index += 1;
   }
 
+  // A comment on a line of its own above a key would otherwise be read as part
+  // of that key, and comments here routinely quote option names.
+  const body = text.slice(bodyStart, index - 1).replace(/^\s*\/\/.*$/gm, "");
   const options = new Map<string, string>();
-  for (const entry of splitTopLevel(text.slice(bodyStart, index - 1))) {
+  for (const entry of splitTopLevel(body)) {
     const separator = entry.indexOf(":");
     if (separator === -1) {
       continue;
