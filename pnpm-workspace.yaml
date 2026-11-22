@@ -86,7 +86,11 @@ auditConfig:
 # the Vitest, Oxlint and Oxfmt that `vite-plus` pins exactly, so a package that
 # names one directly (`vitest` where a setup file or jest-dom augments its
 # types or the coverage provider peers on it, and the provider itself) takes
-# that same release. Move these together, and only with `vp migrate`.
+# that same release. Move these together. Since 1.7 the core no longer shares
+# Vite+'s version (it encodes the Vite it bundles: `8.3.8000` is Vite 8.3.8), so
+# read both pins from `npm view vite-plus@<version> dependencies`. `vp migrate`
+# also writes them, along with a `minimumReleaseAgeExclude` list this
+# repository declines: the release-age floor applies to the toolchain too.
 #
 # Same release is not enough: it must be the same copy. `vp run` starts the
 # workspace root's Vitest for every package, and a package whose `vite-plus`
@@ -97,19 +101,7 @@ auditConfig:
 # `packages/domain` sets `"types": []` so the Node types it installs for this
 # reason never reach its code.
 catalog:
-  vite: npm:@voidzero-dev/vite-plus-core@1.2.0
-  vitest: 5.0.4
-  vite-plus: 1.2.0
-  "@vitest/coverage-v8": 5.0.4
-
-# Packages that peer on `vite@^6 || ^7 || ^8` see Vite+'s core, which is
-# versioned as Vite+ (1.x) rather than as the Vite release it ships. The range
-# check is about the version label, not compatibility, so it is waived for the
-# two names the toolchain owns and no others.
-peerDependencyRules:
-  allowAny:
-    - vite
-    - vitest
-  allowedVersions:
-    vite: "*"
-    vitest: "*"
+  vite: npm:@voidzero-dev/vite-plus-core@8.3.8000
+  vitest: 5.1.0
+  vite-plus: 1.7.0
+  "@vitest/coverage-v8": 5.1.0
