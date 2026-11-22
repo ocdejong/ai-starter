@@ -19,10 +19,6 @@
 
 /** @type {import("knip").KnipConfig} */
 const config = {
-  ignoreBinaries: [
-    // Installed on the machine that owns a device, not from npm.
-    "maestro",
-  ],
   ignoreDependencies: [
     // Required at run time by the client Prisma generates into
     // packages/db/generated/, which is gitignored and so invisible to a graph
@@ -51,11 +47,6 @@ const config = {
     // it on the first device pass, where `userInterfaceStyle` is actually
     // rendered.
     "expo-system-ui",
-  ],
-  ignoreUnresolved: [
-    // The `plugins: [{ name: "next" }]` entry in the shared Next.js tsconfig
-    // names a language-service plugin, resolved by the app that extends it.
-    "next",
   ],
   workspaces: {
     ".": {
