@@ -1,7 +1,14 @@
 import { defineConfig, type ViteUserConfig } from "vite-plus";
 
+/**
+ * Every package's Vitest starts here. `requireAssertions` fails a test that
+ * finishes without calling `expect`: a test that only runs code passes whether
+ * or not the code is right, so it reports a confidence nobody earned. A test
+ * whose point is that something does not throw says so with an assertion.
+ */
 export const baseVitestConfig = defineConfig({
   test: {
+    expect: { requireAssertions: true },
     passWithNoTests: true,
   },
 });

@@ -96,6 +96,7 @@ pnpm test:integration
 - Critical web journeys: Playwright. Critical native journeys: Maestro. Add a journey only for a critical boundary that unit, component or integration tests cannot prove; cover variations at the lowest faithful level.
 - Test observable behavior, constraints, and failure cases. Avoid snapshots unless the serialized structure itself is the contract.
 - Never mock the database in a test intended to prove persistence integrity.
+- Every test asserts something; both runners fail one that never calls `expect`. Remove a test, or move it to a cheaper layer, only by the deletion rule in `docs/testing.md`.
 
 ## Security and integrations
 
