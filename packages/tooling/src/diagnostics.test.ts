@@ -7,9 +7,9 @@ import {
   formatChecks,
   hasFailure,
   majorOf,
-  minimumMajor,
   nodeCheck,
   pinnedVersion,
+  rangeAllows,
   rangeAllowsMajor,
   devMailboxCheck,
   rateLimitCheck,
@@ -18,12 +18,6 @@ import {
 } from "./diagnostics.ts";
 
 describe("version parsing", () => {
-  it("reads the minimum major from an engines range", () => {
-    expect(minimumMajor(">=24")).toBe(24);
-    expect(minimumMajor("^20.11.0")).toBe(20);
-    expect(minimumMajor("latest")).toBeUndefined();
-  });
-
   it("reads the major from a runtime version", () => {
     expect(majorOf("v24.18.0")).toBe(24);
     expect(majorOf("10.32.1")).toBe(10);
@@ -63,9 +57,34 @@ describe("engines range evaluation", () => {
     expect(rangeAllowsMajor("^20.11.0", 21)).toBe(false);
   });
 
+  it("allows a major when any release in it satisfies a minor floor", () => {
+    expect(rangeAllowsMajor("^24.11 || >=26", 24)).toBe(true);
+    expect(rangeAllowsMajor("^24.11 || >=26", 25)).toBe(false);
+  });
+
   it("returns undefined for a range it cannot read", () => {
     expect(rangeAllowsMajor("latest", 24)).toBeUndefined();
     expect(rangeAllowsMajor("^24 || latest", 24)).toBeUndefined();
+  });
+});
+
+describe("engines range evaluation of a full version", () => {
+  it("holds a release below a minor floor to that floor", () => {
+    expect(rangeAllows("^24.11 || >=26", "24.5.0")).toBe(false);
+    expect(rangeAllows("^24.11 || >=26", "24.11.0")).toBe(true);
+    expect(rangeAllows("^24.11 || >=26", "v24.22.2")).toBe(true);
+  });
+
+  it("keeps the gap between clauses", () => {
+    expect(rangeAllows("^24.11 || >=26", "25.9.0")).toBe(false);
+    expect(rangeAllows("^24.11 || >=26", "26.0.0")).toBe(true);
+    expect(rangeAllows(">=22 <24.2", "24.1.9")).toBe(true);
+    expect(rangeAllows(">=22 <24.2", "24.2.0")).toBe(false);
+  });
+
+  it("returns undefined for a range or version it cannot read", () => {
+    expect(rangeAllows("latest", "24.11.0")).toBeUndefined();
+    expect(rangeAllows("^24.11", "nightly")).toBeUndefined();
   });
 });
 
@@ -89,6 +108,12 @@ describe("Node.js check", () => {
     expect(check.status).toBe("failure");
     expect(check.detail).toContain("older");
     expect(check.fix).toBeDefined();
+  });
+
+  it("fails a release of the right major below a minor floor as too old", () => {
+    const check = nodeCheck("^24.11 || >=26", "24.5.0");
+    expect(check.status).toBe("failure");
+    expect(check.detail).toContain("older");
   });
 
   it("warns when no range is declared or readable", () => {

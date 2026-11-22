@@ -24,27 +24,58 @@ export type Check = {
   readonly fix?: string;
 };
 
-/** Reads the minimum major version out of an `engines.node` range such as `^24 || >=26`. */
-export function minimumMajor(range: string): number | undefined {
-  const match = /(\d+)/.exec(range);
-  return match?.[1] === undefined ? undefined : Number(match[1]);
+type Version = readonly [major: number, minor: number, patch: number];
+
+/** Reads `24`, `24.11` or `v24.11.0` as a version, missing parts as zero. */
+function parseVersion(text: string): Version | undefined {
+  const match = /^v?(\d+)(?:\.(\d+))?(?:\.(\d+))?$/.exec(text);
+  if (match?.[1] === undefined) {
+    return undefined;
+  }
+  return [Number(match[1]), Number(match[2] ?? 0), Number(match[3] ?? 0)];
+}
+
+function compareVersions(left: Version, right: Version): number {
+  return left[0] - right[0] || left[1] - right[1] || left[2] - right[2];
 }
 
 /**
- * Evaluates an `engines.node` range against one major version: `||`-separated
+ * Evaluates an `engines.node` range against one version: `||`-separated
  * clauses, each a space-separated list of `^`, `~`, `>=`, `<` or bare
- * comparators that must all hold. Major granularity is deliberate — Node
- * support (and the LTS distinction dependency-cruiser enforces) moves per
- * major, and staying dependency-free rules out a full semver library. Returns
- * undefined when any clause is unreadable so callers degrade to a warning.
+ * comparators that must all hold. That subset is what `engines.node` ranges
+ * use, and staying dependency-free rules out a full semver library. Returns
+ * undefined when the version or any clause is unreadable so callers degrade
+ * to a warning.
+ */
+export function rangeAllows(
+  range: string,
+  version: string,
+): boolean | undefined {
+  const parsed = parseVersion(version.trim());
+  return parsed === undefined ? undefined : rangeAllowsVersion(range, parsed);
+}
+
+/**
+ * Whether any release of `major` satisfies the range — the granularity at
+ * which Node support, and the LTS distinction dependency-cruiser enforces,
+ * moves. A minor floor such as `^24.11` therefore still admits major 24.
  */
 export function rangeAllowsMajor(
   range: string,
   major: number,
 ): boolean | undefined {
+  const first = rangeAllowsVersion(range, [major, 0, 0]);
+  const last = rangeAllowsVersion(range, [major, Number.MAX_SAFE_INTEGER, 0]);
+  return first === undefined || last === undefined ? undefined : first || last;
+}
+
+function rangeAllowsVersion(
+  range: string,
+  version: Version,
+): boolean | undefined {
   let allowed = false;
   for (const clause of range.split("||")) {
-    const satisfied = clauseAllowsMajor(clause.trim(), major);
+    const satisfied = clauseAllows(clause.trim(), version);
     if (satisfied === undefined) {
       return undefined;
     }
@@ -53,7 +84,7 @@ export function rangeAllowsMajor(
   return allowed;
 }
 
-function clauseAllowsMajor(clause: string, major: number): boolean | undefined {
+function clauseAllows(clause: string, version: Version): boolean | undefined {
   const comparators = clause.split(/\s+/).filter((part) => part !== "");
   if (comparators.length === 0) {
     return undefined;
@@ -61,20 +92,42 @@ function clauseAllowsMajor(clause: string, major: number): boolean | undefined {
 
   let satisfied = true;
   for (const comparator of comparators) {
-    const match = /^(\^|~|>=|<)?v?(\d+)(?:\.\d+(?:\.\d+)?)?$/.exec(comparator);
-    if (match?.[2] === undefined) {
+    const match = /^(\^|~|>=|<)?(.+)$/.exec(comparator);
+    const bound = match?.[2] === undefined ? undefined : parseVersion(match[2]);
+    if (bound === undefined) {
       return undefined;
     }
 
-    const bound = Number(match[2]);
-    satisfied &&=
-      match[1] === ">="
-        ? major >= bound
-        : match[1] === "<"
-          ? major < bound
-          : major === bound;
+    const fromBound = compareVersions(version, bound);
+    switch (match?.[1]) {
+      case ">=":
+        satisfied &&= fromBound >= 0;
+        break;
+      case "<":
+        satisfied &&= fromBound < 0;
+        break;
+      case "~":
+        satisfied &&=
+          fromBound >= 0 &&
+          version[0] === bound[0] &&
+          (match[2]?.includes(".") !== true || version[1] === bound[1]);
+        break;
+      case "^":
+      case undefined:
+        // `^` and a bare version both mean "this major, from this release on";
+        // a bare `24` is `>=24.0.0 <25`.
+        satisfied &&= fromBound >= 0 && version[0] === bound[0];
+    }
   }
   return satisfied;
+}
+
+/** The lowest version a range admits: the smallest bound any clause names. */
+function minimumVersion(range: string): Version | undefined {
+  const bounds = [...range.matchAll(/v?\d+(?:\.\d+){0,2}/g)]
+    .map((match) => parseVersion(match[0]))
+    .filter((bound) => bound !== undefined);
+  return bounds.sort(compareVersions)[0];
 }
 
 export function majorOf(version: string): number | undefined {
@@ -146,13 +199,9 @@ function checkNode(root: string): Check {
  * so a Node this check blesses cannot fail verify on version alone.
  */
 export function nodeCheck(range: string | undefined, version: string): Check {
-  const major = majorOf(version);
-  const allowed =
-    range === undefined || major === undefined
-      ? undefined
-      : rangeAllowsMajor(range, major);
+  const allowed = range === undefined ? undefined : rangeAllows(range, version);
 
-  if (range === undefined || major === undefined || allowed === undefined) {
+  if (range === undefined || allowed === undefined) {
     return {
       detail: `Running Node.js ${version}; package.json declares no readable engines.node range.`,
       name: "Node.js",
@@ -168,11 +217,14 @@ export function nodeCheck(range: string | undefined, version: string): Check {
     };
   }
 
-  const floor = minimumMajor(range);
+  const floor = minimumVersion(range);
+  const running = parseVersion(version.trim());
   const fix =
     "Switch to Node.js 24 — the repository pins it in .node-version; `nvm use`, `fnm use`, or `mise use` picks it up.";
 
-  return floor !== undefined && major < floor
+  return floor !== undefined &&
+    running !== undefined &&
+    compareVersions(running, floor) < 0
     ? {
         detail: `Node.js ${version} is older than the required ${range}.`,
         fix,
