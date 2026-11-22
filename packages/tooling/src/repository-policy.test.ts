@@ -326,6 +326,68 @@ describe("repository policy", () => {
     expect(checkRepositoryPolicy(root)).toEqual([]);
   });
 
+  const restrictedDataCollection = [
+    "  dataCollection: {",
+    "    userInfo: false,",
+    "    cookies: false,",
+    "    httpHeaders: {",
+    "      request: { deny: ['forwarded', '-ip', 'remote-', 'via', '-user'] },",
+    "      response: { deny: ['forwarded', '-ip', 'remote-', 'via', '-user'] },",
+    "    },",
+    "    httpBodies: [],",
+    "    urlQueryParams: { deny: ['forwarded', '-ip', 'remote-', 'via', '-user'] },",
+    "    genAI: { inputs: false, outputs: false },",
+    "    databaseQueryData: false,",
+    "    queues: false,",
+    "    graphQL: { document: false, variables: false },",
+    "  },",
+  ];
+
+  function initWith(lines: readonly string[]): string {
+    return [
+      "Sentry.init({",
+      "  dsn,",
+      "  enabled: Boolean(dsn),",
+      ...lines,
+      "});",
+    ].join("\n");
+  }
+
+  it("accepts a dataCollection that collects no category of personal data", () => {
+    const root = checkout({
+      "apps/web/instrumentation.ts": initWith([
+        "  // Before v11: `sendDefaultPii: false`.",
+        ...restrictedDataCollection,
+      ]),
+    });
+
+    expect(checkRepositoryPolicy(root)).toEqual([]);
+  });
+
+  it("names each dataCollection category left on or left to the SDK's default", () => {
+    const lines = restrictedDataCollection
+      .filter((line) => !line.includes("cookies"))
+      .map((line) => line.replace("userInfo: false", "userInfo: true"))
+      .map((line) => line.replace("outputs: false", "outputs: true"));
+    const root = checkout({ "apps/web/instrumentation.ts": initWith(lines) });
+
+    const violations = checkRepositoryPolicy(root);
+
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.problem).toContain("cookies");
+    expect(violations[0]?.problem).toContain("userInfo");
+    expect(violations[0]?.problem).toContain("genAI");
+    expect(violations[0]?.problem).not.toContain("queues");
+  });
+
+  it("reports a dataCollection that is not written out where it is read", () => {
+    const root = checkout({
+      "apps/web/instrumentation.ts": initWith(["  dataCollection,"]),
+    });
+
+    expect(checkRepositoryPolicy(root)[0]?.problem).toContain("dataCollection");
+  });
+
   it("reports the root missing a verification-step script", () => {
     const step = verificationSteps[0]?.name ?? "";
     const remaining = { ...rootScripts };

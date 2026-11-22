@@ -101,7 +101,7 @@ pnpm test:integration
 ## Security and integrations
 
 - Keep third-party SDKs behind a small adapter and validate their responses with Zod before passing data into domain logic.
-- Sentry is disabled without a DSN and must keep `sendDefaultPii: false` unless a documented privacy decision changes it.
+- Sentry is disabled without a DSN and collects no personal data unless a documented privacy decision changes that: `sendDefaultPii: false` on an SDK before v11 (mobile), and on v11 (web) a `dataCollection` that turns every category off, because v11 collects whatever it is not told to skip.
 - Never log credentials, authorization headers, full provider payloads, or sensitive user content.
 - A workflow that runs on a schedule must file an issue when it fails, through `.github/actions/report-failure`; `pnpm policy` rejects one that does not. A red that only ever appears in the Actions tab is a signal nobody receives.
 - The repository host is configuration, not folklore: `.github/rulesets/main.json` and `.github/CODEOWNERS` are checked in, `pnpm repo:host` applies them, and `pnpm policy` fails when a workflow, an action pin, or a pnpm setting drifts from what `docs/repository-host.md` describes.
