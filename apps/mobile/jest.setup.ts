@@ -35,3 +35,10 @@ jest.mock("expo-secure-store", () => {
     },
   };
 });
+
+// Jest's counterpart of the `requireAssertions` the Vitest suites share: a test
+// that finishes without calling `expect` fails, because running code proves
+// nothing about whether it is right.
+beforeEach(() => {
+  expect.hasAssertions();
+});

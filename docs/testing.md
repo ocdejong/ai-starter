@@ -116,6 +116,19 @@ Passing tests are evidence, not permission to ignore the rest of the system. Typ
 
 Tests must not be deleted, skipped, weakened, or rewritten merely because the implementation fails them. Change an existing expectation only when the product contract intentionally changed, and document that change in the same commit.
 
+Every test has to assert something. The shared Vitest base sets `expect.requireAssertions`, and the mobile Jest setup calls `expect.hasAssertions()` before each test, so a test that runs code without calling `expect` fails. A test about something not throwing says so: `expect(() => run()).not.toThrow()`.
+
+## Removing a test
+
+Removing a duplicate, or moving a test to a cheaper layer, is how a suite stays fast without losing what it catches. A browser journey that only checks what a component test could check becomes that component test, and a database test of pure logic becomes a domain unit. A test goes, or becomes one row of a table-driven test, only when all of these hold:
+
+1. A named test at the same or a lower layer asserts the same observable outcome for the same kind of input. Name it in the commit.
+2. Line coverage of the code the test exercised does not drop, or the commit explains each line that loses coverage. Browser journeys have no coverage, so the reviewer matches each removed assertion to the test that now makes it.
+3. It is not a guard, a contract pin or a negative contract. The policy and architecture checks, a test that pins an API shape, and a test that asserts something is absent all kill few mutants by design. A test can hold an architecture in place without catching a bug.
+4. When a mutation tool has run on those files, the same mutants die before and after the removal.
+
+A tool's list, such as tests that kill no mutant, tests whose coverage another test's contains, or a greedy cover, tells a reviewer where to look. It never decides on its own. This rule comes from a product built the same way: pruning its suites by it removed few tests, and most of the time it saved came from cheaper fixtures and moving tests to lower layers.
+
 ## Sensors, and what they are for
 
 Four questions cannot be answered by a pull request, because nothing about the change decides them. They run on a schedule instead, deliberately outside `pnpm verify` and deliberately absent from `.github/rulesets/main.json` — a sensor that can block a merge turns somebody else's outage into yours.
