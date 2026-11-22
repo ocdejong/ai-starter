@@ -22,32 +22,35 @@ const mocks = vi.hoisted(() => {
     isPending: boolean;
   } = { data: [], error: null, isError: false, isPending: false };
 
-  return { announcementQuery, invalidate: vi.fn() };
+  return { announcementQuery };
 });
 
-// The board is wired to the API through these hooks; replacing them lets a test
-// put the query in exactly the state under examination.
+// The board is wired to the API through TanStack Query's hooks fed by tRPC's
+// option builders; replacing the hooks lets a test put the query in exactly the
+// state under examination.
+vi.mock("@tanstack/react-query", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  useMutation: () => ({
+    error: null,
+    isPending: false,
+    isSuccess: false,
+    mutate: vi.fn(),
+  }),
+  useQuery: () => mocks.announcementQuery,
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+}));
+
 vi.mock("~/trpc/react", () => {
-  const idleMutation = {
-    useMutation: () => ({
-      error: null,
-      isPending: false,
-      isSuccess: false,
-      mutate: vi.fn(),
-    }),
+  const procedure = {
+    mutationOptions: () => ({}),
+    queryKey: () => [],
+    queryOptions: () => ({}),
   };
 
   return {
-    api: {
-      announcement: {
-        create: idleMutation,
-        list: { useQuery: () => mocks.announcementQuery },
-        rename: idleMutation,
-      },
-      useUtils: () => ({
-        announcement: { list: { invalidate: mocks.invalidate } },
-      }),
-    },
+    useTRPC: () => ({
+      announcement: { create: procedure, list: procedure, rename: procedure },
+    }),
   };
 });
 
