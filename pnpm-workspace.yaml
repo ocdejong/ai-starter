@@ -42,8 +42,8 @@ overrides:
   # `use-intl` — would otherwise auto-install the registry's newest, which
   # leaves a `react-dom` of one version paired with a `react` of another. Move
   # these together with `apps/mobile`, never apart.
-  react: 19.2.8
-  react-dom: 19.2.8
+  react: 19.3.0
+  react-dom: 19.3.0
   # The three below answer advisories the weekly sensor reports (issue #23). Each
   # fixed version satisfies the range its parent already declares, so nothing
   # but the lockfile stood in the way. The selector names the *line* that

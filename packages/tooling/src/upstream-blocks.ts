@@ -1,11 +1,11 @@
 /**
- * The majors this repository cannot take, and the upstream fact holding each
+ * The releases this repository cannot take, and the upstream fact holding each
  * one back.
  *
  * These are the declines that have no local trigger. A Dependabot group
- * re-proposes jest 30 every month, it fails for a reason nothing here can
- * fix, and it is closed again — and the day the upstream release lands,
- * *nothing in this repository notices*. That is the shape stage
+ * re-proposed jest 30 every month until jest-expo 58 moved, it failed for a
+ * reason nothing here could fix, and it was closed again — and the day the
+ * upstream release lands, *nothing in this repository notices*. That is the shape stage
  * 21 exists to kill: a decision that lives in somebody's memory rather than in
  * the repository.
  *
@@ -49,23 +49,12 @@ export type UpstreamBlock = {
 };
 
 /**
- * The first recorded 2026-07-28, the second 2026-11-22, each against the
- * newest published version at the time. A block that clears is deleted from this
+ * Recorded 2026-11-22 against the newest published version at the time. A block that clears is deleted from this
  * list in the same change that takes the bump — the list is the backlog, not a
  * log. The `effect` entry also has an `auditConfig.ignoreGhsas` entry in
  * `pnpm-workspace.yaml`, which goes in the same change.
  */
 export const upstreamBlocks: readonly UpstreamBlock[] = [
-  {
-    dependency: "@jest/globals",
-    field: "dependencies",
-    issue: 38,
-    pkg: "jest-expo",
-    recorded: "^29.2.1",
-    summary:
-      "jest 30 — `jest-expo` is Expo-SDK-pinned and still depends on the Jest 29 runtime, so the mobile suite dies on `clearMocksOnScope`",
-    wanted: "30",
-  },
   {
     dependency: "effect",
     field: "dependencies",
