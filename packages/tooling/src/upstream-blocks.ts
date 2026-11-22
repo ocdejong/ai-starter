@@ -49,10 +49,10 @@ export type UpstreamBlock = {
 };
 
 /**
- * The first recorded 2026-07-28, the second 2026-10-04, each against the
+ * The first recorded 2026-07-28, the second 2026-11-22, each against the
  * newest published version at the time. A block that clears is deleted from this
  * list in the same change that takes the bump — the list is the backlog, not a
- * log. The `deepmerge-ts` entry also has an `auditConfig.ignoreGhsas` entry in
+ * log. The `effect` entry also has an `auditConfig.ignoreGhsas` entry in
  * `pnpm-workspace.yaml`, which goes in the same change.
  */
 export const upstreamBlocks: readonly UpstreamBlock[] = [
@@ -67,14 +67,14 @@ export const upstreamBlocks: readonly UpstreamBlock[] = [
     wanted: "30",
   },
   {
-    dependency: "deepmerge-ts",
+    dependency: "effect",
     field: "dependencies",
     issue: 23,
     pkg: "@prisma/config",
-    recorded: "7.1.5",
+    recorded: "3.20.0",
     summary:
-      "deepmerge-ts GHSA-ggr8-5vv4-36mx is fixed in 8.0.0, but `@prisma/config` pins 7.1.5 exactly, so no override honours its range; the code runs in the Prisma CLI's config loader at development time",
-    wanted: "8",
+      "effect GHSA-7589-6fvf-x4pw is fixed in 3.22.1, but `@prisma/config` pins 3.20.0 exactly, so no override honours its range; the code runs in the Prisma CLI's config loader at development time",
+    wanted: "3.22.1",
   },
 ];
 

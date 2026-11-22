@@ -12,6 +12,6 @@ module.exports = {
   // hung test quickly; every test after the first settles in milliseconds.
   testTimeout: 20000,
   transformIgnorePatterns: [
-    "node_modules/(?!(.pnpm|(jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|ai|@ai-sdk/.*|@workflow/.*|use-intl|intl-messageformat|@formatjs/.*))",
+    "node_modules/(?!(.pnpm|(jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|ai|@ai-sdk/.*|@workflow/.*|use-intl|intl-messageformat|@formatjs/.*|zod))",
   ],
 };
