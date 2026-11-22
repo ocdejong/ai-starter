@@ -36,8 +36,12 @@ export type UpstreamBlock = {
   readonly field: "dependencies" | "peerDependencies";
   /** The entry in that field whose range decides it. */
   readonly dependency: string;
-  /** The major this repository is waiting for. */
-  readonly wanted: number;
+  /**
+   * The release this repository is waiting for: a major such as `"30"` for a
+   * declined major, or a full version such as `"3.22.1"` for an advisory fixed
+   * inside the major the upstream pins.
+   */
+  readonly wanted: string;
   /** What that range said when this block was recorded, for the diff. */
   readonly recorded: string;
   /** The issue tracking the block. */
@@ -60,7 +64,7 @@ export const upstreamBlocks: readonly UpstreamBlock[] = [
     recorded: "^29.2.1",
     summary:
       "jest 30 — `jest-expo` is Expo-SDK-pinned and still depends on the Jest 29 runtime, so the mobile suite dies on `clearMocksOnScope`",
-    wanted: 30,
+    wanted: "30",
   },
   {
     dependency: "deepmerge-ts",
@@ -70,29 +74,52 @@ export const upstreamBlocks: readonly UpstreamBlock[] = [
     recorded: "7.1.5",
     summary:
       "deepmerge-ts GHSA-ggr8-5vv4-36mx is fixed in 8.0.0, but `@prisma/config` pins 7.1.5 exactly, so no override honours its range; the code runs in the Prisma CLI's config loader at development time",
-    wanted: 8,
+    wanted: "8",
   },
 ];
 
 /**
- * Whether a range names a major at least this high.
+ * Whether a range admits a release at least as new as `wanted`.
  *
  * Deliberately not semver: `packages/tooling` may import nothing installed, and
- * the question is narrow enough to answer by reading the majors a range names.
- * `^9.7` names 9; `^3 || ... || ^9.7` names 3 through 9; `^1.19.9` names 1.
- * Patch churn inside a blocked major therefore does not fire, which is the
- * whole reason this is not a string comparison against `recorded`.
+ * the question is narrow enough to answer from the versions a range names. An
+ * exact pin or a bare version reaches `wanted` when it is at least that
+ * release; `^` also reaches it from below inside the same major, and `~` inside
+ * the same minor. So `^9.7` never reaches `"10"`, and patch churn inside a
+ * blocked major does not fire, which is the whole reason this is not a string
+ * comparison against `recorded`.
  *
  * The one shape it would misread is an exclusive upper bound — `<3` names 3
  * without allowing it. No upstream here uses one, and a false "unblocked"
  * costs a person one command to disprove, where a false "still blocked" would
  * cost the silence this sensor exists to end.
  */
-export function namesMajorAtLeast(range: string, major: number): boolean {
-  const majors = [...range.matchAll(/(?:^|[\s|,>=<~^])(\d+)/g)].map((match) =>
-    Number(match[1]),
+export function namesVersionAtLeast(range: string, wanted: string): boolean {
+  const target = versionParts(wanted);
+  return [...range.matchAll(/(?:^|[\s|,>=<])([~^]?)(\d+(?:\.\d+){0,2})/g)].some(
+    (match) => {
+      const named = versionParts(match[2] ?? "");
+      const sameMajor = named[0] === target[0];
+      const sameMinor = sameMajor && named[1] === target[1];
+      return (
+        compareParts(named, target) >= 0 ||
+        (match[1] === "^" && sameMajor) ||
+        (match[1] === "~" && sameMinor)
+      );
+    },
   );
-  return majors.some((named) => named >= major);
+}
+
+function versionParts(version: string): readonly [number, number, number] {
+  const [major = 0, minor = 0, patch = 0] = version.split(".").map(Number);
+  return [major, minor, patch];
+}
+
+function compareParts(
+  left: readonly [number, number, number],
+  right: readonly [number, number, number],
+): number {
+  return left[0] - right[0] || left[1] - right[1] || left[2] - right[2];
 }
 
 export type BlockReview = {
@@ -112,7 +139,7 @@ export function reviewBlock(
   return {
     block,
     cleared:
-      observed === undefined || namesMajorAtLeast(observed, block.wanted),
+      observed === undefined || namesVersionAtLeast(observed, block.wanted),
     observed,
     version: manifest.version,
   };
