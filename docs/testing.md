@@ -81,7 +81,7 @@ A step that skips is a file nobody reads, which is how `apps/mobile/.maestro/smo
 
 Beyond that, the suite carries three levels of native evidence:
 
-- `test:unit` runs the Jest/RNTL component suites. A screen file under `apps/mobile/src/app/` cannot hold its own test — expo-router would register the test as a route — so the testable component lives in `src/components/` and the route file only wires it up. ESM-only dependencies need their package added to the `transformIgnorePatterns` allowlist in `apps/mobile/package.json`; pnpm's nested `node_modules` segment re-triggers the pattern, and a `.mjs` entry point cannot be transformed at all, in which case mock the module boundary instead.
+- `test:unit` runs the Jest/RNTL component suites. A screen file under `apps/mobile/src/app/` cannot hold its own test — expo-router would register the test as a route — so the testable component lives in `src/components/` and the route file only wires it up. ESM-only dependencies need their package added to the `transformIgnorePatterns` allowlist in `apps/mobile/jest.config.cjs`; pnpm's nested `node_modules` segment re-triggers the pattern, and a `.mjs` entry point cannot be transformed at all, in which case mock the module boundary instead.
 - `typecheck` covers the Expo app against the same shared API and domain contracts as web.
 - `build:native` runs `expo export --platform ios --platform android`, so a bundle that no longer resolves or compiles fails the authoritative suite.
 
