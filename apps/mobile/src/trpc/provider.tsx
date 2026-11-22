@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { httpBatchLink, loggerLink } from "@trpc/client";
-import { createTRPCReact } from "@trpc/react-query";
+import { createTRPCClient, httpBatchLink, loggerLink } from "@trpc/client";
+import { createTRPCContext } from "@trpc/tanstack-react-query";
 import type { AppRouter } from "@ai-starter/api/client";
 import { useState, type ReactNode } from "react";
 import superjson from "superjson";
@@ -9,7 +9,12 @@ import { authClient } from "../auth/client";
 import { mobileEnv } from "../env";
 import { trpcRequestHeaders } from "./headers";
 
-export const api = createTRPCReact<AppRouter>();
+/**
+ * `useTRPC()` returns option builders for TanStack Query's own hooks:
+ * `useQuery(trpc.announcement.list.queryOptions())`.
+ */
+const trpcContext = createTRPCContext<AppRouter>();
+export const useTRPC = trpcContext.useTRPC;
 
 export function TRPCProvider({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -25,7 +30,7 @@ export function TRPCProvider({ children }: { children: ReactNode }) {
   );
 
   const [trpcClient] = useState(() =>
-    api.createClient({
+    createTRPCClient<AppRouter>({
       links: [
         loggerLink({
           enabled: (operation) =>
@@ -67,9 +72,12 @@ export function TRPCProvider({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <api.Provider client={trpcClient} queryClient={queryClient}>
+      <trpcContext.TRPCProvider
+        trpcClient={trpcClient}
+        queryClient={queryClient}
+      >
         {children}
-      </api.Provider>
+      </trpcContext.TRPCProvider>
     </QueryClientProvider>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 
@@ -8,7 +9,7 @@ import {
   type AnnouncementFailure,
 } from "~/components/announcements/announcement-panel";
 import { groupSettingsPath } from "~/lib/routes";
-import { api } from "~/trpc/react";
+import { useTRPC } from "~/trpc/react";
 
 /**
  * A request that never reached the server carries no error payload; anything
@@ -64,19 +65,21 @@ export function announcementReadFailure(
  */
 export function AnnouncementBoard() {
   const t = useTranslations("app.announcements");
-  const utils = api.useUtils();
-  const announcements = api.announcement.list.useQuery();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const announcements = useQuery(trpc.announcement.list.queryOptions());
 
-  const create = api.announcement.create.useMutation({
-    onSuccess: async () => {
-      await utils.announcement.list.invalidate();
-    },
-  });
-  const rename = api.announcement.rename.useMutation({
-    onSuccess: async () => {
-      await utils.announcement.list.invalidate();
-    },
-  });
+  const invalidateList = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: trpc.announcement.list.queryKey(),
+    });
+  };
+  const create = useMutation(
+    trpc.announcement.create.mutationOptions({ onSuccess: invalidateList }),
+  );
+  const rename = useMutation(
+    trpc.announcement.rename.mutationOptions({ onSuccess: invalidateList }),
+  );
 
   if (announcements.isPending) {
     return <p className="text-muted-foreground">{t("loading")}</p>;

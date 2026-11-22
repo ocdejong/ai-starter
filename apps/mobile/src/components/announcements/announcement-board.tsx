@@ -1,6 +1,7 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "use-intl";
 
-import { api } from "../../trpc/provider";
+import { useTRPC } from "../../trpc/provider";
 import { Notice } from "../auth/notice";
 import {
   AnnouncementPanel,
@@ -37,19 +38,21 @@ function announcementFailure(
  */
 export function AnnouncementBoard() {
   const t = useTranslations("app.announcements");
-  const utils = api.useUtils();
-  const announcements = api.announcement.list.useQuery();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const announcements = useQuery(trpc.announcement.list.queryOptions());
 
-  const create = api.announcement.create.useMutation({
-    onSuccess: async () => {
-      await utils.announcement.list.invalidate();
-    },
-  });
-  const rename = api.announcement.rename.useMutation({
-    onSuccess: async () => {
-      await utils.announcement.list.invalidate();
-    },
-  });
+  const invalidateList = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: trpc.announcement.list.queryKey(),
+    });
+  };
+  const create = useMutation(
+    trpc.announcement.create.mutationOptions({ onSuccess: invalidateList }),
+  );
+  const rename = useMutation(
+    trpc.announcement.rename.mutationOptions({ onSuccess: invalidateList }),
+  );
 
   if (announcements.isPending) {
     return <Notice message={t("loading")} tone="info" />;
